@@ -140,29 +140,16 @@ const WorkLogPage = () => {
         );
     }
 
+    const pageTitle =
+        loginMethod === "accessCode"
+            ? workerName
+                ? `${workerName}님의 근무 기록`
+                : companyName ?? "나의 근무 기록하기"
+            : undefined;
+
     return (
         <PageWrapper>
             <Header>
-                <div className="title-section">
-                    {loginMethod === "accessCode" ? (
-                        <div>
-                            {workerName ? `${workerName}님의 근무 기록` : companyName ? companyName : "나의 근무 기록하기"}
-                        </div>
-                    ) : (
-                        <TitleWithSelect>
-                            
-                            <Select value={selectedCompanyId || ""} onChange={(e) => dispatch(setSelectedCompany(Number(e.target.value) || null))}>
-                                <option value="">업장을 선택하세요</option>
-                                {companies.map((company: { companyId: number; name: string }) => (
-                                    <option key={company.companyId} value={company.companyId}>
-                                        {company.name}
-                                    </option>
-                                ))}
-                            </Select>
-                            <span>의 근무 기록하기</span>
-                        </TitleWithSelect>
-                    )}
-                </div>
                 <div className="buttons">
                     <img src={DownloadImg} alt="download" />
                     <img src={SettingImg} alt="setting" />
@@ -177,6 +164,10 @@ const WorkLogPage = () => {
                 onWorkLogCreated={handleWorkLogCreated}
                 loginMethod={loginMethod || undefined}
                 accessCode={accessCode || undefined}
+                pageTitle={pageTitle}
+                companies={loginMethod === "email" ? companies : []}
+                selectedCompanyId={loginMethod === "email" ? selectedCompanyId : null}
+                onCompanyChange={loginMethod === "email" ? (id) => dispatch(setSelectedCompany(id)) : undefined}
             />
         </PageWrapper>
     );
@@ -191,16 +182,9 @@ const PageWrapper = styled.div`
 const Header = styled.div`
     width: 100%;
     display: flex;
-    font-size: 46px;
-    font-weight: bold;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-bottom: 20px;
-
-    .title-section {
-        display: flex;
-        align-items: center;
-    }
 
     .buttons {
         display: flex;
@@ -212,44 +196,6 @@ const Header = styled.div`
             object-fit: contain;
             cursor: pointer;
         }
-    }
-`;
-
-const TitleWithSelect = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 46px;
-    font-weight: bold;
-
-    span {
-        white-space: nowrap;
-    }
-`;
-
-const Select = styled.select`
-    padding: 8px 12px;
-    font-size: 46px;
-    font-weight: bold;
-    border: 1.5px solid #00ccc7;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    min-width: 200px;
-    height: auto;
-    appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300a8a5%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E');
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-
-    &:focus {
-        outline: none;
-        border-color: #00a8a5;
-    }
-
-    option[value=""] {
-        display: none;
     }
 `;
 

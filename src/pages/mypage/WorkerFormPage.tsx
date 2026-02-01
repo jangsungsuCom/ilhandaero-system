@@ -8,6 +8,35 @@ import { fetchSalaryTargets } from "../../store/slices/salaryTargetSlice";
 import { FormCard, Form, FieldGroup, Label, Input, SubmitButton } from "../../components/common/FormCard";
 import type { CreateWorkerRequest } from "../../types/mypage";
 
+const DEFAULT_COLOR = "#00ccc7";
+
+const COLOR_PALETTE: string[] = [
+    "#00ccc7",
+    "#11d0c9",
+    "#009a96",
+    "#007d79",
+    "#e74c3c",
+    "#e67e22",
+    "#f39c12",
+    "#2ecc71",
+    "#27ae60",
+    "#3498db",
+    "#2980b9",
+    "#9b59b6",
+    "#8e44ad",
+    "#34495e",
+    "#2c3e50",
+    "#95a5a6",
+    "#7f8c8d",
+    "#1abc9c",
+    "#16a085",
+    "#e91e63",
+    "#673ab7",
+    "#3f51b5",
+    "#2196f3",
+    "#00bcd4",
+];
+
 export default function WorkerFormPage() {
     const dispatch = useAppDispatch();
     const { storeId, workerId } = useParams<{ storeId: string; workerId: string }>();
@@ -25,6 +54,7 @@ export default function WorkerFormPage() {
         accountNumber: "",
         weeklyAllowanceEnabled: false,
         deductionType: "FOUR_INSURANCE",
+        colorHex: DEFAULT_COLOR,
     });
     const [loading, setLoading] = useState(false);
 
@@ -41,6 +71,7 @@ export default function WorkerFormPage() {
                     accountNumber: worker.accountNumber,
                     weeklyAllowanceEnabled: worker.weeklyAllowanceEnabled ?? false,
                     deductionType: worker.deductionType ?? "FOUR_INSURANCE",
+                    colorHex: worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR,
                 });
             }
         }
@@ -196,6 +227,24 @@ export default function WorkerFormPage() {
                             </CheckboxRow>
                         </FieldGroup>
 
+                        <FieldGroup>
+                            <Label>표시 색상</Label>
+                            <ColorPalette>
+                                {COLOR_PALETTE.map((hex) => (
+                                    <ColorSwatch
+                                        key={hex}
+                                        $color={hex}
+                                        $selected={formData.colorHex === hex}
+                                        type="button"
+                                        aria-label={`색상 ${hex}`}
+                                        title={hex}
+                                        onClick={() => setFormData({ ...formData, colorHex: hex })}
+                                    />
+                                ))}
+                            </ColorPalette>
+                            <ColorValue>{formData.colorHex}</ColorValue>
+                        </FieldGroup>
+
                         <ButtonGroup>
                             <SubmitButton type="submit" disabled={loading} style={{ width: "100%" }}>
                                 {loading ? "저장 중..." : isEdit ? "수정" : "등록"}
@@ -319,4 +368,34 @@ const CheckboxCircle = styled.span<{ $checked: boolean }>`
     border: 1.5px solid #009a96;
     background: ${({ $checked }) => ($checked ? "#00ccc7" : "transparent")};
     transition: background 0.2s ease;
+`;
+
+const ColorPalette = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+`;
+
+const ColorSwatch = styled.button<{ $color: string; $selected: boolean }>`
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: ${({ $color }) => $color};
+    border: 3px solid ${({ $selected }) => ($selected ? "#1a1a1a" : "transparent")};
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+`;
+
+const ColorValue = styled.span`
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
 `;

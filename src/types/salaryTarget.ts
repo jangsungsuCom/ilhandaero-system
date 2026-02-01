@@ -8,6 +8,8 @@ export interface SalaryTarget {
     accountNumber: string;
     accessCode: string;
     codeStatus: "ACTIVE" | "INACTIVE";
+    /** 표시 색상 #RRGGBB */
+    colorHex?: string;
 }
 
 export interface SalaryTargetResponse {

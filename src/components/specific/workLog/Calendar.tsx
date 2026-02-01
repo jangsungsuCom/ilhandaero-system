@@ -3,11 +3,17 @@ import React, { useState, type JSX } from "react";
 import styled from "styled-components";
 import AddModal from "./AddModal";
 import EditModal from "./EditModal";
+import SummaryModal, { type SummaryRow } from "./SummaryModal";
 import AddBtnImg from "../../../assets/images/workLog/add_log.png";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
 import type { LoginMethod } from "../../../types/auth";
+
+export interface CompanyOption {
+    companyId: number;
+    name: string;
+}
 
 interface CalendarProps {
     workLogsByAccessCode?: Record<string, WorkLog[]>;
@@ -18,15 +24,35 @@ interface CalendarProps {
     onWorkLogCreated?: () => void;
     loginMethod?: LoginMethod;
     accessCode?: string;
+    /** 이메일 로그인 시 업장 선택용 (TopBar에 표시) */
+    companies?: CompanyOption[];
+    selectedCompanyId?: number | null;
+    onCompanyChange?: (companyId: number | null) => void;
+    /** 페이지 제목 (WorkLogPage에서 계산해 전달) */
+    pageTitle?: string;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTargets = [], currentYear, currentMonth, onMonthChange, onWorkLogCreated, loginMethod, accessCode }) => {
+const Calendar: React.FC<CalendarProps> = ({
+    workLogsByAccessCode = {},
+    salaryTargets = [],
+    currentYear,
+    currentMonth,
+    onMonthChange,
+    onWorkLogCreated,
+    loginMethod,
+    accessCode,
+    companies = [],
+    selectedCompanyId = null,
+    onCompanyChange,
+    pageTitle,
+}) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [editingWorkLog, setEditingWorkLog] = useState<WorkLog | null>(null);
     const [editingSalaryTarget, setEditingSalaryTarget] = useState<SalaryTarget | undefined>(undefined);
+    const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -90,6 +116,32 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
         return total;
     };
 
+    /** 근무자별 해당 월 임금 집계 (SummaryModal용) */
+    const getSummaryRows = (): SummaryRow[] => {
+        const yearStr = String(currentYear);
+        const monthStr = String(currentMonth + 1).padStart(2, "0");
+        const prefix = `${yearStr}-${monthStr}`;
+
+        if (loginMethod === "email") {
+            return salaryTargets.map((target) => {
+                const logs = workLogsByAccessCode[target.accessCode] || [];
+                const totalAmount = logs
+                    .filter((log) => log.workDate.startsWith(prefix))
+                    .reduce((sum, log) => sum + log.earnedAmount, 0);
+                return { workerName: target.workerName, totalAmount };
+            });
+        }
+        if (loginMethod === "accessCode" && accessCode) {
+            const logs = workLogsByAccessCode[accessCode] || [];
+            const totalAmount = logs
+                .filter((log) => log.workDate.startsWith(prefix))
+                .reduce((sum, log) => sum + log.earnedAmount, 0);
+            const workerName = pageTitle != null && pageTitle !== "" ? pageTitle.replace(/님의 근무 기록$/, "").trim() || "근무자" : "근무자";
+            return [{ workerName, totalAmount }];
+        }
+        return [];
+    };
+
     const formatWorkTime = (minutes: number): string => {
         const totalHours = minutes / 60;
         // 소수점 첫째 자리까지 표시 (0.5 단위)
@@ -121,28 +173,38 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
             const workLogsForDate = getWorkLogsForDate(date);
 
             cells.push(
-                <DayCell key={`curr-${day}`} className={isSelected ? "selected" : ""} onClick={() => setSelectedDate(date)}>
-                    {isSelected && (
+                <DayCell
+                    key={`curr-${day}`}
+                    className={isSelected ? "selected" : ""}
+                    onClick={() => {
+                        setSelectedDate(date);
+                        setIsAddModalOpen(true);
+                    }}
+                >
+                    {/* {isSelected && (
                         <AddButton onClick={() => setIsAddModalOpen(true)}>
                             <img src={AddBtnImg} alt="add" />
                         </AddButton>
-                    )}
+                    )} */}
                     <DateNumber dayOfWeek={dayOfWeek}>{day}</DateNumber>
-                    {workLogsForDate.map(({ workLog, salaryTarget }) => (
-                        <WorkTimeBadge
-                            key={workLog.workLogId}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingWorkLog(workLog);
-                                setEditingSalaryTarget(salaryTarget);
-                                setIsEditModalOpen(true);
-                            }}
-                        >
-                            {loginMethod === "email" && salaryTarget
-                                ? `${salaryTarget.workerName}, ${formatWorkTime(workLog.workedMinutes)}`
-                                : formatWorkTime(workLog.workedMinutes)}
-                        </WorkTimeBadge>
-                    ))}
+                    {workLogsForDate.map(({ workLog, salaryTarget }) => {
+                        const badgeColor =
+                            salaryTarget?.colorHex && /^#[0-9A-Fa-f]{6}$/.test(salaryTarget.colorHex) ? salaryTarget.colorHex : "#00ccc7";
+                        return (
+                            <WorkTimeBadge
+                                key={workLog.workLogId}
+                                $color={badgeColor}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingWorkLog(workLog);
+                                    setEditingSalaryTarget(salaryTarget);
+                                    setIsEditModalOpen(true);
+                                }}
+                            >
+                                {loginMethod === "email" && salaryTarget ? `${salaryTarget.workerName}, ${formatWorkTime(workLog.workedMinutes)}` : formatWorkTime(workLog.workedMinutes)}
+                            </WorkTimeBadge>
+                        );
+                    })}
                 </DayCell>
             );
         }
@@ -163,7 +225,7 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
     };
 
     const monthlyTotalAmount = getMonthlyTotalAmount();
-    const monthlyLabel = "이번달 임금";
+    const monthlyLabel = "총 급여";
 
     return (
         <>
@@ -172,9 +234,26 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
                     <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
                         {currentYear}년 {currentMonth + 1}월 ˅
                     </PickerButton>
-                    <SummaryCard>
+                    <TopBarTitleBlock>
+                        {loginMethod === "accessCode" && pageTitle != null && pageTitle !== "" ? (
+                            <TitleText>{pageTitle}</TitleText>
+                        ) : loginMethod === "email" && companies.length > 0 && onCompanyChange ? (
+                            <>
+                                <CompanySelect value={selectedCompanyId ?? ""} onChange={(e) => onCompanyChange(e.target.value ? Number(e.target.value) : null)}>
+                                    <option value="">업장을 선택하세요</option>
+                                    {companies.map((c) => (
+                                        <option key={c.companyId} value={c.companyId}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </CompanySelect>
+                                <TitleSuffix>근무</TitleSuffix>
+                            </>
+                        ) : null}
+                    </TopBarTitleBlock>
+                    <SummaryCard onClick={() => setIsSummaryModalOpen(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setIsSummaryModalOpen(true)}>
                         <SummaryLabel>{monthlyLabel}</SummaryLabel>
-                        <SummaryValue>{monthlyTotalAmount.toLocaleString()} 원</SummaryValue>
+                        <SummaryValue>{monthlyTotalAmount.toLocaleString()} 원 ˅</SummaryValue>
                     </SummaryCard>
                 </TopBar>
 
@@ -235,6 +314,14 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
                     }}
                 />
             )}
+            <SummaryModal
+                open={isSummaryModalOpen}
+                onClose={() => setIsSummaryModalOpen(false)}
+                title="근무자 별 임금 확인"
+                year={currentYear}
+                month={currentMonth + 1}
+                rows={getSummaryRows()}
+            />
         </>
     );
 };
@@ -257,39 +344,91 @@ const TopBar = styled.div`
 `;
 
 const PickerButton = styled.div`
-    width: 301px;
-    height: 88px;
+    width: 240px;
+    height: 72px;
     background: #11d0c9;
-    border-radius: 44px;
+    border-radius: 36px;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 31px;
+    font-size: 26px;
     font-weight: 700;
     cursor: pointer;
 `;
 
+const TopBarTitleBlock = styled.div`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-width: 0;
+    font-size: 31px;
+    font-weight: bold;
+`;
+
+const TitleText = styled.span`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const TitleSuffix = styled.span`
+    white-space: nowrap;
+`;
+
+const CompanySelect = styled.select`
+    padding: 8px 36px 8px 12px;
+    font-size: 31px;
+    font-weight: bold;
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    min-width: 180px;
+    max-width: 100%;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300a8a5%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+
+    &:focus {
+        outline: none;
+        border-color: #00a8a5;
+    }
+
+    option[value=""] {
+        display: none;
+    }
+`;
+
 const SummaryCard = styled.div`
-    width: 500px;
-    height: 88px;
+    width: 400px;
+    height: 72px;
     background: #11d0c9;
-    border-radius: 44px;
+    border-radius: 36px;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 32px;
+    font-size: 26px;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+        opacity: 0.95;
+    }
 `;
 
 const SummaryLabel = styled.div`
-    font-size: 31px;
     font-weight: 700;
     color: #ffffff;
 `;
 
 const SummaryValue = styled.div`
-    font-size: 31px;
     font-weight: 700;
     color: #ffffff;
 `;
@@ -389,11 +528,11 @@ const AddButton = styled.button`
     cursor: pointer;
 `;
 
-const WorkTimeBadge = styled.div`
-    width: 164px;
+const WorkTimeBadge = styled.div<{ $color?: string }>`
+    width: 144px;
     height: 36px;
     border-radius: 18px;
-    background-color: #ffc8c8;
+    background-color: ${({ $color }) => $color ?? "#00ccc7"};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -402,10 +541,10 @@ const WorkTimeBadge = styled.div`
     margin-top: 8px;
     color: #333;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s, transform 0.1s, filter 0.2s;
 
     &:hover {
-        background-color: #ffb0b0;
+        filter: brightness(0.9);
         transform: scale(1.05);
     }
 `;

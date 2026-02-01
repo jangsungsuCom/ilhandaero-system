@@ -13,7 +13,7 @@ interface NavLink {
 
 const PageLayout = () => {
     const navigate = useNavigate();
-    
+
     return (
         <LayoutContainer>
             <Header>
@@ -66,11 +66,7 @@ const NavBar = () => {
     return (
         <BarContainer>
             {navLinks.map((link) => (
-                <NavMenu
-                    key={link.path}
-                    isActive={location.pathname === link.path}
-                    onClick={() => handleNavClick(link)}
-                >
+                <NavMenu key={link.path} isActive={location.pathname === link.path} onClick={() => handleNavClick(link)}>
                     {link.name}
                 </NavMenu>
             ))}
@@ -79,7 +75,6 @@ const NavBar = () => {
 };
 
 export default PageLayout;
-
 
 const LayoutContainer = styled.div`
     min-width: 1600px;

@@ -31,7 +31,7 @@ export default function MypageLayout() {
     // 로그인 방법에 따라 접근 불가한 경로로 가면 리다이렉트
     useEffect(() => {
         const currentPath = location.pathname;
-        
+
         if (loginMethod === "accessCode") {
             // accessCode는 work-history만 접근 가능
             if (currentPath !== "/mypage/work-history" && currentPath.startsWith("/mypage/")) {

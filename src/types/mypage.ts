@@ -18,6 +18,8 @@ export interface MyPageWorker {
     /** GET 미구현: 없으면 default 사용 */
     weeklyAllowanceEnabled?: boolean;
     deductionType?: DeductionType;
+    /** 표시 색상 #RRGGBB */
+    colorHex?: string;
 }
 
 export interface MyPageAdvanceRequest {
@@ -41,6 +43,8 @@ export interface CreateWorkerRequest {
     accountNumber: string;
     weeklyAllowanceEnabled: boolean;
     deductionType: DeductionType;
+    /** 표시 색상 #RRGGBB (^#[0-9A-Fa-f]{6}$) */
+    colorHex: string;
 }
 
 export function getStatusLabel(status?: string): string {
