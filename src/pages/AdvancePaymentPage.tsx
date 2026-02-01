@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
-import {
-    PageContainer,
-    FormCard,
-    Title,
-    Form,
-    FieldGroup,
-    Label,
-    Input,
-    ReadOnlyInput,
-    InputWrapper,
-    Unit,
-    SubmitButton,
-} from "../components/common/FormCard";
+import styled from "styled-components";
+import { format, subDays } from "date-fns";
+import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, ReadOnlyInput, InputWrapper, Unit } from "../components/common/FormCard";
 import { getWorkAmount, createAdvanceRequest } from "../utils/workLog";
 import { getAccessCode } from "../utils/auth";
 
@@ -31,10 +21,13 @@ export default function AdvancePaymentPage() {
                     console.error("Access code not found");
                     return;
                 }
-                const response = await getWorkAmount(accessCode);
-                setCumulativeReceived(response.data.totalEarnedAmount);
-                setCumulativeAdvance(response.data.totalAdvancedAmount);
-                setMaxAdvanceAmount(response.data.maxAdvanceAmount);
+                const today = new Date();
+                const from = format(subDays(today, 30), "yyyy-MM-dd");
+                const to = format(today, "yyyy-MM-dd");
+                const response = await getWorkAmount(accessCode, from, to);
+                setCumulativeReceived(response.data.grossAmount);
+                setCumulativeAdvance(response.data.totalAdvanced);
+                setMaxAdvanceAmount(response.data.maxAdvance);
             } catch (error) {
                 console.error("Failed to load work amount:", error);
             }
@@ -81,51 +74,100 @@ export default function AdvancePaymentPage() {
     };
 
     return (
-        <PageContainer width="580px">
+        <PageContainer width="525px">
             <FormCard>
                 <Title>선지급 요청</Title>
 
                 <Form onSubmit={handleSubmit}>
-                    <FieldGroup>
-                        <Label>누적 수령액</Label>
-                        <ReadOnlyInput value={`${cumulativeReceived.toLocaleString()} 원`} readOnly />
-                    </FieldGroup>
+                    <RowFieldGroup>
+                        <RowLabel>누적 수령액</RowLabel>
+                        <ControlArea>
+                            <ReadOnlyInput value={`${cumulativeReceived.toLocaleString()} 원`} readOnly />
+                        </ControlArea>
+                    </RowFieldGroup>
 
-                    <FieldGroup>
-                        <Label>누적 선지급액</Label>
-                        <ReadOnlyInput value={`${cumulativeAdvance.toLocaleString()} 원`} readOnly />
-                    </FieldGroup>
+                    <RowFieldGroup>
+                        <RowLabel>누적 선지급액</RowLabel>
+                        <ControlArea>
+                            <ReadOnlyInput value={`${cumulativeAdvance.toLocaleString()} 원`} readOnly />
+                        </ControlArea>
+                    </RowFieldGroup>
 
-                    <FieldGroup>
-                        <Label>
-                            선지급 금액 <span style={{ fontSize: "14px", color: "#666", fontWeight: "normal" }}>(최대 {maxAdvanceAmount.toLocaleString()}원)</span>
-                        </Label>
-                        <InputWrapper>
-                            <Input
-                                type="number"
-                                value={advanceAmount}
-                                onChange={handleAdvanceAmountChange}
-                                placeholder="금액 입력"
-                                min={0}
-                                max={maxAdvanceAmount}
-                            />
-                            <Unit>원</Unit>
-                        </InputWrapper>
-                    </FieldGroup>
+                    <RowFieldGroup>
+                        <RowLabel>
+                            선지급 금액 <span style={{ fontSize: "12px", color: "#666", fontWeight: "normal" }}>(최대 {maxAdvanceAmount.toLocaleString()}원)</span>
+                        </RowLabel>
+                        <ControlArea>
+                            <InputWrapper>
+                                <Input type="number" value={advanceAmount} onChange={handleAdvanceAmountChange} placeholder="금액 입력" min={0} max={maxAdvanceAmount} />
+                                <Unit>원</Unit>
+                            </InputWrapper>
+                        </ControlArea>
+                    </RowFieldGroup>
 
-                    <FieldGroup>
-                        <Label>수수료</Label>
-                        <InputWrapper>
-                            <Input type="number" value={fee} onChange={(e) => setFee(e.target.value ? Number(e.target.value) : "")} placeholder="0" disabled />
-                            <Unit>원</Unit>
-                        </InputWrapper>
-                    </FieldGroup>
+                    <RowFieldGroup>
+                        <RowLabel>수수료</RowLabel>
+                        <ControlArea>
+                            <InputWrapper>
+                                <Input type="number" value={fee} onChange={(e) => setFee(e.target.value ? Number(e.target.value) : "")} placeholder="0" disabled />
+                                <Unit>원</Unit>
+                            </InputWrapper>
+                        </ControlArea>
+                    </RowFieldGroup>
 
-                    <SubmitButton type="submit" disabled={isSubmitting}>
+                    <SectionDivider />
+
+                    <RequestButton type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "요청 중..." : "요청하기"}
-                    </SubmitButton>
+                    </RequestButton>
                 </Form>
             </FormCard>
         </PageContainer>
     );
 }
+
+const RowFieldGroup = styled(FieldGroup)`
+    flex-direction: row;
+    align-items: center;
+    gap: 60px;
+`;
+
+const RowLabel = styled(Label)`
+    flex: 1;
+    text-align: right;
+`;
+
+const ControlArea = styled.div`
+    width: 330px;
+`;
+
+const SectionDivider = styled.div`
+    border-top: 1px solid #bebebe;
+    margin: 8px 0 20px;
+`;
+
+const RequestButton = styled.button`
+    width: 212px;
+    height: 63px;
+    border-radius: 10px;
+    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    letter-spacing: 2px;
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+    margin: 20px auto 0;
+
+    &:hover:not(:disabled) {
+        border-color: #00ccc7;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;

@@ -41,7 +41,7 @@ function App() {
                             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
                             style={{ 
                                 width: "100%", 
-                                minHeight: "100vh", 
+                                height: "100%", 
                                 position: "absolute", 
                                 top: 0, 
                                 left: 0,
@@ -63,7 +63,7 @@ function App() {
                             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
                             style={{ 
                                 width: "100%", 
-                                minHeight: "100vh", 
+                                height: "100%", 
                                 position: "absolute", 
                                 top: 0, 
                                 left: 0,

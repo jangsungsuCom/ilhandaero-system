@@ -63,6 +63,33 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
         return result;
     };
 
+    const getMonthlyTotalAmount = (): number => {
+        const yearStr = String(currentYear);
+        const monthStr = String(currentMonth + 1).padStart(2, "0");
+        const prefix = `${yearStr}-${monthStr}`;
+
+        let total = 0;
+
+        if (loginMethod === "email") {
+            Object.values(workLogsByAccessCode).forEach((logs) => {
+                logs.forEach((log) => {
+                    if (log.workDate.startsWith(prefix)) {
+                        total += log.earnedAmount;
+                    }
+                });
+            });
+        } else if (loginMethod === "accessCode" && accessCode) {
+            const logs = workLogsByAccessCode[accessCode] || [];
+            logs.forEach((log) => {
+                if (log.workDate.startsWith(prefix)) {
+                    total += log.earnedAmount;
+                }
+            });
+        }
+
+        return total;
+    };
+
     const formatWorkTime = (minutes: number): string => {
         const totalHours = minutes / 60;
         // 소수점 첫째 자리까지 표시 (0.5 단위)
@@ -78,15 +105,18 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
 
         for (let i = firstDay - 1; i >= 0; i--) {
             const d = daysInPrev - i;
+            const prevDate = new Date(currentYear, currentMonth - 1, d);
+            const prevDayOfWeek = prevDate.getDay();
             cells.push(
                 <DayCell key={`prev-${d}`} className="other-month">
-                    <DateNumber>{d}</DateNumber>
+                    <DateNumber dayOfWeek={prevDayOfWeek}>{d}</DateNumber>
                 </DayCell>
             );
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(currentYear, currentMonth, day);
+            const dayOfWeek = date.getDay();
             const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth && selectedDate.getFullYear() === currentYear;
             const workLogsForDate = getWorkLogsForDate(date);
 
@@ -97,7 +127,7 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
                             <img src={AddBtnImg} alt="add" />
                         </AddButton>
                     )}
-                    <DateNumber>{day}</DateNumber>
+                    <DateNumber dayOfWeek={dayOfWeek}>{day}</DateNumber>
                     {workLogsForDate.map(({ workLog, salaryTarget }) => (
                         <WorkTimeBadge
                             key={workLog.workLogId}
@@ -121,22 +151,31 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
         const remain = total <= 35 ? 35 - total : 42 - total;
 
         for (let d = 1; d <= remain; d++) {
+            const nextDate = new Date(currentYear, currentMonth + 1, d);
+            const nextDayOfWeek = nextDate.getDay();
             cells.push(
                 <DayCell key={`next-${d}`} className="other-month">
-                    <DateNumber>{d}</DateNumber>
+                    <DateNumber dayOfWeek={nextDayOfWeek}>{d}</DateNumber>
                 </DayCell>
             );
         }
         return cells;
     };
 
+    const monthlyTotalAmount = getMonthlyTotalAmount();
+    const monthlyLabel = "이번달 임금";
+
     return (
         <>
             <Container>
                 <TopBar>
                     <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
-                        {currentYear}년 {currentMonth + 1}월 ▼
+                        {currentYear}년 {currentMonth + 1}월 ˅
                     </PickerButton>
+                    <SummaryCard>
+                        <SummaryLabel>{monthlyLabel}</SummaryLabel>
+                        <SummaryValue>{monthlyTotalAmount.toLocaleString()} 원</SummaryValue>
+                    </SummaryCard>
                 </TopBar>
 
                 {pickerOpen && (
@@ -160,8 +199,10 @@ const Calendar: React.FC<CalendarProps> = ({ workLogsByAccessCode = {}, salaryTa
                 )}
 
                 <WeekDays>
-                    {daysOfWeek.map((d) => (
-                        <DayHeader key={d}>{d}</DayHeader>
+                    {daysOfWeek.map((d, index) => (
+                        <DayHeader key={d} isSunday={index === 0} isSaturday={index === 6}>
+                            {d}
+                        </DayHeader>
                     ))}
                 </WeekDays>
 
@@ -209,7 +250,9 @@ const Container = styled.div`
 
 const TopBar = styled.div`
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
     margin-bottom: 12px;
 `;
 
@@ -218,13 +261,37 @@ const PickerButton = styled.div`
     height: 88px;
     background: #11d0c9;
     border-radius: 44px;
-    color: white;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 31px;
+    font-weight: 700;
     cursor: pointer;
+`;
+
+const SummaryCard = styled.div`
+    width: 500px;
+    height: 88px;
+    background: #11d0c9;
+    border-radius: 44px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+`;
+
+const SummaryLabel = styled.div`
+    font-size: 31px;
+    font-weight: 700;
+    color: #ffffff;
+`;
+
+const SummaryValue = styled.div`
+    font-size: 31px;
+    font-weight: 700;
+    color: #ffffff;
 `;
 
 const PickerBox = styled.div`
@@ -278,8 +345,9 @@ const WeekDays = styled.div`
     font-weight: 700;
 `;
 
-const DayHeader = styled.div`
+const DayHeader = styled.div<{ isSunday?: boolean; isSaturday?: boolean }>`
     padding: 10px 0;
+    color: ${({ isSunday, isSaturday }) => (isSunday ? "#35d63b" : isSaturday ? "#11d0c9" : "#000")};
 `;
 
 const Grid = styled.div`
@@ -297,7 +365,6 @@ const DayCell = styled.div`
     cursor: pointer;
 
     &.other-month {
-        color: #aaa;
         background: #fafafa;
     }
 
@@ -306,9 +373,10 @@ const DayCell = styled.div`
     }
 `;
 
-const DateNumber = styled.div`
+const DateNumber = styled.div<{ dayOfWeek?: number }>`
     font-size: 20px;
     font-weight: 700;
+    color: ${({ dayOfWeek }) => (dayOfWeek === 0 ? "#35d63b" : dayOfWeek === 6 ? "#11d0c9" : "#000")};
 `;
 
 const AddButton = styled.button`

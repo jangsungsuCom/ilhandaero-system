@@ -41,10 +41,12 @@ export default function WorkHistoryPage() {
             const accessCode = getAccessCode();
             if (!accessCode) return;
 
-            const [workLogsResponse, workAmountResponse] = await Promise.all([
-                getWorkLogs(currentYear, currentMonth, accessCode),
-                getWorkAmount(accessCode),
-            ]);
+            const startDate = new Date(currentYear, currentMonth, 1);
+            const endDate = new Date(currentYear, currentMonth + 1, 0);
+            const from = format(startDate, "yyyy-MM-dd");
+            const to = format(endDate, "yyyy-MM-dd");
+
+            const [workLogsResponse, workAmountResponse] = await Promise.all([getWorkLogs(currentYear, currentMonth, accessCode), getWorkAmount(accessCode, from, to)]);
 
             setWorkLogs(workLogsResponse.data || []);
             setWorkAmount(workAmountResponse.data || null);
@@ -100,19 +102,19 @@ export default function WorkHistoryPage() {
                     <SummaryGrid>
                         <SummaryItem>
                             <SummaryLabel>누적 임금</SummaryLabel>
-                            <SummaryValue>{workAmount?.totalEarnedAmount?.toLocaleString() || 0}원</SummaryValue>
+                            <SummaryValue>{workAmount?.grossAmount?.toLocaleString() || 0}원</SummaryValue>
                         </SummaryItem>
                         <SummaryItem>
                             <SummaryLabel>선지급액</SummaryLabel>
-                            <SummaryValue>{workAmount?.totalAdvancedAmount?.toLocaleString() || 0}원</SummaryValue>
+                            <SummaryValue>{workAmount?.totalAdvanced?.toLocaleString() || 0}원</SummaryValue>
                         </SummaryItem>
                         <SummaryItem>
                             <SummaryLabel>가용 임금</SummaryLabel>
-                            <SummaryValue>{workAmount?.availableAmount?.toLocaleString() || 0}원</SummaryValue>
+                            <SummaryValue>{workAmount?.available?.toLocaleString() || 0}원</SummaryValue>
                         </SummaryItem>
                         <SummaryItem>
                             <SummaryLabel>최대 선지급 가능액</SummaryLabel>
-                            <SummaryValue>{workAmount?.maxAdvanceAmount?.toLocaleString() || 0}원</SummaryValue>
+                            <SummaryValue>{workAmount?.maxAdvance?.toLocaleString() || 0}원</SummaryValue>
                         </SummaryItem>
                     </SummaryGrid>
                 </SummaryCard>
@@ -138,15 +140,15 @@ export default function WorkHistoryPage() {
                                     <TableHeaderCell>수령액</TableHeaderCell>
                                 </TableRow>
                             </TableHeader>
-                        <tbody>
-                            {workLogs.map((log) => (
-                                <TableRow key={log.workLogId}>
-                                    <TableCell>{formatDate(log.workDate)}</TableCell>
-                                    <TableCell>{formatWorkTime(log.workedMinutes)}</TableCell>
-                                    <TableCell>{log.earnedAmount?.toLocaleString() || 0}원</TableCell>
-                                </TableRow>
-                            ))}
-                        </tbody>
+                            <tbody>
+                                {workLogs.map((log) => (
+                                    <TableRow key={log.workLogId}>
+                                        <TableCell>{formatDate(log.workDate)}</TableCell>
+                                        <TableCell>{formatWorkTime(log.workedMinutes)}</TableCell>
+                                        <TableCell>{log.earnedAmount?.toLocaleString() || 0}원</TableCell>
+                                    </TableRow>
+                                ))}
+                            </tbody>
                         </WorkLogTable>
                     </WorkLogSection>
                 )}

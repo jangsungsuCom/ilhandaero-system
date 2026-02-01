@@ -7,6 +7,7 @@ import PaymentButton from "../assets/images/home/PaymentLink.png";
 import DownloadButton from "../assets/images/home/download.png";
 import Kakao from "../assets/images/home/kakao_logo.png";
 import { getLoginMethod, removeAuthToken } from "../utils/auth";
+import Footer from "../components/specific/home/Footer";
 
 const HomePage = () => {
     const navigate = useNavigate();
@@ -20,10 +21,12 @@ const HomePage = () => {
                     <TopNavBar />
                     <PaymentBtnContainer src={PaymentButton} alt="payment" onClick={() => navigate("/work-log")} style={{ cursor: "pointer" }} />
                     <Introduction>
-                        <div className="title">일한대로</div>
-                        <div className="line" />
-                        <div className="subTitle">일한대로 한줄 소개 자리 입니다.</div>
-                        <div className="info">일한대로 회사 소개 자리 입니다. 일한대로 회사 소개 자리 입니다.</div>
+                        <div className="subTitle">사장님은 계산할 필요 없이</div>
+                        <div className="title">간편송금</div>
+                        <div style={{ height: "72px" }} />
+                        <div className="subTitle">알바생은 기다릴 필요 없이</div>
+                        <div className="title">선지급 요청</div>
+                        <div style={{ height: "48px" }} />
                         <div className="more">{`더 알아보기 >`}</div>
                     </Introduction>
                     <BottomContentsContainer>
@@ -31,11 +34,13 @@ const HomePage = () => {
                         <img src={DownloadButton} alt="download" />
                     </BottomContentsContainer>
                     <RightBotTriangle>
-                        <img src={Kakao} style={{ cursor: "pointer" }}/>
+                        <img src={Kakao} style={{ cursor: "pointer" }} />
                     </RightBotTriangle>
                 </Content>
             </PageWrapper>
-            <img src={Bg2} alt="x" width={"100%"} />
+
+            <img src={Bg2} alt="x" width={"100%"} style={{ marginBottom: 0 }} />
+            <Footer />
         </>
     );
 };
@@ -56,7 +61,7 @@ const TopNavBar = () => {
         { path: "/login", name: isAuthenticated ? "로그아웃" : "로그인" },
     ];
 
-    const handleNavClick = (link: typeof navLinks[0]) => {
+    const handleNavClick = (link: (typeof navLinks)[0]) => {
         if (link.requiresAuth && !isAuthenticated) {
             navigate("/login");
             return;
@@ -86,7 +91,8 @@ const TopNavBar = () => {
 
 const PageWrapper = styled.div`
     width: 100%;
-    height: 1080px;
+    height: 100vh;
+    min-height: 1080px;
     background-color: yellow;
     background-image: url(${BackgroundImage});
     background-size: cover;
@@ -193,16 +199,21 @@ const BottomContentsContainer = styled.div`
 
 const Introduction = styled.div`
     position: absolute;
-    top: 333px;
-    left: 184px;
+    top: 351px;
+    left: 94px;
     color: white;
 
     .title {
-        font-size: 67px;
-        line-height: 68px;
-        letter-spacing: 3px;
+        font-size: 73px;
+        letter-spacing: 4px;
+        line-height: 73px;
         font-weight: bold;
-        margin-bottom: 84px;
+    }
+    .subTitle {
+        font-size: 49px;
+        letter-spacing: 2.45px;
+        line-height: 49px;
+        margin-bottom: 20px;
     }
 
     .line {
@@ -211,20 +222,7 @@ const Introduction = styled.div`
         background-color: white;
         margin-bottom: 26px;
     }
-    .subTitle {
-        font-size: 34px;
-        line-height: 34px;
-        letter-spacing: 2px;
-        margin-bottom: 77px;
-    }
-    .info {
-        font-size: 26px;
-        letter-spacing: 1px;
-        line-height: 50px;
-        font-weight: 300;
-        margin-bottom: 40px;
-        text-align: center;
-    }
+
     .more {
         font-size: 25px;
         line-height: 25px;

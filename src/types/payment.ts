@@ -1,8 +1,11 @@
 export interface WorkAmountData {
-    totalEarnedAmount: number;
-    totalAdvancedAmount: number;
-    availableAmount: number;
-    maxAdvanceAmount: number;
+    totalWorkedMinutes: number;
+    basePay: number;
+    weeklyAllowance: number;
+    grossAmount: number;
+    totalAdvanced: number;
+    available: number;
+    maxAdvance: number;
 }
 
 export interface WorkAmountResponse {

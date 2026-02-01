@@ -3,6 +3,8 @@ export interface MyPageCompany {
     name: string;
 }
 
+export type DeductionType = "FOUR_INSURANCE" | "THREE_POINT_THREE";
+
 export interface MyPageWorker {
     id: number;
     workerName: string;
@@ -13,6 +15,9 @@ export interface MyPageWorker {
     accountNumber: string;
     accessCode: string;
     codeStatus: "ACTIVE" | "INACTIVE";
+    /** GET 미구현: 없으면 default 사용 */
+    weeklyAllowanceEnabled?: boolean;
+    deductionType?: DeductionType;
 }
 
 export interface MyPageAdvanceRequest {
@@ -34,6 +39,8 @@ export interface CreateWorkerRequest {
     payDay: number;
     bankName: string;
     accountNumber: string;
+    weeklyAllowanceEnabled: boolean;
+    deductionType: DeductionType;
 }
 
 export function getStatusLabel(status?: string): string {

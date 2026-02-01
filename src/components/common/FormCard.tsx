@@ -67,6 +67,18 @@ export const Input = styled.input`
         color: #555;
         cursor: not-allowed;
     }
+
+    /* number 타입 화살표 제거 (Chrome, Edge, Safari) */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* number 타입 화살표 제거 (Firefox) */
+    &[type="number"] {
+        -moz-appearance: textfield;
+    }
 `;
 
 export const ReadOnlyInput = styled(Input)`
@@ -101,7 +113,10 @@ export const SubmitButton = styled.button`
     cursor: pointer;
     box-shadow: 0 6px 12px rgba(0, 204, 199, 0.3);
     transition: all 0.2s ease;
-
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     &:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 10px 20px rgba(0, 204, 199, 0.4);
@@ -148,6 +163,7 @@ export const Divider = styled.div`
 `;
 
 export const ToggleButton = styled.button<{ isActive: boolean }>`
+    flex: 1;
     padding: 8px 16px;
     font-size: 14px;
     font-weight: 600;

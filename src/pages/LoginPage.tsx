@@ -72,7 +72,7 @@ export default function LoginPage() {
 
     return (
         <PageContainer>
-            <FormCard>
+            <LoginFormCard>
                 <Title>로그인</Title>
 
                 <MethodToggle>
@@ -133,7 +133,7 @@ export default function LoginPage() {
                         </RegisterButton>
                     </RegisterLink>
                 )}
-            </FormCard>
+            </LoginFormCard>
         </PageContainer>
     );
 }
@@ -184,4 +184,8 @@ const SuccessText = styled.p`
     background: #e8f5e9;
     border-radius: 8px;
     border-left: 3px solid #4caf50;
+`;
+
+const LoginFormCard = styled(FormCard)`
+    min-width: 420px;
 `;

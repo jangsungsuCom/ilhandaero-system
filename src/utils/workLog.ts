@@ -30,13 +30,14 @@ export const createWorkLog = async (workLog: CreateWorkLogRequest, accessCodePar
     await urlAxios.post(`/pud/${accessCode}/work-logs`, workLog);
 };
 
-export const getWorkAmount = async (accessCodeParam?: string): Promise<WorkAmountResponse> => {
+export const getWorkAmount = async (accessCodeParam?: string, from?: string, to?: string): Promise<WorkAmountResponse> => {
     const accessCode = accessCodeParam || getAccessCode();
     if (!accessCode) {
         throw new Error("Access code not found");
     }
 
-    const response = await urlAxios.get<WorkAmountResponse>(`/pud/${accessCode}/work-amount`);
+    const params = from && to ? `?from=${from}&to=${to}` : "";
+    const response = await urlAxios.get<WorkAmountResponse>(`/pud/${accessCode}/work-amount${params}`);
     return response.data;
 };
 
