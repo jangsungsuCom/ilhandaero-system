@@ -4,6 +4,8 @@ import styled from "styled-components";
 export interface SummaryRow {
     workerName: string;
     totalAmount: number;
+    /** 선지급액 (원). 없으면 0으로 표시 */
+    totalAdvanced?: number;
 }
 
 type Props = {
@@ -58,18 +60,20 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title = "근무자 별 �
                                 <tr>
                                     <Th>근무자</Th>
                                     <Th alignRight>임금 (원)</Th>
+                                    <Th alignRight>선지급 (원)</Th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rows.length === 0 ? (
                                     <tr>
-                                        <Td colSpan={2}>데이터가 없습니다.</Td>
+                                        <Td colSpan={3}>데이터가 없습니다.</Td>
                                     </tr>
                                 ) : (
                                     rows.map((row, idx) => (
                                         <tr key={idx}>
                                             <Td>{row.workerName}</Td>
                                             <Td alignRight>{row.totalAmount.toLocaleString()}</Td>
+                                            <Td alignRight>{(row.totalAdvanced ?? 0).toLocaleString()}</Td>
                                         </tr>
                                     ))
                                 )}

@@ -59,13 +59,22 @@ export default function WorkHistoryPage() {
         }
     };
 
-    const formatWorkTime = (minutes: number): string => {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        if (mins === 0) {
-            return `${hours}시간`;
+    /** 시간 문자열을 HH:mm 형태로 (초 제거) */
+    const toHHmm = (timeStr: string): string => {
+        const part = String(timeStr || "")
+            .trim()
+            .split(":");
+        if (part.length >= 2) return `${part[0].padStart(2, "0")}:${part[1].padStart(2, "0")}`;
+        return String(timeStr || "");
+    };
+
+    const formatWorkTime = (log: { startTime?: string; endTime?: string; workedMinutes: number }): string => {
+        const hours = Math.floor(log.workedMinutes / 60);
+        const hoursLabel = `${hours}시간`;
+        if (log.startTime && log.endTime) {
+            return `${toHHmm(log.startTime)}~${toHHmm(log.endTime)} (${hoursLabel})`;
         }
-        return `${hours}시간 ${mins}분`;
+        return hoursLabel;
     };
 
     const formatDate = (dateString: string): string => {
@@ -146,7 +155,7 @@ export default function WorkHistoryPage() {
                                 {workLogs.map((log) => (
                                     <TableRow key={log.workLogId}>
                                         <TableCell>{formatDate(log.workDate)}</TableCell>
-                                        <TableCell>{formatWorkTime(log.workedMinutes)}</TableCell>
+                                        <TableCell>{formatWorkTime(log)}</TableCell>
                                         <TableCell>{log.earnedAmount?.toLocaleString() || 0}원</TableCell>
                                     </TableRow>
                                 ))}

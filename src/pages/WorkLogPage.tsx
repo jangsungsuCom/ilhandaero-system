@@ -11,7 +11,9 @@ import { setSelectedCompany, fetchCompanies } from "../store/slices/companySlice
 import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
 import { getLoginMethod, getAccessCode } from "../utils/auth";
 import { getWorkerInfo, getWorkAmount } from "../utils/workLog";
+import { getCalendarSettings } from "../utils/calendarSettings";
 import { format } from "date-fns";
+import CalendarSettingModal from "../components/specific/workLog/CalendarSettingModal";
 
 const WorkLogPage = () => {
     const dispatch = useAppDispatch();
@@ -21,6 +23,8 @@ const WorkLogPage = () => {
     const [workerName, setWorkerName] = useState<string>("");
     const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; totalAdvanced: number } | null>(null);
     const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
+    const [isCalendarSettingModalOpen, setIsCalendarSettingModalOpen] = useState(false);
+    const [calendarSettings, setCalendarSettings] = useState(getCalendarSettings);
 
     const loginMethod = getLoginMethod();
     const { companies, selectedCompanyId, isLoading: companiesLoading } = useAppSelector((state: RootState) => state.company);
@@ -216,9 +220,12 @@ const WorkLogPage = () => {
             <Header>
                 <div className="buttons">
                     <img src={DownloadImg} alt="download" />
-                    <img src={SettingImg} alt="setting" />
+                    <SettingButton type="button" onClick={() => setIsCalendarSettingModalOpen(true)} aria-label="달력 설정">
+                        <img src={SettingImg} alt="setting" />
+                    </SettingButton>
                 </div>
             </Header>
+            <CalendarSettingModal open={isCalendarSettingModalOpen} onClose={() => setIsCalendarSettingModalOpen(false)} onSettingsChange={() => setCalendarSettings(getCalendarSettings())} />
             <Calendar
                 workLogsByAccessCode={workLogsByAccessCode}
                 salaryTargets={loginMethod === "email" ? currentSalaryTargets : []}
@@ -234,6 +241,8 @@ const WorkLogPage = () => {
                 onCompanyChange={loginMethod === "email" ? (id) => dispatch(setSelectedCompany(id)) : undefined}
                 workAmountData={workAmountData}
                 workAmountRows={loginMethod === "email" ? workAmountRows : undefined}
+                calendarStartDay={calendarSettings.startDay}
+                workTimeDisplayFormat={calendarSettings.workTimeFormat}
             />
         </PageWrapper>
     );
@@ -262,6 +271,22 @@ const Header = styled.div`
             object-fit: contain;
             cursor: pointer;
         }
+    }
+`;
+
+const SettingButton = styled.button`
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    > img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
     }
 `;
 

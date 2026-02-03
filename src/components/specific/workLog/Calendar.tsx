@@ -9,6 +9,7 @@ import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
 import type { LoginMethod } from "../../../types/auth";
+import type { CalendarStartDay, WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
 
 export interface CompanyOption {
     companyId: number;
@@ -34,6 +35,10 @@ interface CalendarProps {
     workAmountData?: { grossAmount: number; totalAdvanced: number } | null;
     /** 이메일 로그인 시 근무자별 work-amount (SummaryModal용) */
     workAmountRows?: { workerName: string; grossAmount: number; totalAdvanced: number }[];
+    /** 달력 시작 요일: 0=일, 1=월, 2=화 (localStorage 연동) */
+    calendarStartDay?: CalendarStartDay;
+    /** 근무시간 표시: "hours" = nn h, "range" = hh:mm~hh:mm */
+    workTimeDisplayFormat?: WorkTimeDisplayFormat;
 }
 
 const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
@@ -55,6 +60,8 @@ const Calendar: React.FC<CalendarProps> = ({
     pageTitle,
     workAmountData = null,
     workAmountRows,
+    calendarStartDay = 0,
+    workTimeDisplayFormat = "hours",
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -75,7 +82,8 @@ const Calendar: React.FC<CalendarProps> = ({
         }
     }, [pickerOpen, currentYear, currentMonth]);
 
-    const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
+    const DAYS_ORDER = ["일", "월", "화", "수", "목", "금", "토"];
+    const daysOfWeek = DAYS_ORDER.slice(calendarStartDay).concat(DAYS_ORDER.slice(0, calendarStartDay));
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 
     const handleSelectMonthYear = (year: number, month: number) => {
@@ -140,7 +148,7 @@ const Calendar: React.FC<CalendarProps> = ({
     /** 근무자별 해당 월 임금 집계 (SummaryModal용) */
     const getSummaryRows = (): SummaryRow[] => {
         if (loginMethod === "email" && workAmountRows && workAmountRows.length > 0) {
-            return workAmountRows.map((r) => ({ workerName: r.workerName, totalAmount: r.grossAmount }));
+            return workAmountRows.map((r) => ({ workerName: r.workerName, totalAmount: r.grossAmount, totalAdvanced: r.totalAdvanced }));
         }
         const yearStr = String(currentYear);
         const monthStr = String(currentMonth + 1).padStart(2, "0");
@@ -164,18 +172,32 @@ const Calendar: React.FC<CalendarProps> = ({
 
     const formatWorkTime = (minutes: number): string => {
         const totalHours = minutes / 60;
-        // 소수점 첫째 자리까지 표시 (0.5 단위)
         const formattedHours = Math.round(totalHours * 2) / 2;
         return `${formattedHours}h`;
     };
 
+    /** 시간 문자열을 HH:mm 형태로 (초 제거) */
+    const toHHmm = (timeStr: string): string => {
+        const part = timeStr.trim().split(":");
+        if (part.length >= 2) return `${part[0].padStart(2, "0")}:${part[1].padStart(2, "0")}`;
+        return timeStr;
+    };
+
+    const formatWorkTimeDisplay = (workLog: WorkLog): string => {
+        if (workTimeDisplayFormat === "range" && workLog.startTime && workLog.endTime) {
+            return `${toHHmm(workLog.startTime)}~${toHHmm(workLog.endTime)}`;
+        }
+        return formatWorkTime(workLog.workedMinutes);
+    };
+
     const generateCalendar = () => {
-        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0=Sun .. 6=Sat
+        const prevMonthCells = (firstDayOfMonth - calendarStartDay + 7) % 7;
         const daysInMonth = getDaysInMonth(currentYear, currentMonth);
         const daysInPrev = getDaysInMonth(currentYear, currentMonth - 1);
         const cells: JSX.Element[] = [];
 
-        for (let i = firstDay - 1; i >= 0; i--) {
+        for (let i = prevMonthCells - 1; i >= 0; i--) {
             const d = daysInPrev - i;
             const prevDate = new Date(currentYear, currentMonth - 1, d);
             const prevDayOfWeek = prevDate.getDay();
@@ -220,7 +242,7 @@ const Calendar: React.FC<CalendarProps> = ({
                                     setIsEditModalOpen(true);
                                 }}
                             >
-                                {loginMethod === "email" && salaryTarget ? `${salaryTarget.workerName}, ${formatWorkTime(workLog.workedMinutes)}` : formatWorkTime(workLog.workedMinutes)}
+                                {loginMethod === "email" && salaryTarget ? `${salaryTarget.workerName}, ${formatWorkTimeDisplay(workLog)}` : formatWorkTimeDisplay(workLog)}
                             </WorkTimeBadge>
                         );
                     })}
@@ -296,11 +318,14 @@ const Calendar: React.FC<CalendarProps> = ({
                 )}
 
                 <WeekDays>
-                    {daysOfWeek.map((d, index) => (
-                        <DayHeader key={d} isSunday={index === 0} isSaturday={index === 6}>
-                            {d}
-                        </DayHeader>
-                    ))}
+                    {daysOfWeek.map((d, index) => {
+                        const dayOfWeek = (calendarStartDay + index) % 7;
+                        return (
+                            <DayHeader key={d} isSunday={dayOfWeek === 0} isSaturday={dayOfWeek === 6}>
+                                {d}
+                            </DayHeader>
+                        );
+                    })}
                 </WeekDays>
 
                 <Grid>{generateCalendar()}</Grid>

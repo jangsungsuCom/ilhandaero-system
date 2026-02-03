@@ -70,7 +70,7 @@ const TopNavBar = () => {
         if (link.path === "/login" && isAuthenticated) {
             // Handle logout
             removeAuthToken();
-            navigate("/");
+            navigate("/login");
             return;
         }
 
