@@ -1,10 +1,10 @@
 // src/components/Calendar.tsx
-import React, { useState, type JSX } from "react";
+import React, { useState, useEffect, type JSX } from "react";
 import styled from "styled-components";
 import AddModal from "./AddModal";
 import EditModal from "./EditModal";
 import SummaryModal, { type SummaryRow } from "./SummaryModal";
-import AddBtnImg from "../../../assets/images/workLog/add_log.png";
+import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
@@ -30,7 +30,15 @@ interface CalendarProps {
     onCompanyChange?: (companyId: number | null) => void;
     /** 페이지 제목 (WorkLogPage에서 계산해 전달) */
     pageTitle?: string;
+    /** accessCode 로그인 시 해당 월 work-amount (총 급여/선지급액 표시용) */
+    workAmountData?: { grossAmount: number; totalAdvanced: number } | null;
+    /** 이메일 로그인 시 근무자별 work-amount (SummaryModal용) */
+    workAmountRows?: { workerName: string; grossAmount: number; totalAdvanced: number }[];
 }
+
+const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
+
+const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
 
 const Calendar: React.FC<CalendarProps> = ({
     workLogsByAccessCode = {},
@@ -45,6 +53,8 @@ const Calendar: React.FC<CalendarProps> = ({
     selectedCompanyId = null,
     onCompanyChange,
     pageTitle,
+    workAmountData = null,
+    workAmountRows,
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -53,6 +63,17 @@ const Calendar: React.FC<CalendarProps> = ({
     const [editingWorkLog, setEditingWorkLog] = useState<WorkLog | null>(null);
     const [editingSalaryTarget, setEditingSalaryTarget] = useState<SalaryTarget | undefined>(undefined);
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+    /** 연/월 피커에서 스크롤로 고른 값 (선택하기 버튼 누르기 전) */
+    const [pendingYear, setPendingYear] = useState(currentYear);
+    const [pendingMonth, setPendingMonth] = useState(currentMonth);
+
+    useEffect(() => {
+        console.log("workAmountData", workAmountData);
+        if (pickerOpen) {
+            setPendingYear(currentYear);
+            setPendingMonth(currentMonth);
+        }
+    }, [pickerOpen, currentYear, currentMonth]);
 
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -118,6 +139,9 @@ const Calendar: React.FC<CalendarProps> = ({
 
     /** 근무자별 해당 월 임금 집계 (SummaryModal용) */
     const getSummaryRows = (): SummaryRow[] => {
+        if (loginMethod === "email" && workAmountRows && workAmountRows.length > 0) {
+            return workAmountRows.map((r) => ({ workerName: r.workerName, totalAmount: r.grossAmount }));
+        }
         const yearStr = String(currentYear);
         const monthStr = String(currentMonth + 1).padStart(2, "0");
         const prefix = `${yearStr}-${monthStr}`;
@@ -125,17 +149,13 @@ const Calendar: React.FC<CalendarProps> = ({
         if (loginMethod === "email") {
             return salaryTargets.map((target) => {
                 const logs = workLogsByAccessCode[target.accessCode] || [];
-                const totalAmount = logs
-                    .filter((log) => log.workDate.startsWith(prefix))
-                    .reduce((sum, log) => sum + log.earnedAmount, 0);
+                const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
                 return { workerName: target.workerName, totalAmount };
             });
         }
         if (loginMethod === "accessCode" && accessCode) {
             const logs = workLogsByAccessCode[accessCode] || [];
-            const totalAmount = logs
-                .filter((log) => log.workDate.startsWith(prefix))
-                .reduce((sum, log) => sum + log.earnedAmount, 0);
+            const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
             const workerName = pageTitle != null && pageTitle !== "" ? pageTitle.replace(/님의 근무 기록$/, "").trim() || "근무자" : "근무자";
             return [{ workerName, totalAmount }];
         }
@@ -188,8 +208,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     )} */}
                     <DateNumber dayOfWeek={dayOfWeek}>{day}</DateNumber>
                     {workLogsForDate.map(({ workLog, salaryTarget }) => {
-                        const badgeColor =
-                            salaryTarget?.colorHex && /^#[0-9A-Fa-f]{6}$/.test(salaryTarget.colorHex) ? salaryTarget.colorHex : "#00ccc7";
+                        const badgeColor = salaryTarget?.colorHex && /^#[0-9A-Fa-f]{6}$/.test(salaryTarget.colorHex) ? salaryTarget.colorHex : "#00ccc7";
                         return (
                             <WorkTimeBadge
                                 key={workLog.workLogId}
@@ -226,6 +245,8 @@ const Calendar: React.FC<CalendarProps> = ({
 
     const monthlyTotalAmount = getMonthlyTotalAmount();
     const monthlyLabel = "총 급여";
+    const displayGross = workAmountData != null ? workAmountData.grossAmount : monthlyTotalAmount;
+    const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced ?? 0 : null;
 
     return (
         <>
@@ -253,27 +274,24 @@ const Calendar: React.FC<CalendarProps> = ({
                     </TopBarTitleBlock>
                     <SummaryCard onClick={() => setIsSummaryModalOpen(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setIsSummaryModalOpen(true)}>
                         <SummaryLabel>{monthlyLabel}</SummaryLabel>
-                        <SummaryValue>{monthlyTotalAmount.toLocaleString()} 원 ˅</SummaryValue>
+                        <SummaryValue>
+                            {displayGross.toLocaleString()} 원 {displayTotalAdvanced != null && <SummarySubLine>선지급 {(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummarySubLine>}
+                        </SummaryValue>
+                        <div>˅</div>
                     </SummaryCard>
                 </TopBar>
 
                 {pickerOpen && (
                     <PickerBox>
-                        <YearSection>
-                            {Array.from({ length: 21 }, (_, i) => currentYear - 10 + i).map((y) => (
-                                <YearItem key={y} className={y === currentYear ? "active" : ""} onClick={() => handleSelectMonthYear(y, currentMonth)}>
-                                    {y}년
-                                </YearItem>
-                            ))}
-                        </YearSection>
-
-                        <MonthSection>
-                            {Array.from({ length: 12 }, (_, i) => i).map((m) => (
-                                <MonthItem key={m} className={m === currentMonth ? "active" : ""} onClick={() => handleSelectMonthYear(currentYear, m)}>
-                                    {m + 1}월
-                                </MonthItem>
-                            ))}
-                        </MonthSection>
+                        <WheelPickerRow>
+                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} allowDirectInput={false} />
+                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} allowDirectInput={false} />
+                        </WheelPickerRow>
+                        <PickerConfirmRow>
+                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
+                                적용
+                            </PickerConfirmButton>
+                        </PickerConfirmRow>
                     </PickerBox>
                 )}
 
@@ -306,6 +324,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     setIsModalOpen={setIsEditModalOpen}
                     editingWorkLog={editingWorkLog}
                     salaryTarget={editingSalaryTarget}
+                    companyId={selectedCompanyId ?? undefined}
                     onWorkLogUpdated={() => {
                         setIsEditModalOpen(false);
                         setEditingWorkLog(null);
@@ -314,14 +333,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     }}
                 />
             )}
-            <SummaryModal
-                open={isSummaryModalOpen}
-                onClose={() => setIsSummaryModalOpen(false)}
-                title="근무자 별 임금 확인"
-                year={currentYear}
-                month={currentMonth + 1}
-                rows={getSummaryRows()}
-            />
+            <SummaryModal open={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} title="근무자 별 임금 확인" year={currentYear} month={currentMonth + 1} rows={getSummaryRows()} />
         </>
     );
 };
@@ -429,50 +441,61 @@ const SummaryLabel = styled.div`
 `;
 
 const SummaryValue = styled.div`
+    flex: 1;
+    padding-right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
     font-weight: 700;
     color: #ffffff;
 `;
 
+const SummarySubLine = styled.span`
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+`;
+
 const PickerBox = styled.div`
     display: flex;
-    gap: 12px;
     justify-content: center;
     margin-bottom: 16px;
+    gap: 20px;
 `;
 
-const YearSection = styled.div`
+const WheelPickerRow = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 300px;
-    overflow-y: auto;
+    gap: 24px;
+    align-items: flex-start;
 `;
 
-const MonthSection = styled.div`
+const PickerConfirmRow = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    //margin-top: 16px;
 `;
 
-const YearItem = styled.div`
-    padding: 6px 14px;
+const PickerConfirmButton = styled.button`
+    width: 100px;
+    height: 32px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    background: #11d0c9;
+    border: none;
+    border-radius: 24px;
     cursor: pointer;
-    border-radius: 6px;
-    &.active {
-        background: #11d0c9;
-        color: white;
-        font-weight: 600;
-    }
-`;
+    transition: opacity 0.2s;
 
-const MonthItem = styled.div`
-    padding: 6px 14px;
-    cursor: pointer;
-    border-radius: 6px;
-    &.active {
-        background: #11d0c9;
-        color: white;
-        font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        opacity: 0.9;
     }
 `;
 
@@ -516,16 +539,6 @@ const DateNumber = styled.div<{ dayOfWeek?: number }>`
     font-size: 20px;
     font-weight: 700;
     color: ${({ dayOfWeek }) => (dayOfWeek === 0 ? "#35d63b" : dayOfWeek === 6 ? "#11d0c9" : "#000")};
-`;
-
-const AddButton = styled.button`
-    position: absolute;
-    width: 166px;
-    top: -80px;
-    transform: translateX(-30%);
-    background: none;
-    border: none;
-    cursor: pointer;
 `;
 
 const WorkTimeBadge = styled.div<{ $color?: string }>`

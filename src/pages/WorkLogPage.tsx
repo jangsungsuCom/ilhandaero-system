@@ -10,7 +10,8 @@ import { fetchWorkLogsByAccessCode } from "../store/slices/workLogSlice";
 import { setSelectedCompany, fetchCompanies } from "../store/slices/companySlice";
 import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
 import { getLoginMethod, getAccessCode } from "../utils/auth";
-import { getWorkerInfo } from "../utils/workLog";
+import { getWorkerInfo, getWorkAmount } from "../utils/workLog";
+import { format } from "date-fns";
 
 const WorkLogPage = () => {
     const dispatch = useAppDispatch();
@@ -18,6 +19,8 @@ const WorkLogPage = () => {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [workerName, setWorkerName] = useState<string>("");
+    const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; totalAdvanced: number } | null>(null);
+    const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
 
     const loginMethod = getLoginMethod();
     const { companies, selectedCompanyId, isLoading: companiesLoading } = useAppSelector((state: RootState) => state.company);
@@ -60,6 +63,72 @@ const WorkLogPage = () => {
             }
         }
     }, [loginMethod, currentYear, currentMonth, dispatch, workLogsByAccessCode]);
+
+    // accessCode 로그인 시 해당 월 work-amount(grossAmount, totalAdvanced) 로드
+    useEffect(() => {
+        if (loginMethod === "accessCode") {
+            const accessCode = getAccessCode();
+            if (!accessCode) {
+                setWorkAmountData(null);
+                setWorkAmountRows([]);
+                return;
+            }
+            const startDate = new Date(currentYear, currentMonth, 1);
+            const endDate = new Date(currentYear, currentMonth + 1, 0);
+            const from = format(startDate, "yyyy-MM-dd");
+            const to = format(endDate, "yyyy-MM-dd");
+            getWorkAmount(accessCode, from, to)
+                .then((res) => {
+                    const data = res?.data;
+                    if (data && typeof data.grossAmount === "number" && typeof data.totalAdvanced === "number") {
+                        setWorkAmountData({ grossAmount: data.grossAmount, totalAdvanced: data.totalAdvanced });
+                        setWorkAmountRows([]);
+                    } else {
+                        setWorkAmountData(null);
+                        setWorkAmountRows([]);
+                    }
+                })
+                .catch(() => {
+                    setWorkAmountData(null);
+                    setWorkAmountRows([]);
+                });
+            return;
+        }
+        if (loginMethod === "email" && selectedCompanyId && salaryTargets[selectedCompanyId]) {
+            const targets = salaryTargets[selectedCompanyId].filter((t: { codeStatus: string }) => t.codeStatus === "ACTIVE");
+            if (targets.length === 0) {
+                setWorkAmountData(null);
+                setWorkAmountRows([]);
+                return;
+            }
+            const startDate = new Date(currentYear, currentMonth, 1);
+            const endDate = new Date(currentYear, currentMonth + 1, 0);
+            const from = format(startDate, "yyyy-MM-dd");
+            const to = format(endDate, "yyyy-MM-dd");
+            Promise.all(targets.map((t: { accessCode: string; workerName: string }) => getWorkAmount(t.accessCode, from, to).then((res) => ({ workerName: t.workerName, data: res?.data }))))
+                .then((results) => {
+                    let sumGross = 0;
+                    let sumAdvanced = 0;
+                    const rows: { workerName: string; grossAmount: number; totalAdvanced: number }[] = [];
+                    results.forEach((r, i) => {
+                        const g = typeof r.data?.grossAmount === "number" ? r.data.grossAmount : 0;
+                        const a = typeof r.data?.totalAdvanced === "number" ? r.data.totalAdvanced : 0;
+                        sumGross += g;
+                        sumAdvanced += a;
+                        rows.push({ workerName: targets[i].workerName, grossAmount: g, totalAdvanced: a });
+                    });
+                    setWorkAmountData({ grossAmount: sumGross, totalAdvanced: sumAdvanced });
+                    setWorkAmountRows(rows);
+                })
+                .catch(() => {
+                    setWorkAmountData(null);
+                    setWorkAmountRows([]);
+                });
+            return;
+        }
+        setWorkAmountData(null);
+        setWorkAmountRows([]);
+    }, [loginMethod, currentYear, currentMonth, selectedCompanyId, salaryTargets]);
 
     // accessCode 로그인 시 worker 정보 로드
     useEffect(() => {
@@ -140,12 +209,7 @@ const WorkLogPage = () => {
         );
     }
 
-    const pageTitle =
-        loginMethod === "accessCode"
-            ? workerName
-                ? `${workerName}님의 근무 기록`
-                : companyName ?? "나의 근무 기록하기"
-            : undefined;
+    const pageTitle = loginMethod === "accessCode" ? (workerName ? `${workerName}님의 근무 기록` : companyName ?? "나의 근무 기록하기") : undefined;
 
     return (
         <PageWrapper>
@@ -168,6 +232,8 @@ const WorkLogPage = () => {
                 companies={loginMethod === "email" ? companies : []}
                 selectedCompanyId={loginMethod === "email" ? selectedCompanyId : null}
                 onCompanyChange={loginMethod === "email" ? (id) => dispatch(setSelectedCompany(id)) : undefined}
+                workAmountData={workAmountData}
+                workAmountRows={loginMethod === "email" ? workAmountRows : undefined}
             />
         </PageWrapper>
     );

@@ -1,9 +1,11 @@
 export interface WorkLog {
     workLogId: number;
     salaryTargetId: number;
-    companyName:string;
+    companyName: string;
     workDate: string; // "2025-01-10"
-    workedMinutes: number; // 30분 단위
+    startTime?: string; // "07:00"
+    endTime?: string; // "16:00"
+    workedMinutes: number;
     earnedAmount: number;
 }
 
@@ -15,5 +17,6 @@ export interface WorkLogResponse {
 
 export interface CreateWorkLogRequest {
     workDate: string; // "yyyy-MM-dd"
-    workedMinutes: number; // ≥ 30, 30분 단위
+    startTime: string; // "HH:mm"
+    endTime: string; // "HH:mm"
 }

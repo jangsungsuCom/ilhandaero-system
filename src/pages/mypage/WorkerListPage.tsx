@@ -219,14 +219,14 @@ const AccessCode = styled.code`
     color: #2c3e50;
 `;
 
-const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    background-color: ${(props) => (props.$status === "ACTIVE" ? "#d4edda" : "#f8d7da")};
-    color: ${(props) => (props.$status === "ACTIVE" ? "#155724" : "#721c24")};
-`;
+// const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
+//     padding: 4px 12px;
+//     border-radius: 12px;
+//     font-size: 13px;
+//     font-weight: 500;
+//     background-color: ${(props) => (props.$status === "ACTIVE" ? "#d4edda" : "#f8d7da")};
+//     color: ${(props) => (props.$status === "ACTIVE" ? "#155724" : "#721c24")};
+// `;
 
 const ActionButton = styled.button`
     padding: 4px 8px;

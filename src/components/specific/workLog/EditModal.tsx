@@ -2,46 +2,93 @@ import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
 import { updateWorkLog } from "../../../utils/workLog";
+import { deleteWorkLog } from "../../../utils/mypageApi";
 import { getAccessCode, getLoginMethod } from "../../../utils/auth";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
+import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
+
+const HOUR_OPTIONS: WheelOption<number>[] = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${i}시` }));
+const MINUTE_OPTIONS: WheelOption<number>[] = Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${i}분` }));
+
+/** "HH:mm" 또는 "HH:mm:ss" (API) 형식 파싱 */
+function parseTimeHHmm(s: string | undefined): { hour: number; minute: number } {
+    const t = typeof s === "string" ? s.trim() : "";
+    if (!t) return { hour: 9, minute: 0 };
+    const parts = t.split(":");
+    if (parts.length < 2) return { hour: 9, minute: 0 };
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (Number.isNaN(h) || Number.isNaN(m)) return { hour: 9, minute: 0 };
+    return {
+        hour: Math.min(23, Math.max(0, h)),
+        minute: Math.min(59, Math.max(0, m)),
+    };
+}
 
 type Props = {
     isModalOpen: boolean;
     setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
     editingWorkLog: WorkLog;
     salaryTarget?: SalaryTarget;
+    /** email 유저일 때 근무 삭제용 (선택 업장 ID) */
+    companyId?: number | null;
     onWorkLogUpdated?: () => void;
 };
 
-export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, onWorkLogUpdated }: Props) {
+export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, companyId, onWorkLogUpdated }: Props) {
     const loginMethod = getLoginMethod();
-    const [hour, setHour] = useState(0);
-    const [minute, setMinute] = useState(0);
+    const [startHour, setStartHour] = useState(9);
+    const [startMinute, setStartMinute] = useState(0);
+    const [endHour, setEndHour] = useState(18);
+    const [endMinute, setEndMinute] = useState(0);
+    const [editingTime, setEditingTime] = useState<"start" | "end" | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState("");
 
-    // 수정 모드일 때 기존 데이터로 초기화
     useEffect(() => {
-        if (isModalOpen && editingWorkLog) {
-            const totalMinutes = editingWorkLog.workedMinutes;
-            setHour(Math.floor(totalMinutes / 60));
-            setMinute(totalMinutes % 60);
-            setError("");
+        if (!isModalOpen || !editingWorkLog) return;
+        setEditingTime(null);
+        const hasStartEnd =
+            typeof editingWorkLog.startTime === "string" && editingWorkLog.startTime.trim() !== "" && typeof editingWorkLog.endTime === "string" && editingWorkLog.endTime.trim() !== "";
+        if (hasStartEnd) {
+            const start = parseTimeHHmm(editingWorkLog.startTime);
+            const end = parseTimeHHmm(editingWorkLog.endTime);
+            setStartHour(start.hour);
+            setStartMinute(start.minute);
+            setEndHour(end.hour);
+            setEndMinute(end.minute);
+        } else {
+            const totalMinutes = editingWorkLog.workedMinutes ?? 0;
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            setStartHour(9);
+            setStartMinute(0);
+            setEndHour(9 + h);
+            setEndMinute(Math.min(59, m));
         }
+        setError("");
     }, [isModalOpen, editingWorkLog]);
 
     if (!isModalOpen) return null;
 
+    const toTimeString = (hour: number, minute: number) => `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    const formatTimeDisplay = (hour: number, minute: number) => `${hour}시 ${minute}분`;
+
     const handleSave = async () => {
-        const totalMinutes = hour * 60 + minute;
-        if (totalMinutes < 30) {
+        const startMins = startHour * 60 + startMinute;
+        const endMins = endHour * 60 + endMinute;
+        if (endMins <= startMins) {
+            setError("종료 시간은 시작 시간보다 늦어야 합니다.");
+            return;
+        }
+        if (endMins - startMins < 30) {
             setError("근무시간은 최소 30분 이상이어야 합니다.");
             return;
         }
-
-        if (minute % 30 !== 0) {
-            setError("분은 30분 단위로 입력해주세요.");
+        if (startMinute % 30 !== 0 || endMinute % 30 !== 0) {
+            setError("분은 30분 단위로 입력해주세요 (0, 30).");
             return;
         }
 
@@ -51,7 +98,6 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
         try {
             let accessCode: string | undefined;
             if (loginMethod === "email") {
-                // email 유저인 경우 salaryTarget의 accessCode 사용
                 if (!salaryTarget) {
                     setError("직원 정보를 찾을 수 없습니다.");
                     setIsLoading(false);
@@ -59,7 +105,6 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                 }
                 accessCode = salaryTarget.accessCode;
             } else {
-                // accessCode 유저인 경우 저장된 accessCode 사용
                 const savedAccessCode = getAccessCode();
                 if (!savedAccessCode) {
                     setError("접근 코드를 찾을 수 없습니다.");
@@ -68,7 +113,7 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                 }
                 accessCode = savedAccessCode;
             }
-            await updateWorkLog(editingWorkLog.workLogId, format(new Date(editingWorkLog.workDate), "yyyy-MM-dd"), totalMinutes, accessCode);
+            await updateWorkLog(editingWorkLog.workLogId, format(new Date(editingWorkLog.workDate), "yyyy-MM-dd"), toTimeString(startHour, startMinute), toTimeString(endHour, endMinute), accessCode);
             onWorkLogUpdated?.();
             setIsModalOpen(false);
         } catch (err: any) {
@@ -77,6 +122,24 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
             setIsLoading(false);
         }
     };
+
+    const handleDelete = async () => {
+        if (loginMethod !== "email" || companyId == null || !salaryTarget) return;
+        if (!window.confirm("이 근무 기록을 삭제하시겠습니까?")) return;
+        setIsDeleting(true);
+        setError("");
+        try {
+            await deleteWorkLog(companyId, salaryTarget.id, editingWorkLog.workLogId);
+            onWorkLogUpdated?.();
+            setIsModalOpen(false);
+        } catch (err: any) {
+            setError(err.response?.data?.message || "삭제에 실패했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const showDeleteButton = loginMethod === "email" && companyId != null && salaryTarget != null;
 
     return (
         <ModalOverlay onClick={() => setIsModalOpen(false)}>
@@ -87,12 +150,40 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                 </ModalHeader>
 
                 <ModalBody>
-                    <SectionTitle>근무시간 (30분 단위)</SectionTitle>
-                    <Row>
-                        <NumberInput value={hour} onChange={setHour} label="시간" />
-                        <NumberInput value={minute} onChange={setMinute} label="분" max={59} step={30} />
-                    </Row>
-                    <HelperText>분은 30분 단위로 입력해주세요 (0, 30)</HelperText>
+                    <TimeRow>
+                        <SectionTitle>시작 시간</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{formatTimeDisplay(startHour, startMinute)}</TimeDisplay>
+                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "start" ? null : "start")}>
+                                {editingTime === "start" ? "완료" : "수정"}
+                            </EditTimeButton>
+                        </TimeDisplayRow>
+                        {editingTime === "start" && (
+                            <TimePickerRow>
+                                <IosWheelPicker options={HOUR_OPTIONS} value={startHour} onChange={setStartHour} allowDirectInput={false} />
+                                <MinutePickerWrap>
+                                    <IosWheelPicker options={MINUTE_OPTIONS} value={startMinute} onChange={setStartMinute} allowDirectInput={false} />
+                                </MinutePickerWrap>
+                            </TimePickerRow>
+                        )}
+                    </TimeRow>
+                    <TimeRow>
+                        <SectionTitle>종료 시간</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{formatTimeDisplay(endHour, endMinute)}</TimeDisplay>
+                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "end" ? null : "end")}>
+                                {editingTime === "end" ? "완료" : "수정"}
+                            </EditTimeButton>
+                        </TimeDisplayRow>
+                        {editingTime === "end" && (
+                            <TimePickerRow>
+                                <IosWheelPicker options={HOUR_OPTIONS} value={endHour} onChange={setEndHour} allowDirectInput={false} />
+                                <MinutePickerWrap>
+                                    <IosWheelPicker options={MINUTE_OPTIONS} value={endMinute} onChange={setEndMinute} allowDirectInput={false} />
+                                </MinutePickerWrap>
+                            </TimePickerRow>
+                        )}
+                    </TimeRow>
 
                     {error && <ErrorText>{error}</ErrorText>}
                 </ModalBody>
@@ -101,55 +192,16 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                     <SaveButton onClick={handleSave} disabled={isLoading}>
                         {isLoading ? "수정 중..." : "수정하기"}
                     </SaveButton>
+                    {showDeleteButton && (
+                        <DeleteButton type="button" onClick={handleDelete} disabled={isDeleting}>
+                            {isDeleting ? "삭제 중..." : "삭제하기"}
+                        </DeleteButton>
+                    )}
                 </ModalFooter>
             </ModalContent>
         </ModalOverlay>
     );
 }
-
-type NumberInputProps = {
-    value: number;
-    onChange: (v: number) => void;
-    label?: string;
-    max?: number;
-    step?: number;
-};
-
-const NumberInput = ({ value, onChange, label, max, step }: NumberInputProps) => {
-    const [localValue, setLocalValue] = useState(value.toString());
-
-    useEffect(() => {
-        setLocalValue(value.toString());
-    }, [value]);
-
-    const handleBlur = () => {
-        let v = Number(localValue);
-        if (isNaN(v)) v = 0;
-        if (max !== undefined) v = Math.min(max, v);
-        if (v < 0) v = 0;
-        if (step && v % step !== 0) {
-            v = Math.round(v / step) * step;
-        }
-        onChange(v);
-        setLocalValue(v.toString());
-    };
-
-    return (
-        <InputWrapper>
-            <Input
-                type="number"
-                value={localValue}
-                step={step}
-                min={0}
-                onChange={(e) => {
-                    setLocalValue(e.target.value);
-                }}
-                onBlur={handleBlur}
-            />
-            {label && <Label>{label}</Label>}
-        </InputWrapper>
-    );
-};
 
 /* =================== styled-components =================== */
 
@@ -191,46 +243,54 @@ const ModalBody = styled.div`
     padding: 40px;
 `;
 
-const ModalFooter = styled.div`
-    display: flex;
-    justify-content: center;
-    padding-bottom: 40px;
-`;
-
 const SectionTitle = styled.div`
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 12px;
 `;
 
-const Row = styled.div`
-    display: flex;
-    gap: 12px;
-    margin-bottom: 30px;
+const TimeRow = styled.div`
+    margin-bottom: 20px;
 `;
 
-const InputWrapper = styled.div`
+const TimeDisplayRow = styled.div`
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
+    margin-bottom: 8px;
 `;
 
-const Label = styled.div`
+const TimeDisplay = styled.span`
     font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
 `;
 
-const Input = styled.input`
-    width: 120px;
-    padding: 8px;
-    border: 1px solid #00ccc7;
-    border-radius: 6px;
-`;
-
-const HelperText = styled.div`
+const EditTimeButton = styled.button`
+    padding: 6px 14px;
     font-size: 14px;
-    color: #666;
-    margin-top: -20px;
-    margin-bottom: 20px;
+    font-weight: 600;
+    color: #00a8a5;
+    background: #fff;
+    border: 1.5px solid #00ccc7;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #f0f9f8;
+    }
+`;
+
+const TimePickerRow = styled.div`
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 24px;
+`;
+
+const MinutePickerWrap = styled.div`
+    min-width: 88px;
 `;
 
 const ErrorText = styled.div`
@@ -243,7 +303,34 @@ const ErrorText = styled.div`
     border-left: 3px solid #e57373;
 `;
 
+const ModalFooter = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding-bottom: 40px;
+`;
+
 const SaveButton = styled.button`
+    width: 200px;
+    height: 56px;
+    border-radius: 10px;
+    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    border: none;
+    color: white;
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+const DeleteButton = styled.button`
     width: 200px;
     height: 56px;
     border-radius: 10px;

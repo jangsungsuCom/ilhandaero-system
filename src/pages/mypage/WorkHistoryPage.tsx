@@ -3,11 +3,12 @@ import styled from "styled-components";
 import { getWorkLogs, getWorkAmount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
 import { format } from "date-fns";
+import type { WorkAmountData } from "../../types/payment";
 
 export default function WorkHistoryPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [workLogs, setWorkLogs] = useState<any[]>([]);
-    const [workAmount, setWorkAmount] = useState<any>(null);
+    const [workAmount, setWorkAmount] = useState<WorkAmountData | null>(null);
     const [loading, setLoading] = useState(true);
 
     const currentYear = currentDate.getFullYear();
@@ -49,7 +50,8 @@ export default function WorkHistoryPage() {
             const [workLogsResponse, workAmountResponse] = await Promise.all([getWorkLogs(currentYear, currentMonth, accessCode), getWorkAmount(accessCode, from, to)]);
 
             setWorkLogs(workLogsResponse.data || []);
-            setWorkAmount(workAmountResponse.data || null);
+            // GET /pud/{accessCode}/work-amount?from=...&to=... → { status, message, data: { grossAmount, totalAdvanced, available, maxAdvance, ... } }
+            setWorkAmount(workAmountResponse?.data ?? null);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {

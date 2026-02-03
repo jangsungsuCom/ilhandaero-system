@@ -60,7 +60,7 @@ export const getWorkerInfo = async (accessCodeParam?: string): Promise<WorkerInf
     return response.data;
 };
 
-export const updateWorkLog = async (workLogId: number, workDate: string, workedMinutes: number, accessCodeParam?: string): Promise<void> => {
+export const updateWorkLog = async (workLogId: number, workDate: string, startTime: string, endTime: string, accessCodeParam?: string): Promise<void> => {
     const accessCode = accessCodeParam || getAccessCode();
     if (!accessCode) {
         throw new Error("Access code not found");
@@ -68,6 +68,7 @@ export const updateWorkLog = async (workLogId: number, workDate: string, workedM
 
     await urlAxios.put(`/pud/${accessCode}/work-logs/${workLogId}`, {
         workDate,
-        workedMinutes,
+        startTime,
+        endTime,
     });
 };

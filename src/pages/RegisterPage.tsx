@@ -92,15 +92,7 @@ export default function RegisterPage() {
                 <Form onSubmit={handleSubmit}>
                     <FieldGroup>
                         <Label>이메일 *</Label>
-                        <Input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="이메일을 입력하세요"
-                            disabled={isLoading}
-                            required
-                        />
+                        <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="이메일을 입력하세요" disabled={isLoading} required />
                     </FieldGroup>
 
                     <FieldGroup>
@@ -120,28 +112,12 @@ export default function RegisterPage() {
 
                     <FieldGroup>
                         <Label>비밀번호 확인 *</Label>
-                        <Input
-                            type="password"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="비밀번호를 다시 입력하세요"
-                            disabled={isLoading}
-                            required
-                        />
+                        <Input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="비밀번호를 다시 입력하세요" disabled={isLoading} required />
                     </FieldGroup>
 
                     <FieldGroup>
                         <Label>이름 *</Label>
-                        <Input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="이름을 입력하세요"
-                            disabled={isLoading}
-                            required
-                        />
+                        <Input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="이름을 입력하세요" disabled={isLoading} required />
                     </FieldGroup>
 
                     <FieldGroup>
@@ -151,6 +127,8 @@ export default function RegisterPage() {
                             name="birthDate"
                             value={formData.birthDate}
                             onChange={handleChange}
+                            min="1900-01-01" // ← 가장 오래된 허용 연도
+                            max="2100-12-31"
                             disabled={isLoading}
                             required
                         />
@@ -158,40 +136,17 @@ export default function RegisterPage() {
 
                     <FieldGroup>
                         <Label>전화번호 *</Label>
-                        <Input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            placeholder="전화번호를 입력하세요"
-                            disabled={isLoading}
-                            required
-                        />
+                        <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="전화번호를 입력하세요" disabled={isLoading} required />
                     </FieldGroup>
 
                     <FieldGroup>
                         <Label>기본주소 *</Label>
-                        <Input
-                            type="text"
-                            name="address1"
-                            value={formData.address1}
-                            onChange={handleChange}
-                            placeholder="기본주소를 입력하세요"
-                            disabled={isLoading}
-                            required
-                        />
+                        <Input type="text" name="address1" value={formData.address1} onChange={handleChange} placeholder="기본주소를 입력하세요" disabled={isLoading} required />
                     </FieldGroup>
 
                     <FieldGroup>
                         <Label>상세주소</Label>
-                        <Input
-                            type="text"
-                            name="address2"
-                            value={formData.address2}
-                            onChange={handleChange}
-                            placeholder="상세주소를 입력하세요 (선택사항)"
-                            disabled={isLoading}
-                        />
+                        <Input type="text" name="address2" value={formData.address2} onChange={handleChange} placeholder="상세주소를 입력하세요 (선택사항)" disabled={isLoading} />
                     </FieldGroup>
 
                     {error && <ErrorText>{error}</ErrorText>}
@@ -202,7 +157,7 @@ export default function RegisterPage() {
                 </Form>
 
                 <LinkText>
-                    이미 계정이 있으신가요?                     <LinkButton onClick={() => navigate("/login")}>로그인</LinkButton>
+                    이미 계정이 있으신가요? <LinkButton onClick={() => navigate("/login")}>로그인</LinkButton>
                 </LinkText>
             </RegisterFormCard>
         </PageContainer>

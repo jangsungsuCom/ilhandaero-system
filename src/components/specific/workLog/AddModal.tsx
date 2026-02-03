@@ -4,6 +4,10 @@ import { format } from "date-fns";
 import { createWorkLog } from "../../../utils/workLog";
 import { getLoginMethod } from "../../../utils/auth";
 import type { SalaryTarget } from "../../../types/salaryTarget";
+import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
+
+const HOUR_OPTIONS: WheelOption<number>[] = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${i}시` }));
+const MINUTE_OPTIONS: WheelOption<number>[] = Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${i}분` }));
 
 type Props = {
     isModalOpen: boolean;
@@ -13,27 +17,36 @@ type Props = {
     salaryTargets?: SalaryTarget[];
 };
 
+const toTimeString = (hour: number, minute: number) => `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
 export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, onWorkLogCreated, salaryTargets = [] }: Props) {
     const loginMethod = getLoginMethod();
     const [selectedTargetId, setSelectedTargetId] = useState<number | "">("");
-    const [hour, setHour] = useState(0);
-    const [minute, setMinute] = useState(0);
+    const [startHour, setStartHour] = useState(9);
+    const [startMinute, setStartMinute] = useState(0);
+    const [endHour, setEndHour] = useState(18);
+    const [endMinute, setEndMinute] = useState(0);
+    const [editingTime, setEditingTime] = useState<"start" | "end" | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
         if (isModalOpen) {
-            setHour(0);
-            setMinute(0);
+            setStartHour(9);
+            setStartMinute(0);
+            setEndHour(18);
+            setEndMinute(0);
+            setEditingTime(null);
             setSelectedTargetId("");
             setError("");
         }
     }, [isModalOpen]);
 
+    const formatTimeDisplay = (hour: number, minute: number) => `${hour}시 ${minute}분`;
+
     if (!isModalOpen) return null;
 
     const handleSave = async () => {
-        // email 로그인인 경우 직원 선택 필수
         if (loginMethod === "email") {
             if (!selectedTargetId) {
                 setError("직원을 선택해주세요.");
@@ -41,14 +54,18 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             }
         }
 
-        const totalMinutes = hour * 60 + minute;
-        if (totalMinutes < 30) {
+        const startMins = startHour * 60 + startMinute;
+        const endMins = endHour * 60 + endMinute;
+        if (endMins <= startMins) {
+            setError("종료 시간은 시작 시간보다 늦어야 합니다.");
+            return;
+        }
+        if (endMins - startMins < 30) {
             setError("근무시간은 최소 30분 이상이어야 합니다.");
             return;
         }
-
-        if (minute % 30 !== 0) {
-            setError("분은 30분 단위로 입력해주세요.");
+        if (startMinute % 30 !== 0 || endMinute % 30 !== 0) {
+            setError("분은 30분 단위로 입력해주세요 (0, 30).");
             return;
         }
 
@@ -70,14 +87,17 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             await createWorkLog(
                 {
                     workDate: format(selectedDate, "yyyy-MM-dd"),
-                    workedMinutes: totalMinutes,
+                    startTime: toTimeString(startHour, startMinute),
+                    endTime: toTimeString(endHour, endMinute),
                 },
                 accessCode
             );
             onWorkLogCreated?.();
             setIsModalOpen(false);
-            setHour(0);
-            setMinute(0);
+            setStartHour(9);
+            setStartMinute(0);
+            setEndHour(18);
+            setEndMinute(0);
             setSelectedTargetId("");
         } catch (err: any) {
             setError(err.response?.data?.message || "기록에 실패했습니다. 다시 시도해주세요.");
@@ -111,12 +131,40 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                         </>
                     )}
 
-                    <SectionTitle>근무시간 (30분 단위)</SectionTitle>
-                    <Row>
-                        <NumberInput value={hour} onChange={setHour} label="시간" />
-                        <NumberInput value={minute} onChange={setMinute} label="분" max={59} step={30} />
-                    </Row>
-                    <HelperText>분은 30분 단위로 입력해주세요 (0, 30)</HelperText>
+                    <TimeRow>
+                        <SectionTitle>시작 시간</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{formatTimeDisplay(startHour, startMinute)}</TimeDisplay>
+                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "start" ? null : "start")}>
+                                {editingTime === "start" ? "완료" : "수정"}
+                            </EditTimeButton>
+                        </TimeDisplayRow>
+                        {editingTime === "start" && (
+                            <TimePickerRow>
+                                <IosWheelPicker options={HOUR_OPTIONS} value={startHour} onChange={setStartHour} allowDirectInput={false} />
+                                <MinutePickerWrap>
+                                    <IosWheelPicker options={MINUTE_OPTIONS} value={startMinute} onChange={setStartMinute} allowDirectInput={false} />
+                                </MinutePickerWrap>
+                            </TimePickerRow>
+                        )}
+                    </TimeRow>
+                    <TimeRow>
+                        <SectionTitle>종료 시간</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{formatTimeDisplay(endHour, endMinute)}</TimeDisplay>
+                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "end" ? null : "end")}>
+                                {editingTime === "end" ? "완료" : "수정"}
+                            </EditTimeButton>
+                        </TimeDisplayRow>
+                        {editingTime === "end" && (
+                            <TimePickerRow>
+                                <IosWheelPicker options={HOUR_OPTIONS} value={endHour} onChange={setEndHour} allowDirectInput={false} />
+                                <MinutePickerWrap>
+                                    <IosWheelPicker options={MINUTE_OPTIONS} value={endMinute} onChange={setEndMinute} allowDirectInput={false} />
+                                </MinutePickerWrap>
+                            </TimePickerRow>
+                        )}
+                    </TimeRow>
 
                     {error && <ErrorText>{error}</ErrorText>}
                 </ModalBody>
@@ -130,50 +178,6 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
         </ModalOverlay>
     );
 }
-
-type NumberInputProps = {
-    value: number;
-    onChange: (v: number) => void;
-    label?: string;
-    max?: number;
-    step?: number;
-};
-
-const NumberInput = ({ value, onChange, label, max, step }: NumberInputProps) => {
-    const [localValue, setLocalValue] = useState(value.toString());
-
-    useEffect(() => {
-        setLocalValue(value.toString());
-    }, [value]);
-
-    const handleBlur = () => {
-        let v = Number(localValue);
-        if (isNaN(v)) v = 0;
-        if (max !== undefined) v = Math.min(max, v);
-        if (v < 0) v = 0;
-        if (step && v % step !== 0) {
-            v = Math.round(v / step) * step;
-        }
-        onChange(v);
-        setLocalValue(v.toString());
-    };
-
-    return (
-        <InputWrapper>
-            <Input
-                type="number"
-                value={localValue}
-                step={step}
-                min={0}
-                onChange={(e) => {
-                    setLocalValue(e.target.value);
-                }}
-                onBlur={handleBlur}
-            />
-            {label && <Label>{label}</Label>}
-        </InputWrapper>
-    );
-};
 
 /* =================== styled-components =================== */
 
@@ -227,27 +231,48 @@ const SectionTitle = styled.div`
     margin-bottom: 12px;
 `;
 
-const Row = styled.div`
-    display: flex;
-    gap: 12px;
-    margin-bottom: 30px;
+const TimeRow = styled.div`
+    margin-bottom: 20px;
 `;
 
-const InputWrapper = styled.div`
+const TimeDisplayRow = styled.div`
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
+    margin-bottom: 8px;
 `;
 
-const Label = styled.div`
+const TimeDisplay = styled.span`
     font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
 `;
 
-const Input = styled.input`
-    width: 120px;
-    padding: 8px;
-    border: 1px solid #00ccc7;
-    border-radius: 6px;
+const EditTimeButton = styled.button`
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #00a8a5;
+    background: #fff;
+    border: 1.5px solid #00ccc7;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #f0f9f8;
+    }
+`;
+
+const TimePickerRow = styled.div`
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 24px;
+`;
+
+const MinutePickerWrap = styled.div`
+    min-width: 88px;
 `;
 
 const Select = styled.select`
@@ -268,13 +293,6 @@ const Select = styled.select`
     option[value=""] {
         display: none;
     }
-`;
-
-const HelperText = styled.div`
-    font-size: 14px;
-    color: #666;
-    margin-top: -20px;
-    margin-bottom: 20px;
 `;
 
 const ErrorText = styled.div`

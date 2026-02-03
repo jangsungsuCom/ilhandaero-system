@@ -51,25 +51,24 @@ export const mypageWorkerApi = {
     },
 };
 
+// 근무 내역 삭제 (email 유저)
+export const deleteWorkLog = async (companyId: number, salaryTargetId: number, workLogId: number): Promise<void> => {
+    await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs/${workLogId}`);
+};
+
 // 선지급 요청 관련 API
 export const mypageAdvanceRequestApi = {
     getAdvanceRequests: async (companyId: number, salaryTargetId: number): Promise<MyPageAdvanceRequest[]> => {
-        const res = await urlAxios.get<ApiSuccessResponse<MyPageAdvanceRequest[]>>(
-            `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests`
-        );
+        const res = await urlAxios.get<ApiSuccessResponse<MyPageAdvanceRequest[]>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests`);
         return res.data.data;
     },
 
     approveAdvanceRequest: async (companyId: number, salaryTargetId: number, requestId: number): Promise<void> => {
-        await urlAxios.post<ApiSuccessResponse<void>>(
-            `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/approve`
-        );
+        await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/approve`);
     },
 
     rejectAdvanceRequest: async (companyId: number, salaryTargetId: number, requestId: number): Promise<void> => {
-        await urlAxios.post<ApiSuccessResponse<void>>(
-            `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/reject`
-        );
+        await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/reject`);
     },
 };
 
