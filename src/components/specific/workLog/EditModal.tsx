@@ -74,20 +74,20 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
     const formatTimeDisplay = (hour: number, minute: number) => `${hour}시 ${minute}분`;
 
     const handleSave = async () => {
-        const startMins = startHour * 60 + startMinute;
-        const endMins = endHour * 60 + endMinute;
-        if (endMins <= startMins) {
-            setError("종료 시간은 시작 시간보다 늦어야 합니다.");
-            return;
-        }
-        if (endMins - startMins < 30) {
-            setError("근무시간은 최소 30분 이상이어야 합니다.");
-            return;
-        }
-        if (startMinute % 30 !== 0 || endMinute % 30 !== 0) {
-            setError("분은 30분 단위로 입력해주세요 (0, 30).");
-            return;
-        }
+        // const startMins = startHour * 60 + startMinute;
+        // const endMins = endHour * 60 + endMinute;
+        // if (endMins <= startMins) {
+        //     setError("종료 시간은 시작 시간보다 늦어야 합니다.");
+        //     return;
+        // }
+        // if (endMins - startMins < 30) {
+        //     setError("근무시간은 최소 30분 이상이어야 합니다.");
+        //     return;
+        // }
+        // if (startMinute % 30 !== 0 || endMinute % 30 !== 0) {
+        //     setError("분은 30분 단위로 입력해주세요 (0, 30).");
+        //     return;
+        // }
 
         setIsLoading(true);
         setError("");

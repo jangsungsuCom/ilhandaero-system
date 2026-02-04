@@ -104,19 +104,21 @@ const Calendar: React.FC<CalendarProps> = ({
         if (loginMethod === "email") {
             salaryTargets.forEach((target) => {
                 const workLogs = workLogsByAccessCode[target.accessCode] || [];
-                const workLog = workLogs.find((log) => log.workDate === dateStr);
-                if (workLog) {
+                // 같은 날짜의 모든 workLog를 가져옴
+                const matchingLogs = workLogs.filter((log) => log.workDate === dateStr);
+                matchingLogs.forEach((workLog) => {
                     result.push({ workLog, salaryTarget: target });
-                }
+                });
             });
         }
         // accessCode 로그인인 경우: 해당 accessCode의 workLogs만 표시
         else if (loginMethod === "accessCode" && accessCode) {
             const workLogs = workLogsByAccessCode[accessCode] || [];
-            const workLog = workLogs.find((log) => log.workDate === dateStr);
-            if (workLog) {
+            // 같은 날짜의 모든 workLog를 가져옴
+            const matchingLogs = workLogs.filter((log) => log.workDate === dateStr);
+            matchingLogs.forEach((workLog) => {
                 result.push({ workLog });
-            }
+            });
         }
 
         return result;
@@ -175,11 +177,15 @@ const Calendar: React.FC<CalendarProps> = ({
     };
 
     const formatWorkTime = (minutes: number): string => {
-        const totalHours = minutes / 60;
-        const totalMinutes = minutes % 60;
-        const minuteString = totalMinutes > 0 ? `${totalMinutes}분` : "";
-        const formattedHours = Math.round(totalHours * 2) / 2;
-        return `${formattedHours}시간 ${minuteString}`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        if (hours > 0 && mins > 0) {
+            return `${hours}시간 ${mins}분`;
+        } else if (hours > 0) {
+            return `${hours}시간`;
+        } else {
+            return `${mins}분`;
+        }
     };
 
     /** 시간 문자열을 HH:mm 형태로 (초 제거) */

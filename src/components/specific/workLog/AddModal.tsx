@@ -54,12 +54,12 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             }
         }
 
-        const startMins = startHour * 60 + startMinute;
-        const endMins = endHour * 60 + endMinute;
-        if (endMins <= startMins) {
-            setError("종료 시간은 시작 시간보다 늦어야 합니다.");
-            return;
-        }
+        // const startMins = startHour * 60 + startMinute;
+        // const endMins = endHour * 60 + endMinute;
+        // if (endMins <= startMins) {
+        //     setError("종료 시간은 시작 시간보다 늦어야 합니다.");
+        //     return;
+        // }
         // if (endMins - startMins < 30) {
         //     setError("근무시간은 최소 30분 이상이어야 합니다.");
         //     return;
