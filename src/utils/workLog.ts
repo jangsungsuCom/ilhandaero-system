@@ -72,3 +72,12 @@ export const updateWorkLog = async (workLogId: number, workDate: string, startTi
         endTime,
     });
 };
+
+export const deleteWorkLogByAccessCode = async (workLogId: number, accessCodeParam?: string): Promise<void> => {
+    const accessCode = accessCodeParam || getAccessCode();
+    if (!accessCode) {
+        throw new Error("Access code not found");
+    }
+
+    await urlAxios.delete(`/pud/${accessCode}/work-logs/${workLogId}`);
+};

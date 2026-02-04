@@ -1,7 +1,8 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { getLoginMethod } from "../../utils/auth";
+import { media } from "../../styles/breakpoints";
 
 interface SidebarItem {
     path: string;
@@ -13,6 +14,7 @@ export default function MypageLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const loginMethod = getLoginMethod();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // 로그인하지 않았으면 접근 불가
     if (!loginMethod) {
@@ -45,9 +47,18 @@ export default function MypageLayout() {
         }
     }, [location.pathname, loginMethod, navigate]);
 
+    const handleMenuClick = (path: string) => {
+        navigate(path);
+        setIsSidebarOpen(false);
+    };
+
     return (
         <Container>
-            <Sidebar>
+            <MobileHeader>
+                <MobileMenuButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</MobileMenuButton>
+                <MobileTitle>마이페이지</MobileTitle>
+            </MobileHeader>
+            <Sidebar $isOpen={isSidebarOpen}>
                 <SidebarHeader>
                     <SidebarTitle>마이페이지</SidebarTitle>
                 </SidebarHeader>
@@ -55,13 +66,14 @@ export default function MypageLayout() {
                     {sidebarItems.map((item) => {
                         const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + "/");
                         return (
-                            <SidebarMenuItem key={item.path} $isActive={isActive} onClick={() => navigate(item.path)}>
+                            <SidebarMenuItem key={item.path} $isActive={isActive} onClick={() => handleMenuClick(item.path)}>
                                 {item.name}
                             </SidebarMenuItem>
                         );
                     })}
                 </SidebarMenu>
             </Sidebar>
+            {isSidebarOpen && <Overlay onClick={() => setIsSidebarOpen(false)} />}
             <MainContent>
                 <Outlet />
             </MainContent>
@@ -74,9 +86,45 @@ const Container = styled.div`
     width: 100%;
     min-height: 100vh;
     gap: 0;
+    position: relative;
+
+    ${media.tablet} {
+        flex-direction: column;
+    }
 `;
 
-const Sidebar = styled.div`
+const MobileHeader = styled.div`
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #f9fbfc;
+    border-bottom: 1px solid #e0e0e0;
+
+    ${media.tablet} {
+        display: flex;
+    }
+`;
+
+const MobileMenuButton = styled.button`
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: #00a8a5;
+    color: white;
+    font-size: 20px;
+    border-radius: 8px;
+    cursor: pointer;
+`;
+
+const MobileTitle = styled.h2`
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #00a8a5;
+`;
+
+const Sidebar = styled.div<{ $isOpen?: boolean }>`
     width: 280px;
     background: #f9fbfc;
     padding: 40px 0;
@@ -84,12 +132,46 @@ const Sidebar = styled.div`
     height: 100%;
     min-height: 100vh;
     filter: drop-shadow(2px 0 8px rgba(0, 0, 0, 0.08));
+
+    ${media.desktop} {
+        width: 240px;
+        padding: 30px 0;
+    }
+
+    ${media.tablet} {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        width: 280px;
+        transform: translateX(${({ $isOpen }) => ($isOpen ? "0" : "-100%")});
+        transition: transform 0.3s ease;
+    }
+`;
+
+const Overlay = styled.div`
+    display: none;
+
+    ${media.tablet} {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 999;
+    }
 `;
 
 const SidebarHeader = styled.div`
     padding: 0 24px 30px 24px;
     border-bottom: 1px solid #e0e0e0;
     margin-bottom: 20px;
+
+    ${media.desktop} {
+        padding: 0 20px 24px 20px;
+    }
 `;
 
 const SidebarTitle = styled.h2`
@@ -97,6 +179,10 @@ const SidebarTitle = styled.h2`
     font-size: 24px;
     font-weight: 700;
     color: #00a8a5;
+
+    ${media.desktop} {
+        font-size: 20px;
+    }
 `;
 
 const SidebarMenu = styled.nav`
@@ -104,6 +190,10 @@ const SidebarMenu = styled.nav`
     flex-direction: column;
     gap: 8px;
     padding: 0 16px;
+
+    ${media.desktop} {
+        padding: 0 12px;
+    }
 `;
 
 const SidebarMenuItem = styled.div<{ $isActive: boolean }>`
@@ -120,12 +210,30 @@ const SidebarMenuItem = styled.div<{ $isActive: boolean }>`
         background: ${({ $isActive }) => ($isActive ? "#e0f7f6" : "#f0f9f8")};
         color: #00a8a5;
     }
+
+    ${media.desktop} {
+        padding: 14px 16px;
+        font-size: 16px;
+    }
 `;
 
 const MainContent = styled.div`
     flex: 1;
     padding: 40px;
     background: #ffffff;
-    min-width: 912px;
+    min-width: 0;
     width: 100%;
+    overflow-x: auto;
+
+    ${media.desktop} {
+        padding: 30px;
+    }
+
+    ${media.tablet} {
+        padding: 24px 20px;
+    }
+
+    ${media.mobile} {
+        padding: 16px;
+    }
 `;

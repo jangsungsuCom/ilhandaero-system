@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
+import { media } from "../../../styles/breakpoints";
 
 export interface SummaryRow {
     workerName: string;
@@ -102,6 +103,11 @@ const StyledDialog = styled.dialog`
     &::backdrop {
         background: rgba(0, 0, 0, 0.4);
     }
+
+    ${media.mobile} {
+        width: calc(100vw - 32px);
+        border-radius: 12px;
+    }
 `;
 
 const DialogInner = styled.div`
@@ -114,6 +120,10 @@ const DialogHeader = styled.div`
     justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid #e8e8e8;
+
+    ${media.mobile} {
+        padding: 16px 20px;
+    }
 `;
 
 const DialogTitle = styled.h2`
@@ -121,6 +131,10 @@ const DialogTitle = styled.h2`
     font-size: 20px;
     font-weight: 700;
     color: #1a1a1a;
+
+    ${media.mobile} {
+        font-size: 18px;
+    }
 `;
 
 const CloseButton = styled.button`
@@ -143,12 +157,21 @@ const CloseButton = styled.button`
 
 const DialogBody = styled.div`
     padding: 20px 24px 24px;
+
+    ${media.mobile} {
+        padding: 16px 20px 20px;
+    }
 `;
 
 const PeriodText = styled.p`
     margin: 0 0 16px;
     font-size: 14px;
     color: #666;
+
+    ${media.mobile} {
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
 `;
 
 const TableWrap = styled.div`
@@ -158,6 +181,7 @@ const TableWrap = styled.div`
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
+    min-width: 280px;
 `;
 
 const Th = styled.th<{ alignRight?: boolean }>`
@@ -167,6 +191,12 @@ const Th = styled.th<{ alignRight?: boolean }>`
     font-weight: 600;
     color: #333;
     border-bottom: 2px solid #e0e0e0;
+    white-space: nowrap;
+
+    ${media.mobile} {
+        padding: 8px;
+        font-size: 12px;
+    }
 `;
 
 const Td = styled.td<{ alignRight?: boolean }>`
@@ -175,8 +205,14 @@ const Td = styled.td<{ alignRight?: boolean }>`
     font-size: 15px;
     color: #1a1a1a;
     border-bottom: 1px solid #eee;
+    white-space: nowrap;
 
     &:last-of-type {
         font-weight: 600;
+    }
+
+    ${media.mobile} {
+        padding: 8px;
+        font-size: 13px;
     }
 `;

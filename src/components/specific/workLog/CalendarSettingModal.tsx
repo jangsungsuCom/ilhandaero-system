@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { getCalendarSettings, setCalendarStartDay, setCalendarWorkTimeFormat, type CalendarStartDay, type WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
+import { media } from "../../../styles/breakpoints";
 
 type Props = {
     open: boolean;
@@ -19,8 +20,8 @@ const START_DAY_OPTIONS: { value: CalendarStartDay; label: string }[] = [
 ];
 
 const WORK_TIME_FORMAT_OPTIONS: { value: WorkTimeDisplayFormat; label: string }[] = [
-    { value: "hours", label: "nn h (예: 2h, 8.5h)" },
-    { value: "range", label: "hh:mm~hh:mm (예: 09:00~18:00)" },
+    { value: "hours", label: "시간 (예: 2시간)" },
+    { value: "range", label: "근무시간 (예: 09:00~18:00)" },
 ];
 
 const CalendarSettingModal: React.FC<Props> = ({ open, onClose, onSettingsChange }) => {
@@ -122,6 +123,11 @@ const StyledDialog = styled.dialog`
     &::backdrop {
         background: rgba(0, 0, 0, 0.4);
     }
+
+    ${media.mobile} {
+        width: calc(100vw - 32px);
+        border-radius: 12px;
+    }
 `;
 
 const DialogInner = styled.div`
@@ -134,6 +140,10 @@ const DialogHeader = styled.div`
     justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid #e8e8e8;
+
+    ${media.mobile} {
+        padding: 16px 20px;
+    }
 `;
 
 const DialogTitle = styled.h2`
@@ -141,6 +151,10 @@ const DialogTitle = styled.h2`
     font-size: 20px;
     font-weight: 700;
     color: #1a1a1a;
+
+    ${media.mobile} {
+        font-size: 18px;
+    }
 `;
 
 const CloseButton = styled.button`
@@ -166,6 +180,11 @@ const DialogBody = styled.div`
     display: flex;
     flex-direction: column;
     gap: 20px;
+
+    ${media.mobile} {
+        padding: 16px 20px 20px;
+        gap: 16px;
+    }
 `;
 
 const SettingRow = styled.div`
@@ -178,6 +197,10 @@ const Label = styled.label`
     font-size: 14px;
     font-weight: 600;
     color: #333;
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
 `;
 
 const Select = styled.select`
@@ -192,6 +215,11 @@ const Select = styled.select`
     &:focus {
         outline: none;
         border-color: #11d0c9;
+    }
+
+    ${media.mobile} {
+        font-size: 14px;
+        padding: 10px;
     }
 `;
 
@@ -213,5 +241,10 @@ const ApplyButton = styled.button`
 
     &:hover {
         opacity: 0.9;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        padding: 12px;
     }
 `;

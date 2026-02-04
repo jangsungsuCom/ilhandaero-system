@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchCompanies } from "../../store/slices/companySlice";
+import { media } from "../../styles/breakpoints";
 
 export default function DashboardPage() {
     const dispatch = useAppDispatch();
@@ -57,9 +58,7 @@ export default function DashboardPage() {
             <PageTitle>업장 목록</PageTitle>
             <ContentWrapper>
                 <Header>
-                    <TextButton onClick={() => navigate("/mypage/stores/new")}>
-                        + 업장 등록
-                    </TextButton>
+                    <TextButton onClick={() => navigate("/mypage/stores/new")}>+ 업장 등록</TextButton>
                 </Header>
 
                 {stores.length === 0 ? (
@@ -70,12 +69,7 @@ export default function DashboardPage() {
                             <StoreCard key={store.companyId} onClick={() => handleCardClick(store.companyId)}>
                                 {editingId === store.companyId ? (
                                     <EditForm>
-                                        <EditInput
-                                            type="text"
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
+                                        <EditInput type="text" value={editName} onChange={(e) => setEditName(e.target.value)} onClick={(e) => e.stopPropagation()} />
                                         <ActionButtons>
                                             <ActionButton
                                                 $variant="save"
@@ -143,11 +137,25 @@ const PageTitle = styled.h1`
     color: #00a8a5;
     margin: 0 0 30px 0;
     align-self: flex-start;
+
+    ${media.tablet} {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
 `;
 
 const ContentWrapper = styled.div`
-    width: 922px; /* 1152px * 0.8 = 921.6px */
+    width: 922px;
     max-width: 100%;
+
+    ${media.desktop} {
+        width: 100%;
+    }
 `;
 
 const Header = styled.div`
@@ -155,6 +163,10 @@ const Header = styled.div`
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 30px;
+
+    ${media.tablet} {
+        margin-bottom: 20px;
+    }
 `;
 
 const TextButton = styled.button`
@@ -170,13 +182,21 @@ const TextButton = styled.button`
     &:hover {
         color: #00cbc7;
     }
-`;
 
+    ${media.mobile} {
+        font-size: 16px;
+    }
+`;
 
 const StoresGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
+
+    ${media.mobile} {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
 `;
 
 const StoreCard = styled.div`
@@ -191,6 +211,10 @@ const StoreCard = styled.div`
         transform: translateY(-4px);
         box-shadow: 0 4px 12px rgba(0, 204, 199, 0.2);
     }
+
+    ${media.mobile} {
+        padding: 16px;
+    }
 `;
 
 const StoreName = styled.h3`
@@ -198,6 +222,11 @@ const StoreName = styled.h3`
     font-size: 20px;
     font-weight: 600;
     color: #2c3e50;
+
+    ${media.mobile} {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
 `;
 
 const EditForm = styled.div`
@@ -212,6 +241,11 @@ const EditInput = styled.input`
     border: 1.5px solid #00ccc7;
     border-radius: 8px;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 10px;
+        font-size: 14px;
+    }
 `;
 
 const ActionButtons = styled.div`
@@ -265,6 +299,11 @@ const ActionButton = styled.button<{ $variant?: "edit" | "delete" | "save" | "ca
                 `;
         }
     }}
+
+    ${media.mobile} {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
 `;
 
 const EmptyState = styled.div`
@@ -272,6 +311,11 @@ const EmptyState = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;
 
 const LoadingText = styled.div`
@@ -279,4 +323,9 @@ const LoadingText = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;

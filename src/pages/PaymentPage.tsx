@@ -30,8 +30,9 @@ export default function PaymentPage() {
     const [accountNumber, setAccountNumber] = useState("");
     const [basicSalary, setBasicSalary] = useState<number>(0);
     const [weeklyAllowance, setWeeklyAllowance] = useState<number>(0);
-    const [grossAmount, setGrossAmount] = useState<number>(0);
+    //const [grossAmount, setGrossAmount] = useState<number>(0);
     const [advancePayment, setAdvancePayment] = useState<number>(0);
+    const [available, setAvailable] = useState<number>(0);
     const [additionalPayment, setAdditionalPayment] = useState<number>(0);
     const [additionalPaymentDescription, setAdditionalPaymentDescription] = useState<string>("");
     const [additionalDeduction, setAdditionalDeduction] = useState<number>(0);
@@ -60,8 +61,9 @@ export default function PaymentPage() {
             setAccountNumber("");
             setBasicSalary(0);
             setWeeklyAllowance(0);
-            setGrossAmount(0);
+            //setGrossAmount(0);
             setAdvancePayment(0);
+            setAvailable(0);
             return;
         }
         const targets = salaryTargets[selectedCompanyId] || [];
@@ -89,8 +91,9 @@ export default function PaymentPage() {
                 const d = res.data;
                 setBasicSalary(d.basePay);
                 setWeeklyAllowance(d.weeklyAllowance);
-                setGrossAmount(d.grossAmount);
+                //setGrossAmount(d.grossAmount);
                 setAdvancePayment(d.totalAdvanced);
+                setAvailable(d.available);
                 setAdditionalDeduction(0);
             } catch (e) {
                 console.error("Failed to load work amount:", e);
@@ -127,6 +130,7 @@ export default function PaymentPage() {
                 extraMemo: additionalPaymentDescription || "",
             });
             alert("일반 급여 지급 처리되었습니다.");
+            window.location.reload();
         } catch (err: unknown) {
             const message = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message;
             alert(message || "일반 급여 지급 처리에 실패했습니다.");
@@ -245,17 +249,14 @@ export default function PaymentPage() {
                         <RowFieldGroup>
                             <RowLabel>선지급금</RowLabel>
                             <ControlArea>
-                                <InputWrapper>
-                                    <Input
-                                        type="number"
-                                        value={advancePayment}
-                                        onChange={(e) => setAdvancePayment(e.target.value ? Number(e.target.value) : 0)}
-                                        placeholder="선지급금 입력"
-                                        min={0}
-                                        disabled
-                                    />
-                                    <Unit>원</Unit>
-                                </InputWrapper>
+                                <ReadOnlyInput value={`${advancePayment.toLocaleString()} 원`} readOnly />
+                            </ControlArea>
+                        </RowFieldGroup>
+
+                        <RowFieldGroup>
+                            <RowLabel>잔여금액</RowLabel>
+                            <ControlArea>
+                                <ReadOnlyInput value={`${available.toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 
@@ -307,7 +308,9 @@ export default function PaymentPage() {
                             <RowLabel>
                                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#00ccc7" }}>실수령액</div>
                             </RowLabel>
-                            <ControlArea>{grossAmount && <ReadOnlyInput value={`${(basicSalary - advancePayment + additionalPayment).toLocaleString()} 원`} readOnly />}</ControlArea>
+                            <ControlArea>
+                                <ReadOnlyInput value={`${(available + additionalPayment).toLocaleString()} 원`} readOnly />
+                            </ControlArea>
                         </RowFieldGroup>
                         <SectionDivider />
 

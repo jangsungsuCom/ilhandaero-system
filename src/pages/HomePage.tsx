@@ -2,12 +2,13 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import BackgroundImage from "../assets/images/home/bg1.png";
 import Bg2 from "../assets/images/home/bg2.png";
-import LogoImg from "../assets/images/home/Logo.png";
+import LogoImg from "../assets/images/layout/logo1.svg";
 import PaymentButton from "../assets/images/home/PaymentLink.png";
 import DownloadButton from "../assets/images/home/download.png";
 import Kakao from "../assets/images/home/kakao_logo.png";
 import { getLoginMethod, removeAuthToken } from "../utils/auth";
 import Footer from "../components/specific/home/Footer";
+import { media } from "../styles/breakpoints";
 
 const HomePage = () => {
     const navigate = useNavigate();
@@ -97,8 +98,19 @@ const PageWrapper = styled.div`
     background-image: url(${BackgroundImage});
     background-size: cover;
     background-position: center;
-
     position: relative;
+
+    ${media.desktop} {
+        min-height: 800px;
+    }
+
+    ${media.tablet} {
+        min-height: 600px;
+    }
+
+    ${media.mobile} {
+        min-height: 500px;
+    }
 `;
 
 const BackgroundOverlay = styled.div`
@@ -107,6 +119,7 @@ const BackgroundOverlay = styled.div`
     background-color: rgba(0, 0, 0, 0.4);
     z-index: 1;
 `;
+
 const Content = styled.div`
     position: relative;
     z-index: 2;
@@ -117,62 +130,157 @@ const LeftTopTriangle = styled.div`
     position: absolute;
     top: 0;
     left: 0;
-
     width: 0;
     height: 0;
-
     border-top: 235px solid white;
     border-right: 971px solid transparent;
+
+    ${media.desktop} {
+        border-top: 180px solid white;
+        border-right: 750px solid transparent;
+    }
+
+    ${media.tablet} {
+        border-top: 120px solid white;
+        border-right: 500px solid transparent;
+    }
+
+    ${media.mobile} {
+        border-top: 80px solid white;
+        border-right: 300px solid transparent;
+    }
 `;
 
 const RightBotTriangle = styled.div`
     position: absolute;
     bottom: 0;
     right: 0;
-
     width: 971px;
     height: 235px;
-
     background: linear-gradient(to right, #92f972, #00ccc7);
     clip-path: polygon(100% 100%, 0 100%, 100% 0);
-
     display: flex;
     justify-content: flex-end;
     align-items: flex-end;
     padding: 20px;
+
+    ${media.desktop} {
+        width: 750px;
+        height: 180px;
+    }
+
+    ${media.tablet} {
+        width: 500px;
+        height: 120px;
+        padding: 16px;
+    }
+
+    ${media.mobile} {
+        width: 300px;
+        height: 80px;
+        padding: 12px;
+    }
+
+    img {
+        ${media.tablet} {
+            width: 50px;
+            height: 50px;
+        }
+
+        ${media.mobile} {
+            width: 40px;
+            height: 40px;
+        }
+    }
 `;
 
 const Logo = styled.img`
-    width: 310px;
+    width: 320px;
     margin-right: 358px;
+    flex-shrink: 0;
+    object-fit: contain;
+
+    ${media.desktop} {
+        width: 240px;
+        margin-right: 60px;
+    }
+
+    ${media.tablet} {
+        width: 180px;
+        margin-right: 30px;
+    }
+
+    ${media.mobile} {
+        width: 120px;
+        margin-right: 0;
+    }
 `;
 
 const PaymentBtnContainer = styled.img`
     position: absolute;
     top: 494px;
-    left: 1496px;
+    right: 100px;
+    width: auto;
+    max-width: 300px;
+
+    ${media.desktop} {
+        top: 380px;
+        right: 60px;
+        max-width: 240px;
+    }
+
+    ${media.tablet} {
+        top: 280px;
+        right: 40px;
+        max-width: 180px;
+    }
+
+    ${media.mobile} {
+        display: none;
+    }
 `;
 
 const NavContainer = styled.div`
     position: absolute;
     top: 0px;
     left: 0px;
-
     width: 100%;
     height: 235px;
     padding: 0 85px;
-
     color: white;
     font-size: 21px;
-
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+
+    ${media.desktop} {
+        height: 180px;
+        padding: 0 50px;
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        height: 120px;
+        padding: 0 30px;
+        font-size: 14px;
+        gap: 12px;
+    }
+
+    ${media.mobile} {
+        height: 80px;
+        padding: 0 16px;
+        font-size: 11px;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
 `;
 
 const NavLink = styled.div`
     cursor: pointer;
     transition: opacity 0.2s ease;
+    white-space: nowrap;
 
     &:hover {
         opacity: 0.8;
@@ -185,16 +293,38 @@ const BottomContentsContainer = styled.div`
     font-size: 25px;
     font-weight: 500;
     color: white;
-
     display: flex;
     flex-direction: column;
     align-items: start;
     justify-content: end;
     gap: 20px;
-
     position: absolute;
     bottom: 0;
     left: 86px;
+
+    ${media.desktop} {
+        padding: 0 50px 40px 0;
+        font-size: 20px;
+        left: 50px;
+    }
+
+    ${media.tablet} {
+        padding: 0 30px 30px 0;
+        font-size: 16px;
+        left: 30px;
+        gap: 12px;
+    }
+
+    ${media.mobile} {
+        padding: 0 16px 20px 0;
+        font-size: 12px;
+        left: 16px;
+        gap: 8px;
+
+        img {
+            width: 100px;
+        }
+    }
 `;
 
 const Introduction = styled.div`
@@ -230,5 +360,61 @@ const Introduction = styled.div`
         color: #14cec5;
         font-weight: 500;
         cursor: pointer;
+    }
+
+    ${media.desktop} {
+        top: 260px;
+        left: 50px;
+
+        .title {
+            font-size: 56px;
+            line-height: 56px;
+        }
+        .subTitle {
+            font-size: 36px;
+            line-height: 36px;
+            margin-bottom: 16px;
+        }
+        .more {
+            font-size: 20px;
+        }
+    }
+
+    ${media.tablet} {
+        top: 180px;
+        left: 30px;
+
+        .title {
+            font-size: 40px;
+            line-height: 40px;
+            letter-spacing: 2px;
+        }
+        .subTitle {
+            font-size: 26px;
+            line-height: 26px;
+            margin-bottom: 12px;
+        }
+        .more {
+            font-size: 16px;
+        }
+    }
+
+    ${media.mobile} {
+        top: 110px;
+        left: 16px;
+
+        .title {
+            font-size: 28px;
+            line-height: 28px;
+            letter-spacing: 1px;
+        }
+        .subTitle {
+            font-size: 18px;
+            line-height: 18px;
+            margin-bottom: 10px;
+        }
+        .more {
+            font-size: 14px;
+        }
     }
 `;

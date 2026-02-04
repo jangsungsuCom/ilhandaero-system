@@ -12,6 +12,20 @@ export default function AdvanceRequestPage() {
             setProcessingId(request.requestId);
             try {
                 await approveRequest(request);
+                // 테스트용: 직접 urlAxios로 POST 요청
+                // await urlAxios.post(
+                //     `/owner/companies/${request.companyId}/salary-targets/${request.salaryTargetId}/payouts/advance-requests/${request.requestId}/pay`,
+                //     {},
+                //     {
+                //         headers: {
+                //             "Content-Type": "application/json",
+                //             Authorization: `Bearer ${getAuthToken()}`,
+                //         },
+                //     }
+                // );
+                //window.location.reload();
+            } catch (err: any) {
+                alert(err.response?.data?.message || "승인 처리에 실패했습니다.");
             } finally {
                 setProcessingId(null);
             }
@@ -71,16 +85,10 @@ export default function AdvanceRequestPage() {
                                     <TableCell>
                                         {request.status === "PENDING" && (
                                             <ActionButtons>
-                                                <ApproveButton
-                                                    onClick={() => handleApprove(request)}
-                                                    disabled={processingId === request.requestId}
-                                                >
+                                                <ApproveButton onClick={() => handleApprove(request)} disabled={processingId === request.requestId}>
                                                     {processingId === request.requestId ? "처리중..." : "승인"}
                                                 </ApproveButton>
-                                                <RejectButton
-                                                    onClick={() => handleReject(request)}
-                                                    disabled={processingId === request.requestId}
-                                                >
+                                                <RejectButton onClick={() => handleReject(request)} disabled={processingId === request.requestId}>
                                                     {processingId === request.requestId ? "처리중..." : "거절"}
                                                 </RejectButton>
                                             </ActionButtons>

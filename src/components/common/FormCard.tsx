@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../styles/breakpoints";
 
 export const PageContainer = styled.div<{ width?: string }>`
     display: flex;
@@ -7,6 +8,10 @@ export const PageContainer = styled.div<{ width?: string }>`
     padding: 40px 20px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     width: ${({ width }) => width || "auto"};
+
+    ${media.mobile} {
+        padding: 24px 16px;
+    }
 `;
 
 export const FormCard = styled.div`
@@ -14,6 +19,10 @@ export const FormCard = styled.div`
     width: 100%;
     max-width: 520px;
     overflow: hidden;
+
+    ${media.mobile} {
+        max-width: 100%;
+    }
 `;
 
 export const Title = styled.h1`
@@ -22,12 +31,26 @@ export const Title = styled.h1`
     color: #00a8a5;
     text-align: center;
     margin: 0 0 40px 0;
+
+    ${media.tablet} {
+        font-size: 24px;
+        margin-bottom: 30px;
+    }
+
+    ${media.mobile} {
+        font-size: 22px;
+        margin-bottom: 24px;
+    }
 `;
 
 export const Form = styled.form`
     display: flex;
     flex-direction: column;
     gap: 28px;
+
+    ${media.mobile} {
+        gap: 20px;
+    }
 `;
 
 export const FieldGroup = styled.div`
@@ -79,6 +102,12 @@ export const Input = styled.input`
     &[type="number"] {
         -moz-appearance: textfield;
     }
+
+    ${media.mobile} {
+        height: 46px;
+        font-size: 16px;
+        padding: 0 14px;
+    }
 `;
 
 export const ReadOnlyInput = styled(Input)`
@@ -129,6 +158,13 @@ export const SubmitButton = styled.button`
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        margin-top: 16px;
+        height: 52px;
+        font-size: 18px;
+        border-radius: 12px;
     }
 `;
 

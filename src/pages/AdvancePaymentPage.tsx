@@ -1,9 +1,46 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, ReadOnlyInput, InputWrapper, Unit } from "../components/common/FormCard";
-import { getWorkAmount, createAdvanceRequest } from "../utils/workLog";
+import { getWorkAmount, createAdvanceRequest, getWorkerInfo } from "../utils/workLog";
 import { getAccessCode } from "../utils/auth";
+
+/**
+ * payDay 기준으로 from, to 날짜를 계산합니다.
+ * - 오늘이 payDay 이후라면: 이번달 payDay ~ 다음달 payDay
+ * - 오늘이 payDay 이전이라면: 저번달 payDay ~ 이번달 payDay
+ */
+function getPayPeriod(payDay: number): { from: string; to: string } {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-based
+    const currentDate = today.getDate();
+
+    let toYear: number, toMonth: number;
+    let fromYear: number, fromMonth: number;
+
+    if (currentDate >= payDay) {
+        // 오늘이 payDay 이후 → 이번달 payDay ~ 다음달 payDay
+        fromYear = currentYear;
+        fromMonth = currentMonth;
+        toYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+        toMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    } else {
+        // 오늘이 payDay 이전 → 저번달 payDay ~ 이번달 payDay
+        fromYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        fromMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        toYear = currentYear;
+        toMonth = currentMonth;
+    }
+
+    const fromDate = new Date(fromYear, fromMonth, payDay);
+    const toDate = new Date(toYear, toMonth, payDay);
+
+    return {
+        from: format(fromDate, "yyyy-MM-dd"),
+        to: format(toDate, "yyyy-MM-dd"),
+    };
+}
 
 export default function AdvancePaymentPage() {
     const [cumulativeReceived, setCumulativeReceived] = useState<number>(0);
@@ -21,10 +58,17 @@ export default function AdvancePaymentPage() {
                     console.error("Access code not found");
                     return;
                 }
-                const today = new Date();
-                const from = format(subDays(today, 30), "yyyy-MM-dd");
-                const to = format(today, "yyyy-MM-dd");
+
+                // 먼저 worker 정보에서 payDay를 가져옴
+                const workerInfo = await getWorkerInfo(accessCode);
+                const payDay = workerInfo.data.payDay;
+
+                // payDay 기준으로 from, to 계산
+                const { from, to } = getPayPeriod(payDay);
+                console.log(`Pay period: ${from} ~ ${to} (payDay: ${payDay})`);
+
                 const response = await getWorkAmount(accessCode, from, to);
+                console.log("response", response);
                 setCumulativeReceived(response.data.grossAmount);
                 setCumulativeAdvance(response.data.totalAdvanced);
                 setMaxAdvanceAmount(response.data.maxAdvance);
@@ -106,7 +150,7 @@ export default function AdvancePaymentPage() {
                     </RowFieldGroup>
 
                     <RowFieldGroup>
-                        <RowLabel>수수료</RowLabel>
+                        <RowLabel>사용이용료</RowLabel>
                         <ControlArea>
                             <InputWrapper>
                                 <Input type="number" value={fee} onChange={(e) => setFee(e.target.value ? Number(e.target.value) : "")} placeholder="0" disabled />

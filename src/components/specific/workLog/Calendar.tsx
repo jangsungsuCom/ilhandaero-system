@@ -10,6 +10,7 @@ import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
 import type { LoginMethod } from "../../../types/auth";
 import type { CalendarStartDay, WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
+import { media } from "../../../styles/breakpoints";
 
 export interface CompanyOption {
     companyId: number;
@@ -39,6 +40,8 @@ interface CalendarProps {
     calendarStartDay?: CalendarStartDay;
     /** 근무시간 표시: "hours" = nn h, "range" = hh:mm~hh:mm */
     workTimeDisplayFormat?: WorkTimeDisplayFormat;
+    /** accessCode 로그인 시 근무자 색상 (배지 색상용) */
+    workerColorHex?: string;
 }
 
 const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
@@ -62,6 +65,7 @@ const Calendar: React.FC<CalendarProps> = ({
     workAmountRows,
     calendarStartDay = 0,
     workTimeDisplayFormat = "hours",
+    workerColorHex,
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -172,8 +176,10 @@ const Calendar: React.FC<CalendarProps> = ({
 
     const formatWorkTime = (minutes: number): string => {
         const totalHours = minutes / 60;
+        const totalMinutes = minutes % 60;
+        const minuteString = totalMinutes > 0 ? `${totalMinutes}분` : "";
         const formattedHours = Math.round(totalHours * 2) / 2;
-        return `${formattedHours}h`;
+        return `${formattedHours}시간 ${minuteString}`;
     };
 
     /** 시간 문자열을 HH:mm 형태로 (초 제거) */
@@ -230,7 +236,9 @@ const Calendar: React.FC<CalendarProps> = ({
                     )} */}
                     <DateNumber dayOfWeek={dayOfWeek}>{day}</DateNumber>
                     {workLogsForDate.map(({ workLog, salaryTarget }) => {
-                        const badgeColor = salaryTarget?.colorHex && /^#[0-9A-Fa-f]{6}$/.test(salaryTarget.colorHex) ? salaryTarget.colorHex : "#00ccc7";
+                        // email 로그인: salaryTarget.colorHex 사용, accessCode 로그인: workerColorHex 사용
+                        const colorHex = salaryTarget?.colorHex || workerColorHex;
+                        const badgeColor = colorHex && /^#[0-9A-Fa-f]{6}$/.test(colorHex) ? colorHex : "#00ccc7";
                         return (
                             <WorkTimeBadge
                                 key={workLog.workLogId}
@@ -349,7 +357,6 @@ const Calendar: React.FC<CalendarProps> = ({
                     setIsModalOpen={setIsEditModalOpen}
                     editingWorkLog={editingWorkLog}
                     salaryTarget={editingSalaryTarget}
-                    companyId={selectedCompanyId ?? undefined}
                     onWorkLogUpdated={() => {
                         setIsEditModalOpen(false);
                         setEditingWorkLog(null);
@@ -370,6 +377,10 @@ const Container = styled.div`
     max-width: 1152px;
     margin: 0 auto;
     padding: 8px;
+
+    ${media.tablet} {
+        padding: 4px;
+    }
 `;
 
 const TopBar = styled.div`
@@ -378,6 +389,15 @@ const TopBar = styled.div`
     align-items: center;
     gap: 16px;
     margin-bottom: 12px;
+
+    ${media.tablet} {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    ${media.mobile} {
+        gap: 8px;
+    }
 `;
 
 const PickerButton = styled.div`
@@ -392,6 +412,26 @@ const PickerButton = styled.div`
     font-size: 26px;
     font-weight: 700;
     cursor: pointer;
+
+    ${media.desktop} {
+        width: 200px;
+        height: 60px;
+        font-size: 22px;
+    }
+
+    ${media.tablet} {
+        width: 160px;
+        height: 48px;
+        font-size: 18px;
+        border-radius: 24px;
+    }
+
+    ${media.mobile} {
+        width: 140px;
+        height: 40px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
 `;
 
 const TopBarTitleBlock = styled.div`
@@ -403,6 +443,21 @@ const TopBarTitleBlock = styled.div`
     min-width: 0;
     font-size: 31px;
     font-weight: bold;
+
+    ${media.desktop} {
+        font-size: 24px;
+    }
+
+    ${media.tablet} {
+        font-size: 18px;
+        gap: 8px;
+        order: 3;
+        flex-basis: 100%;
+    }
+
+    ${media.mobile} {
+        font-size: 14px;
+    }
 `;
 
 const TitleText = styled.span`
@@ -439,6 +494,23 @@ const CompanySelect = styled.select`
     option[value=""] {
         display: none;
     }
+
+    ${media.desktop} {
+        font-size: 24px;
+        min-width: 150px;
+    }
+
+    ${media.tablet} {
+        font-size: 18px;
+        min-width: 120px;
+        padding: 6px 28px 6px 10px;
+    }
+
+    ${media.mobile} {
+        font-size: 14px;
+        min-width: 100px;
+        padding: 4px 24px 4px 8px;
+    }
 `;
 
 const SummaryCard = styled.div`
@@ -458,6 +530,29 @@ const SummaryCard = styled.div`
     &:hover {
         opacity: 0.95;
     }
+
+    ${media.desktop} {
+        width: 340px;
+        height: 60px;
+        font-size: 22px;
+        padding: 0 24px;
+    }
+
+    ${media.tablet} {
+        width: 280px;
+        height: 48px;
+        font-size: 16px;
+        padding: 0 20px;
+        border-radius: 24px;
+    }
+
+    ${media.mobile} {
+        width: 200px;
+        height: 40px;
+        font-size: 12px;
+        padding: 0 16px;
+        border-radius: 20px;
+    }
 `;
 
 const SummaryLabel = styled.div`
@@ -475,12 +570,24 @@ const SummaryValue = styled.div`
     gap: 2px;
     font-weight: 700;
     color: #ffffff;
+
+    ${media.mobile} {
+        padding-right: 8px;
+    }
 `;
 
 const SummarySubLine = styled.span`
     font-size: 14px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
+
+    ${media.tablet} {
+        font-size: 12px;
+    }
+
+    ${media.mobile} {
+        font-size: 10px;
+    }
 `;
 
 const PickerBox = styled.div`
@@ -558,12 +665,39 @@ const DayCell = styled.div`
     &.selected {
         background: #e5f4ff;
     }
+
+    ${media.desktop} {
+        min-height: 140px;
+        padding: 4px;
+    }
+
+    ${media.tablet} {
+        min-height: 100px;
+        padding: 3px;
+    }
+
+    ${media.mobile} {
+        min-height: 70px;
+        padding: 2px;
+    }
 `;
 
 const DateNumber = styled.div<{ dayOfWeek?: number }>`
     font-size: 20px;
     font-weight: 700;
     color: ${({ dayOfWeek }) => (dayOfWeek === 0 ? "#35d63b" : dayOfWeek === 6 ? "#11d0c9" : "#000")};
+
+    ${media.desktop} {
+        font-size: 16px;
+    }
+
+    ${media.tablet} {
+        font-size: 14px;
+    }
+
+    ${media.mobile} {
+        font-size: 12px;
+    }
 `;
 
 const WorkTimeBadge = styled.div<{ $color?: string }>`
@@ -584,6 +718,31 @@ const WorkTimeBadge = styled.div<{ $color?: string }>`
     &:hover {
         filter: brightness(0.9);
         transform: scale(1.05);
+    }
+
+    ${media.desktop} {
+        width: 120px;
+        height: 30px;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    ${media.tablet} {
+        width: 100%;
+        max-width: 100px;
+        height: 26px;
+        font-size: 10px;
+        margin-top: 4px;
+        border-radius: 13px;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        max-width: 80px;
+        height: 20px;
+        font-size: 8px;
+        margin-top: 2px;
+        border-radius: 10px;
     }
 `;
 

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
-import { updateWorkLog } from "../../../utils/workLog";
-import { deleteWorkLog } from "../../../utils/mypageApi";
+import { updateWorkLog, deleteWorkLogByAccessCode } from "../../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../../utils/auth";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
@@ -31,12 +30,10 @@ type Props = {
     setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
     editingWorkLog: WorkLog;
     salaryTarget?: SalaryTarget;
-    /** email 유저일 때 근무 삭제용 (선택 업장 ID) */
-    companyId?: number | null;
     onWorkLogUpdated?: () => void;
 };
 
-export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, companyId, onWorkLogUpdated }: Props) {
+export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, onWorkLogUpdated }: Props) {
     const loginMethod = getLoginMethod();
     const [startHour, setStartHour] = useState(9);
     const [startMinute, setStartMinute] = useState(0);
@@ -124,12 +121,28 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
     };
 
     const handleDelete = async () => {
-        if (loginMethod !== "email" || companyId == null || !salaryTarget) return;
         if (!window.confirm("이 근무 기록을 삭제하시겠습니까?")) return;
         setIsDeleting(true);
         setError("");
         try {
-            await deleteWorkLog(companyId, salaryTarget.id, editingWorkLog.workLogId);
+            let accessCode: string | undefined;
+            if (loginMethod === "email") {
+                if (!salaryTarget) {
+                    setError("직원 정보를 찾을 수 없습니다.");
+                    setIsDeleting(false);
+                    return;
+                }
+                accessCode = salaryTarget.accessCode;
+            } else {
+                const savedAccessCode = getAccessCode();
+                if (!savedAccessCode) {
+                    setError("접근 코드를 찾을 수 없습니다.");
+                    setIsDeleting(false);
+                    return;
+                }
+                accessCode = savedAccessCode;
+            }
+            await deleteWorkLogByAccessCode(editingWorkLog.workLogId, accessCode);
             onWorkLogUpdated?.();
             setIsModalOpen(false);
         } catch (err: any) {
@@ -139,7 +152,8 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
         }
     };
 
-    const showDeleteButton = loginMethod === "email" && companyId != null && salaryTarget != null;
+    // email 유저는 salaryTarget 필요, accessCode 유저는 항상 삭제 가능
+    const showDeleteButton = loginMethod === "accessCode" || (loginMethod === "email" && salaryTarget != null);
 
     return (
         <ModalOverlay onClick={() => setIsModalOpen(false)}>

@@ -4,6 +4,7 @@ import { getWorkLogs, getWorkAmount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
 import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
+import { media } from "../../styles/breakpoints";
 
 export default function WorkHistoryPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -180,11 +181,25 @@ const PageTitle = styled.h1`
     color: #00a8a5;
     margin: 0 0 30px 0;
     align-self: flex-start;
+
+    ${media.tablet} {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
 `;
 
 const ContentWrapper = styled.div`
-    width: 922px; /* 1152px * 0.8 = 921.6px */
+    width: 922px;
     max-width: 100%;
+
+    ${media.desktop} {
+        width: 100%;
+    }
 `;
 
 const SummaryCard = styled.div`
@@ -193,6 +208,17 @@ const SummaryCard = styled.div`
     padding: 30px;
     margin-bottom: 30px;
     border: 1.5px solid #00ccc7;
+
+    ${media.tablet} {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        padding: 16px;
+        margin-bottom: 16px;
+        border-radius: 8px;
+    }
 `;
 
 const SummaryTitle = styled.h2`
@@ -200,30 +226,61 @@ const SummaryTitle = styled.h2`
     font-weight: 700;
     color: #00a8a5;
     margin: 0 0 20px 0;
+
+    ${media.tablet} {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
 `;
 
 const SummaryGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
+
+    ${media.mobile} {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
 `;
 
 const SummaryItem = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    ${media.mobile} {
+        gap: 4px;
+    }
 `;
 
 const SummaryLabel = styled.div`
     font-size: 14px;
     color: #666;
     font-weight: 500;
+
+    ${media.mobile} {
+        font-size: 12px;
+    }
 `;
 
 const SummaryValue = styled.div`
     font-size: 20px;
     font-weight: 700;
     color: #2c3e50;
+
+    ${media.tablet} {
+        font-size: 18px;
+    }
+
+    ${media.mobile} {
+        font-size: 16px;
+    }
 `;
 
 const MonthSelector = styled.div`
@@ -232,6 +289,16 @@ const MonthSelector = styled.div`
     justify-content: center;
     gap: 20px;
     margin-bottom: 30px;
+
+    ${media.tablet} {
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        gap: 12px;
+        margin-bottom: 16px;
+    }
 `;
 
 const MonthButton = styled.button`
@@ -248,6 +315,12 @@ const MonthButton = styled.button`
     &:hover {
         background: #f0f9f8;
     }
+
+    ${media.mobile} {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+    }
 `;
 
 const MonthText = styled.div`
@@ -256,10 +329,21 @@ const MonthText = styled.div`
     color: #2c3e50;
     min-width: 120px;
     text-align: center;
+
+    ${media.tablet} {
+        font-size: 18px;
+        min-width: 100px;
+    }
+
+    ${media.mobile} {
+        font-size: 16px;
+        min-width: 90px;
+    }
 `;
 
 const WorkLogSection = styled.div`
     width: 100%;
+    overflow-x: auto;
 `;
 
 const WorkLogTitle = styled.h2`
@@ -267,15 +351,31 @@ const WorkLogTitle = styled.h2`
     font-weight: 700;
     color: #00a8a5;
     margin: 0 0 20px 0;
+
+    ${media.tablet} {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
 `;
 
 const WorkLogTable = styled.table`
     width: 100%;
+    min-width: 400px;
     background: white;
     border-radius: 12px;
     overflow: hidden;
     border-collapse: collapse;
     border: 1.5px solid #00ccc7;
+
+    ${media.mobile} {
+        min-width: 320px;
+        border-radius: 8px;
+    }
 `;
 
 const TableHeader = styled.thead`
@@ -300,12 +400,32 @@ const TableHeaderCell = styled.th`
     font-weight: 600;
     color: #2c3e50;
     font-size: 14px;
+
+    ${media.tablet} {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    ${media.mobile} {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
 `;
 
 const TableCell = styled.td`
     padding: 16px;
     color: #555;
     font-size: 14px;
+
+    ${media.tablet} {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    ${media.mobile} {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
 `;
 
 const EmptyState = styled.div`
@@ -313,6 +433,11 @@ const EmptyState = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;
 
 const LoadingText = styled.div`
@@ -320,4 +445,9 @@ const LoadingText = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;

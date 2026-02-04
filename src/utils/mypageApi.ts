@@ -1,6 +1,7 @@
 import urlAxios from "./urlAxios";
 import type { AxiosError } from "axios";
 import type { MyPageCompany, MyPageWorker, MyPageAdvanceRequest, CreateWorkerRequest } from "../types/mypage";
+import { getAuthToken } from "./auth";
 
 export interface ApiErrorResponse {
     data: null;
@@ -64,7 +65,14 @@ export const mypageAdvanceRequestApi = {
     },
 
     approveAdvanceRequest: async (companyId: number, salaryTargetId: number, requestId: number): Promise<void> => {
-        await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/approve`);
+        const token = getAuthToken();
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // 1단계: approve 요청
+        await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/approve`, {}, { headers });
+
+        // 2단계: pay 요청 (1단계 성공 시)
+        await urlAxios.post<ApiSuccessResponse<void>>(`/owner/companies/${companyId}/salary-targets/${salaryTargetId}/payouts/advance-requests/${requestId}/pay`, {}, { headers });
     },
 
     rejectAdvanceRequest: async (companyId: number, salaryTargetId: number, requestId: number): Promise<void> => {

@@ -7,6 +7,7 @@ import { useAppDispatch } from "../store/hooks";
 import { setAccessToken, setAccessCode } from "../store/slices/authSlice";
 import { fetchCompanies } from "../store/slices/companySlice";
 import type { LoginMethod } from "../types/auth";
+import { media } from "../styles/breakpoints";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -142,6 +143,12 @@ const MethodToggle = styled.div`
     display: flex;
     gap: 12px;
     margin-bottom: 24px;
+
+    ${media.mobile} {
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-direction: column;
+    }
 `;
 
 const ErrorText = styled.p`
@@ -152,6 +159,10 @@ const ErrorText = styled.p`
     background: #ffebee;
     border-radius: 8px;
     border-left: 3px solid #e57373;
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
 `;
 
 const RegisterLink = styled.div`
@@ -159,6 +170,10 @@ const RegisterLink = styled.div`
     margin-top: 24px;
     font-size: 14px;
     color: #666;
+
+    ${media.mobile} {
+        margin-top: 20px;
+    }
 `;
 
 const RegisterButton = styled.button`
@@ -184,8 +199,20 @@ const SuccessText = styled.p`
     background: #e8f5e9;
     border-radius: 8px;
     border-left: 3px solid #4caf50;
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
 `;
 
 const LoginFormCard = styled(FormCard)`
     min-width: 420px;
+
+    ${media.tablet} {
+        min-width: 360px;
+    }
+
+    ${media.mobile} {
+        min-width: 100%;
+    }
 `;

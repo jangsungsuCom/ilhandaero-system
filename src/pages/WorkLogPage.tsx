@@ -14,6 +14,7 @@ import { getWorkerInfo, getWorkAmount } from "../utils/workLog";
 import { getCalendarSettings } from "../utils/calendarSettings";
 import { format } from "date-fns";
 import CalendarSettingModal from "../components/specific/workLog/CalendarSettingModal";
+import { media } from "../styles/breakpoints";
 
 const WorkLogPage = () => {
     const dispatch = useAppDispatch();
@@ -21,6 +22,7 @@ const WorkLogPage = () => {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [workerName, setWorkerName] = useState<string>("");
+    const [workerColorHex, setWorkerColorHex] = useState<string | undefined>(undefined);
     const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; totalAdvanced: number } | null>(null);
     const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
     const [isCalendarSettingModalOpen, setIsCalendarSettingModalOpen] = useState(false);
@@ -68,8 +70,8 @@ const WorkLogPage = () => {
         }
     }, [loginMethod, currentYear, currentMonth, dispatch, workLogsByAccessCode]);
 
-    // accessCode 로그인 시 해당 월 work-amount(grossAmount, totalAdvanced) 로드
-    useEffect(() => {
+    // workAmount 데이터를 로드하는 함수
+    const loadWorkAmountData = (year: number, month: number) => {
         if (loginMethod === "accessCode") {
             const accessCode = getAccessCode();
             if (!accessCode) {
@@ -77,8 +79,8 @@ const WorkLogPage = () => {
                 setWorkAmountRows([]);
                 return;
             }
-            const startDate = new Date(currentYear, currentMonth, 1);
-            const endDate = new Date(currentYear, currentMonth + 1, 0);
+            const startDate = new Date(year, month, 1);
+            const endDate = new Date(year, month + 1, 0);
             const from = format(startDate, "yyyy-MM-dd");
             const to = format(endDate, "yyyy-MM-dd");
             getWorkAmount(accessCode, from, to)
@@ -105,8 +107,8 @@ const WorkLogPage = () => {
                 setWorkAmountRows([]);
                 return;
             }
-            const startDate = new Date(currentYear, currentMonth, 1);
-            const endDate = new Date(currentYear, currentMonth + 1, 0);
+            const startDate = new Date(year, month, 1);
+            const endDate = new Date(year, month + 1, 0);
             const from = format(startDate, "yyyy-MM-dd");
             const to = format(endDate, "yyyy-MM-dd");
             Promise.all(targets.map((t: { accessCode: string; workerName: string }) => getWorkAmount(t.accessCode, from, to).then((res) => ({ workerName: t.workerName, data: res?.data }))))
@@ -132,6 +134,11 @@ const WorkLogPage = () => {
         }
         setWorkAmountData(null);
         setWorkAmountRows([]);
+    };
+
+    // accessCode 로그인 시 해당 월 work-amount(grossAmount, totalAdvanced) 로드
+    useEffect(() => {
+        loadWorkAmountData(currentYear, currentMonth);
     }, [loginMethod, currentYear, currentMonth, selectedCompanyId, salaryTargets]);
 
     // accessCode 로그인 시 worker 정보 로드
@@ -142,6 +149,7 @@ const WorkLogPage = () => {
                 getWorkerInfo(accessCode)
                     .then((response) => {
                         setWorkerName(response.data?.workerName || "");
+                        setWorkerColorHex(response.data?.colorHex);
                     })
                     .catch((error) => {
                         console.error("Failed to load worker info:", error);
@@ -149,6 +157,7 @@ const WorkLogPage = () => {
             }
         } else {
             setWorkerName("");
+            setWorkerColorHex(undefined);
         }
     }, [loginMethod]);
 
@@ -190,6 +199,8 @@ const WorkLogPage = () => {
                 }
             });
         }
+        // 총 급여 데이터도 다시 로드
+        loadWorkAmountData(currentYear, currentMonth);
     };
 
     const currentSalaryTargets = selectedCompanyId ? salaryTargets[selectedCompanyId] || [] : [];
@@ -243,6 +254,7 @@ const WorkLogPage = () => {
                 workAmountRows={loginMethod === "email" ? workAmountRows : undefined}
                 calendarStartDay={calendarSettings.startDay}
                 workTimeDisplayFormat={calendarSettings.workTimeFormat}
+                workerColorHex={loginMethod === "accessCode" ? workerColorHex : undefined}
             />
         </PageWrapper>
     );
@@ -252,6 +264,11 @@ export default WorkLogPage;
 
 const PageWrapper = styled.div`
     width: 1152px;
+    max-width: 100%;
+
+    ${media.desktop} {
+        width: 100%;
+    }
 `;
 
 const Header = styled.div`
@@ -271,6 +288,22 @@ const Header = styled.div`
             object-fit: contain;
             cursor: pointer;
         }
+
+        ${media.tablet} {
+            gap: 24px;
+            > img {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        ${media.mobile} {
+            gap: 16px;
+            > img {
+                width: 28px;
+                height: 28px;
+            }
+        }
     }
 `;
 
@@ -288,6 +321,20 @@ const SettingButton = styled.button`
         height: 38px;
         object-fit: contain;
     }
+
+    ${media.tablet} {
+        > img {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    ${media.mobile} {
+        > img {
+            width: 28px;
+            height: 28px;
+        }
+    }
 `;
 
 const EmptyStateContainer = styled.div`
@@ -297,12 +344,25 @@ const EmptyStateContainer = styled.div`
     justify-content: center;
     min-height: 400px;
     gap: 24px;
+
+    ${media.mobile} {
+        min-height: 300px;
+        gap: 16px;
+    }
 `;
 
 const EmptyStateText = styled.div`
     font-size: 32px;
     font-weight: 600;
     color: #666;
+
+    ${media.tablet} {
+        font-size: 24px;
+    }
+
+    ${media.mobile} {
+        font-size: 20px;
+    }
 `;
 
 const RegisterButton = styled.button`
@@ -324,9 +384,18 @@ const RegisterButton = styled.button`
         color: #00cbc7;
         border-color: #00cbc7;
     }
+
+    ${media.mobile} {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
 `;
 
 const Arrow = styled.span`
     font-size: 20px;
     font-weight: bold;
+
+    ${media.mobile} {
+        font-size: 18px;
+    }
 `;

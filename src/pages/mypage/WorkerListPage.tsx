@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useMypageWorkers } from "../../hooks/useMypageWorkers";
 import { useMypageStores } from "../../hooks/useMypageStores";
 import type { DeductionType } from "../../types/mypage";
+import { media } from "../../styles/breakpoints";
 
 function getDeductionLabel(type?: DeductionType): string {
     switch (type) {
@@ -112,11 +113,26 @@ const PageTitle = styled.h1`
     color: #00a8a5;
     margin: 0 0 30px 0;
     align-self: flex-start;
+
+    ${media.tablet} {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
 `;
 
 const ContentWrapper = styled.div`
     width: 1152px;
     max-width: 100%;
+    overflow-x: auto;
+
+    ${media.desktop} {
+        width: 100%;
+    }
 `;
 
 const Header = styled.div`
@@ -124,11 +140,19 @@ const Header = styled.div`
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 30px;
+
+    ${media.tablet} {
+        margin-bottom: 20px;
+    }
 `;
 
 const ButtonGroup = styled.div`
     display: flex;
     gap: 24px;
+
+    ${media.mobile} {
+        gap: 16px;
+    }
 `;
 
 const TextButton = styled.button`
@@ -143,6 +167,10 @@ const TextButton = styled.button`
 
     &:hover {
         color: #00cbc7;
+    }
+
+    ${media.mobile} {
+        font-size: 14px;
     }
 `;
 
@@ -159,10 +187,15 @@ const BackButton = styled.button`
     &:hover {
         color: #333;
     }
+
+    ${media.mobile} {
+        font-size: 14px;
+    }
 `;
 
 const Table = styled.table`
     width: 100%;
+    min-width: 900px;
     background: white;
     border-radius: 12px;
     overflow: hidden;
@@ -192,12 +225,24 @@ const TableHeaderCell = styled.th`
     font-weight: 600;
     color: #2c3e50;
     font-size: 14px;
+    white-space: nowrap;
+
+    ${media.tablet} {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
 `;
 
 const TableCell = styled.td`
     padding: 16px;
     color: #555;
     font-size: 14px;
+    white-space: nowrap;
+
+    ${media.tablet} {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
 `;
 
 const ColorDot = styled.span<{ $color: string }>`
@@ -217,6 +262,11 @@ const AccessCode = styled.code`
     font-family: monospace;
     font-size: 13px;
     color: #2c3e50;
+
+    ${media.tablet} {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
 `;
 
 // const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
@@ -250,6 +300,11 @@ const EmptyState = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;
 
 const LoadingText = styled.div`
@@ -257,4 +312,9 @@ const LoadingText = styled.div`
     padding: 60px 20px;
     color: #95a5a6;
     font-size: 16px;
+
+    ${media.mobile} {
+        padding: 40px 16px;
+        font-size: 14px;
+    }
 `;
