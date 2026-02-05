@@ -128,11 +128,25 @@ export default function LoginPage() {
                 </Form>
 
                 {loginMethod === "email" && (
-                    <RegisterLink>
-                        <RegisterButton type="button" onClick={() => navigate("/register")}>
-                            회원가입
-                        </RegisterButton>
-                    </RegisterLink>
+                    <div style={{ width: "100%", display: "flex", gap: "12px", justifyContent: "center", alignItems: "center", marginTop: "24px" }}>
+                        <RegisterLink>
+                            <RegisterButton type="button" onClick={() => navigate("/find-email")}>
+                                아이디 찾기
+                            </RegisterButton>
+                        </RegisterLink>
+                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00a8a5" }} />
+                        <RegisterLink>
+                            <RegisterButton type="button" onClick={() => navigate("/reset-password")}>
+                                비밀번호 찾기
+                            </RegisterButton>
+                        </RegisterLink>
+                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00a8a5" }} />
+                        <RegisterLink>
+                            <RegisterButton type="button" onClick={() => navigate("/register")}>
+                                회원가입
+                            </RegisterButton>
+                        </RegisterLink>
+                    </div>
                 )}
             </LoginFormCard>
         </PageContainer>
@@ -167,13 +181,7 @@ const ErrorText = styled.p`
 
 const RegisterLink = styled.div`
     text-align: center;
-    margin-top: 24px;
     font-size: 14px;
-    color: #666;
-
-    ${media.mobile} {
-        margin-top: 20px;
-    }
 `;
 
 const RegisterButton = styled.button`
@@ -184,7 +192,7 @@ const RegisterButton = styled.button`
     font-weight: 600;
     cursor: pointer;
     padding: 0;
-    text-decoration: underline;
+    //text-decoration: underline;
 
     &:hover {
         color: #00cbc7;
