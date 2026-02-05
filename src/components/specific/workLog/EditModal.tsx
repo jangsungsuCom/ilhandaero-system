@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { updateWorkLog, deleteWorkLogByAccessCode } from "../../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../../utils/auth";
 import type { WorkLog } from "../../../types/workLog";
@@ -164,6 +165,13 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                 </ModalHeader>
 
                 <ModalBody>
+                    <TimeRow>
+                        <SectionTitle>선택 날짜</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{format(new Date(editingWorkLog.workDate), "yyyy년 M월 d일 (EEEE)", { locale: ko })}</TimeDisplay>
+                        </TimeDisplayRow>
+                    </TimeRow>
+
                     <TimeRow>
                         <SectionTitle>시작 시간</SectionTitle>
                         <TimeDisplayRow>

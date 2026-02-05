@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { ko } from "date-fns/locale";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
 import { createWorkLog } from "../../../utils/workLog";
 import { getLoginMethod } from "../../../utils/auth";
 import type { SalaryTarget } from "../../../types/salaryTarget";
@@ -29,6 +32,8 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
     const [editingTime, setEditingTime] = useState<"start" | "end" | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const [additionalDates, setAdditionalDates] = useState<Date[]>([]);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -39,8 +44,32 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             setEditingTime(null);
             setSelectedTargetId("");
             setError("");
+            setAdditionalDates([]);
+            setShowDatePicker(false);
         }
     }, [isModalOpen]);
+
+    // 모든 선택된 날짜 (초기 날짜 + 추가 날짜)
+    const allSelectedDates = [selectedDate, ...additionalDates];
+
+    // 날짜 표시 텍스트
+    const dateDisplayText =
+        additionalDates.length > 0 ? `${format(selectedDate, "yyyy년 M월 d일 (E)", { locale: ko })} 외 ${additionalDates.length}개` : format(selectedDate, "yyyy년 M월 d일 (EEEE)", { locale: ko });
+
+    // 날짜 토글 (추가/제거)
+    const handleDateToggle = (date: Date) => {
+        // 초기 날짜는 제거 불가
+        if (isSameDay(date, selectedDate)) return;
+
+        setAdditionalDates((prev) => {
+            const exists = prev.some((d) => isSameDay(d, date));
+            if (exists) {
+                return prev.filter((d) => !isSameDay(d, date));
+            } else {
+                return [...prev, date];
+            }
+        });
+    };
 
     const formatTimeDisplay = (hour: number, minute: number) => `${hour}시 ${minute}분`;
 
@@ -53,21 +82,6 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                 return;
             }
         }
-
-        // const startMins = startHour * 60 + startMinute;
-        // const endMins = endHour * 60 + endMinute;
-        // if (endMins <= startMins) {
-        //     setError("종료 시간은 시작 시간보다 늦어야 합니다.");
-        //     return;
-        // }
-        // if (endMins - startMins < 30) {
-        //     setError("근무시간은 최소 30분 이상이어야 합니다.");
-        //     return;
-        // }
-        // if (startMinute % 30 !== 0 || endMinute % 30 !== 0) {
-        //     setError("분은 30분 단위로 입력해주세요 (0, 30).");
-        //     return;
-        // }
 
         setIsLoading(true);
         setError("");
@@ -84,14 +98,21 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                 accessCode = selectedTarget.accessCode;
             }
 
-            await createWorkLog(
-                {
-                    workDate: format(selectedDate, "yyyy-MM-dd"),
-                    startTime: toTimeString(startHour, startMinute),
-                    endTime: toTimeString(endHour, endMinute),
-                },
-                accessCode
-            );
+            // 모든 선택된 날짜에 대해 API 호출
+            const startTime = toTimeString(startHour, startMinute);
+            const endTime = toTimeString(endHour, endMinute);
+
+            for (const date of allSelectedDates) {
+                await createWorkLog(
+                    {
+                        workDate: format(date, "yyyy-MM-dd"),
+                        startTime,
+                        endTime,
+                    },
+                    accessCode
+                );
+            }
+
             onWorkLogCreated?.();
             setIsModalOpen(false);
             setStartHour(9);
@@ -99,6 +120,7 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             setEndHour(18);
             setEndMinute(0);
             setSelectedTargetId("");
+            setAdditionalDates([]);
         } catch (err: any) {
             setError(err.response?.data?.message || "기록에 실패했습니다. 다시 시도해주세요.");
         } finally {
@@ -130,6 +152,33 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                             </Select>
                         </>
                     )}
+
+                    <TimeRow>
+                        <SectionTitle>선택 날짜</SectionTitle>
+                        <TimeDisplayRow>
+                            <TimeDisplay>{dateDisplayText}</TimeDisplay>
+                            <EditTimeButton type="button" onClick={() => setShowDatePicker(!showDatePicker)}>
+                                {showDatePicker ? "완료" : "추가"}
+                            </EditTimeButton>
+                        </TimeDisplayRow>
+                        {showDatePicker && (
+                            <DatePickerWrapper>
+                                <DayPicker
+                                    mode="multiple"
+                                    selected={allSelectedDates}
+                                    onDayClick={handleDateToggle}
+                                    locale={ko}
+                                    defaultMonth={selectedDate}
+                                    modifiers={{
+                                        primary: [selectedDate],
+                                    }}
+                                    modifiersClassNames={{
+                                        primary: "primary-date",
+                                    }}
+                                />
+                            </DatePickerWrapper>
+                        )}
+                    </TimeRow>
 
                     <TimeRow>
                         <SectionTitle>시작 시간</SectionTitle>
@@ -269,6 +318,38 @@ const TimePickerRow = styled.div`
     gap: 24px;
     justify-content: center;
     margin-bottom: 24px;
+`;
+
+const DatePickerWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+    margin-bottom: 12px;
+
+    .rdp {
+        --rdp-accent-color: #11d0c9;
+        --rdp-accent-background-color: #11d0c9;
+    }
+
+    .rdp-day_button {
+        border-radius: 8px;
+    }
+
+    .rdp-selected .rdp-day_button {
+        background-color: #11d0c9;
+        color: white;
+        border: none;
+        outline: none;
+        border-radius: 50%;
+    }
+
+    .primary-date .rdp-day_button {
+        background-color: #11d0c9;
+        color: white;
+        border: none;
+        outline: none;
+        border-radius: 50%;
+    }
 `;
 
 const MinutePickerWrap = styled.div`
