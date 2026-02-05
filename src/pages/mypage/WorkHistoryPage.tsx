@@ -4,16 +4,31 @@ import { getWorkLogs, getWorkAmount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
 import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
+import { IosWheelPicker, type WheelOption } from "../../components/common/IosWheelPicker";
 import { media } from "../../styles/breakpoints";
+
+const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
+
+const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
 
 export default function WorkHistoryPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [workLogs, setWorkLogs] = useState<any[]>([]);
     const [workAmount, setWorkAmount] = useState<WorkAmountData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [pendingYear, setPendingYear] = useState(new Date().getFullYear());
+    const [pendingMonth, setPendingMonth] = useState(new Date().getMonth());
 
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
+
+    useEffect(() => {
+        if (pickerOpen) {
+            setPendingYear(currentYear);
+            setPendingMonth(currentMonth);
+        }
+    }, [pickerOpen, currentYear, currentMonth]);
 
     useEffect(() => {
         // accessCode 로그인이 아니면 데이터를 로드하지 않음
@@ -79,19 +94,15 @@ export default function WorkHistoryPage() {
     };
 
     const formatDate = (dateString: string): string => {
-        return format(new Date(dateString), "yyyy.MM.dd");
+        const date = new Date(dateString);
+        const days = ["일", "월", "화", "수", "목", "금", "토"];
+        const dayOfWeek = days[date.getDay()];
+        return `${format(date, "yyyy.MM.dd")} (${dayOfWeek})`;
     };
 
-    const handleMonthChange = (direction: "prev" | "next") => {
-        setCurrentDate((prev) => {
-            const newDate = new Date(prev);
-            if (direction === "prev") {
-                newDate.setMonth(prev.getMonth() - 1);
-            } else {
-                newDate.setMonth(prev.getMonth() + 1);
-            }
-            return newDate;
-        });
+    const handleSelectMonthYear = (year: number, month: number) => {
+        setCurrentDate(new Date(year, month, 1));
+        setPickerOpen(false);
     };
 
     if (loading) {
@@ -110,50 +121,58 @@ export default function WorkHistoryPage() {
             <PageTitle>근무내역</PageTitle>
             <ContentWrapper>
                 <SummaryCard>
-                    <SummaryTitle>급여 정보</SummaryTitle>
-                    <SummaryGrid>
-                        <SummaryItem>
-                            <SummaryLabel>누적 임금</SummaryLabel>
-                            <SummaryValue>{workAmount?.grossAmount?.toLocaleString() || 0}원</SummaryValue>
-                        </SummaryItem>
-                        <SummaryItem>
-                            <SummaryLabel>선지급액</SummaryLabel>
-                            <SummaryValue>{workAmount?.totalAdvanced?.toLocaleString() || 0}원</SummaryValue>
-                        </SummaryItem>
-                        <SummaryItem>
-                            <SummaryLabel>가용 임금</SummaryLabel>
-                            <SummaryValue>{workAmount?.available?.toLocaleString() || 0}원</SummaryValue>
-                        </SummaryItem>
-                        <SummaryItem>
-                            <SummaryLabel>최대 선지급 가능액</SummaryLabel>
-                            <SummaryValue>{workAmount?.maxAdvance?.toLocaleString() || 0}원</SummaryValue>
-                        </SummaryItem>
-                    </SummaryGrid>
+                    <SummaryMainItem>
+                        <SummaryMainLabel>총 급여</SummaryMainLabel>
+                        <SummaryMainValue>{workAmount?.grossAmount?.toLocaleString() || 0}원</SummaryMainValue>
+                    </SummaryMainItem>
+                    <SummaryDivider />
+                    <SummarySubItem>
+                        <SummaryLabel>선지급액</SummaryLabel>
+                        <SummaryValue>{workAmount?.totalAdvanced?.toLocaleString() || 0}원</SummaryValue>
+                    </SummarySubItem>
+                    <SummarySubItem>
+                        <SummaryLabel>미결제 임금</SummaryLabel>
+                        <SummaryValue>{workAmount?.available?.toLocaleString() || 0}원</SummaryValue>
+                    </SummarySubItem>
+                    <SummarySubItem>
+                        <SummaryLabel>최대 선지급 가능액</SummaryLabel>
+                        <SummaryValue>{workAmount?.maxAdvance?.toLocaleString() || 0}원</SummaryValue>
+                    </SummarySubItem>
                 </SummaryCard>
 
                 <MonthSelector>
-                    <MonthButton onClick={() => handleMonthChange("prev")}>‹</MonthButton>
-                    <MonthText>
-                        {currentYear}년 {currentMonth + 1}월
-                    </MonthText>
-                    <MonthButton onClick={() => handleMonthChange("next")}>›</MonthButton>
+                    <MonthPickerButton onClick={() => setPickerOpen(!pickerOpen)}>
+                        {currentYear}년 {currentMonth + 1}월 ˅
+                    </MonthPickerButton>
                 </MonthSelector>
+                {pickerOpen && (
+                    <PickerBox>
+                        <WheelPickerRow>
+                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
+                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
+                        </WheelPickerRow>
+                        <PickerConfirmRow>
+                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
+                                적용
+                            </PickerConfirmButton>
+                        </PickerConfirmRow>
+                    </PickerBox>
+                )}
 
                 {workLogs.length === 0 ? (
                     <EmptyState>해당 기간의 근무 기록이 없습니다.</EmptyState>
                 ) : (
                     <WorkLogSection>
-                        <WorkLogTitle>근무내역</WorkLogTitle>
                         <WorkLogTable>
                             <TableHeader>
                                 <TableRow>
                                     <TableHeaderCell>날짜</TableHeaderCell>
                                     <TableHeaderCell>근무시간</TableHeaderCell>
-                                    <TableHeaderCell>수령액</TableHeaderCell>
+                                    <TableHeaderCell>급여</TableHeaderCell>
                                 </TableRow>
                             </TableHeader>
                             <tbody>
-                                {workLogs.map((log) => (
+                                {[...workLogs].reverse().map((log) => (
                                     <TableRow key={log.workLogId}>
                                         <TableCell>{formatDate(log.workDate)}</TableCell>
                                         <TableCell>{formatWorkTime(log)}</TableCell>
@@ -205,9 +224,11 @@ const ContentWrapper = styled.div`
 const SummaryCard = styled.div`
     background: white;
     border-radius: 12px;
-    padding: 30px;
+    padding: 24px 30px;
     margin-bottom: 30px;
     border: 1.5px solid #00ccc7;
+    display: flex;
+    flex-direction: column;
 
     ${media.tablet} {
         padding: 20px;
@@ -221,58 +242,17 @@ const SummaryCard = styled.div`
     }
 `;
 
-const SummaryTitle = styled.h2`
-    font-size: 24px;
-    font-weight: 700;
-    color: #00a8a5;
-    margin: 0 0 20px 0;
-
-    ${media.tablet} {
-        font-size: 20px;
-        margin-bottom: 16px;
-    }
-
-    ${media.mobile} {
-        font-size: 18px;
-        margin-bottom: 12px;
-    }
-`;
-
-const SummaryGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-
-    ${media.mobile} {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-`;
-
-const SummaryItem = styled.div`
+const SummaryMainItem = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    ${media.mobile} {
-        gap: 4px;
-    }
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
 `;
 
-const SummaryLabel = styled.div`
-    font-size: 14px;
-    color: #666;
-    font-weight: 500;
-
-    ${media.mobile} {
-        font-size: 12px;
-    }
-`;
-
-const SummaryValue = styled.div`
+const SummaryMainLabel = styled.div`
     font-size: 20px;
     font-weight: 700;
-    color: #2c3e50;
+    color: #1a1a1a;
 
     ${media.tablet} {
         font-size: 18px;
@@ -283,56 +263,120 @@ const SummaryValue = styled.div`
     }
 `;
 
-const MonthSelector = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 30px;
+const SummaryMainValue = styled.div`
+    font-size: 24px;
+    font-weight: 700;
+    color: #00a8a5;
 
     ${media.tablet} {
-        gap: 16px;
-        margin-bottom: 20px;
+        font-size: 22px;
     }
 
     ${media.mobile} {
-        gap: 12px;
-        margin-bottom: 16px;
-    }
-`;
-
-const MonthButton = styled.button`
-    width: 40px;
-    height: 40px;
-    border: 1.5px solid #00ccc7;
-    border-radius: 8px;
-    background: white;
-    color: #00a8a5;
-    font-size: 24px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: #f0f9f8;
-    }
-
-    ${media.mobile} {
-        width: 36px;
-        height: 36px;
         font-size: 20px;
     }
 `;
 
-const MonthText = styled.div`
-    font-size: 20px;
+const SummaryDivider = styled.div`
+    height: 1px;
+    background: #e0e0e0;
+    margin: 12px 0;
+`;
+
+const SummarySubItem = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+`;
+
+const SummaryLabel = styled.div`
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const SummaryValue = styled.div`
+    font-size: 16px;
     font-weight: 600;
     color: #2c3e50;
-    min-width: 120px;
-    text-align: center;
+
+    ${media.mobile} {
+        font-size: 15px;
+    }
+`;
+
+const MonthSelector = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+`;
+
+const MonthPickerButton = styled.button`
+    padding: 12px 24px;
+    background: #11d0c9;
+    border: none;
+    border-radius: 24px;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.9;
+    }
 
     ${media.tablet} {
-        font-size: 18px;
-        min-width: 100px;
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+`;
+
+const PickerBox = styled.div`
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 20px;
+`;
+
+const WheelPickerRow = styled.div`
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+`;
+
+const PickerConfirmRow = styled.div`
+    margin-left: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+const PickerConfirmButton = styled.button`
+    width: 80px;
+    height: 32px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    background: #11d0c9;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.85;
     }
 
     ${media.mobile} {
@@ -344,23 +388,6 @@ const MonthText = styled.div`
 const WorkLogSection = styled.div`
     width: 100%;
     overflow-x: auto;
-`;
-
-const WorkLogTitle = styled.h2`
-    font-size: 24px;
-    font-weight: 700;
-    color: #00a8a5;
-    margin: 0 0 20px 0;
-
-    ${media.tablet} {
-        font-size: 20px;
-        margin-bottom: 16px;
-    }
-
-    ${media.mobile} {
-        font-size: 18px;
-        margin-bottom: 12px;
-    }
 `;
 
 const WorkLogTable = styled.table`

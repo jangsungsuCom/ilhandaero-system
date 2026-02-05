@@ -306,7 +306,7 @@ export default function PaymentPage() {
                         <SectionDivider />
                         <RowFieldGroup>
                             <RowLabel>
-                                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#00ccc7" }}>실수령액</div>
+                                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#00ccc7" }}>실급여</div>
                             </RowLabel>
                             <ControlArea>
                                 <ReadOnlyInput value={`${(available + additionalPayment).toLocaleString()} 원`} readOnly />

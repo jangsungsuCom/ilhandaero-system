@@ -124,7 +124,7 @@ export default function AdvancePaymentPage() {
 
                 <Form onSubmit={handleSubmit}>
                     <RowFieldGroup>
-                        <RowLabel>누적 수령액</RowLabel>
+                        <RowLabel>누적 급여</RowLabel>
                         <ControlArea>
                             <ReadOnlyInput value={`${cumulativeReceived.toLocaleString()} 원`} readOnly />
                         </ControlArea>

@@ -261,8 +261,8 @@ const WorkLogPage = () => {
             {pickerOpen && (
                 <PickerBox>
                     <WheelPickerRow>
-                        <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} allowDirectInput={false} />
-                        <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} allowDirectInput={false} />
+                        <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
+                        <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
                     </WheelPickerRow>
                     <PickerConfirmRow>
                         <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
@@ -384,18 +384,19 @@ const PickerBox = styled.div`
 
 const WheelPickerRow = styled.div`
     display: flex;
-    gap: 24px;
+    gap: 40px;
     align-items: flex-start;
 `;
 
 const PickerConfirmRow = styled.div`
+    margin-left: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
 `;
 
 const PickerConfirmButton = styled.button`
-    width: 100px;
+    width: 80px;
     height: 32px;
     font-size: 18px;
     font-weight: 600;

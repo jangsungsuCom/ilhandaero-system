@@ -11,30 +11,22 @@ import type { CreateWorkerRequest } from "../../types/mypage";
 const DEFAULT_COLOR = "#00ccc7";
 
 const COLOR_PALETTE: string[] = [
-    "#00ccc7",
-    "#11d0c9",
-    "#009a96",
-    "#007d79",
-    "#e74c3c",
-    "#e67e22",
-    "#f39c12",
-    "#2ecc71",
-    "#27ae60",
-    "#3498db",
-    "#2980b9",
-    "#9b59b6",
-    "#8e44ad",
-    "#34495e",
-    "#2c3e50",
-    "#95a5a6",
-    "#7f8c8d",
-    "#1abc9c",
-    "#16a085",
-    "#e91e63",
-    "#673ab7",
-    "#3f51b5",
-    "#2196f3",
-    "#00bcd4",
+    "#A8E6CF", // 민트
+    "#88D8B0", // 연두
+    "#B8E0D2", // 청록
+    "#95E1D3", // 아쿠아
+    "#F6D6AD", // 살구
+    "#FFCBA4", // 복숭아
+    "#FFB3BA", // 코랄핑크
+    "#FFDAC1", // 피치
+    "#E2F0CB", // 라임
+    "#B5EAD7", // 세이지
+    "#C7CEEA", // 라벤더
+    "#D4A5A5", // 로즈
+    "#A0CED9", // 스카이블루
+    "#AEC6CF", // 파스텔블루
+    "#CFCFC4", // 웜그레이
+    "#E6E6FA", // 라일락
 ];
 
 export default function WorkerFormPage() {
