@@ -12,6 +12,7 @@ import { getWorkAmount } from "../utils/workLog";
 import { postSalaryPay } from "../utils/paymentApi";
 import { getLoginMethod } from "../utils/auth";
 import { RiShareBoxLine } from "react-icons/ri";
+import type { DeductionType } from "../types/salaryTarget";
 
 export default function PaymentPage() {
     const dispatch = useAppDispatch();
@@ -35,8 +36,13 @@ export default function PaymentPage() {
     const [available, setAvailable] = useState<number>(0);
     const [additionalPayment, setAdditionalPayment] = useState<number>(0);
     const [additionalPaymentDescription, setAdditionalPaymentDescription] = useState<string>("");
-    const [additionalDeduction, setAdditionalDeduction] = useState<number>(0);
+    const [deductionType, setDeductionType] = useState<DeductionType | undefined>(undefined);
     const [isCardPaying, setIsCardPaying] = useState(false);
+
+    // 3.3% 공제액 계산 (1의 자리 버림)
+    const totalBeforeDeduction = available + additionalPayment;
+    const calculatedDeduction = deductionType === "THREE_POINT_THREE" ? Math.floor((totalBeforeDeduction * 0.033) / 10) * 10 : 0;
+    const netPayment = totalBeforeDeduction - calculatedDeduction;
 
     // 이메일 로그인 시 업장 목록 로드
     useEffect(() => {
@@ -64,6 +70,7 @@ export default function PaymentPage() {
             //setGrossAmount(0);
             setAdvancePayment(0);
             setAvailable(0);
+            setDeductionType(undefined);
             return;
         }
         const targets = salaryTargets[selectedCompanyId] || [];
@@ -72,6 +79,7 @@ export default function PaymentPage() {
             setHourlyWage(emp.hourlyWage);
             setBank(emp.bankName);
             setAccountNumber(emp.accountNumber);
+            setDeductionType(emp.deductionType);
         }
     }, [loginMethod, selectedCompanyId, selectedEmployeeId, salaryTargets]);
 
@@ -94,7 +102,6 @@ export default function PaymentPage() {
                 //setGrossAmount(d.grossAmount);
                 setAdvancePayment(d.totalAdvanced);
                 setAvailable(d.available);
-                setAdditionalDeduction(0);
             } catch (e) {
                 console.error("Failed to load work amount:", e);
             }
@@ -286,21 +293,11 @@ export default function PaymentPage() {
                                 </InlineInputsRow>
                             </ControlArea>
                         </RowFieldGroup>
-
+                        <SectionDivider />
                         <RowFieldGroup>
-                            <RowLabel>추가공제액</RowLabel>
+                            <RowLabel>전체 공제액</RowLabel>
                             <ControlArea>
-                                <InputWrapper>
-                                    <Input
-                                        type="number"
-                                        value={additionalDeduction}
-                                        onChange={(e) => setAdditionalDeduction(e.target.value ? Number(e.target.value) : 0)}
-                                        placeholder="추가공제액 입력"
-                                        min={0}
-                                        disabled
-                                    />
-                                    <Unit>원</Unit>
-                                </InputWrapper>
+                                <ReadOnlyInput value={`${calculatedDeduction.toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
                         <SectionDivider />
@@ -309,7 +306,7 @@ export default function PaymentPage() {
                                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#00ccc7" }}>실급여</div>
                             </RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${(available + additionalPayment).toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${netPayment.toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
                         <SectionDivider />
