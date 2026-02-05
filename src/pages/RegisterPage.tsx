@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton } from "../components/common/FormCard";
+import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton, EmailInput } from "../components/common/FormCard";
 import { registerWithEmail } from "../utils/auth";
 
 export default function RegisterPage() {
@@ -92,7 +92,7 @@ export default function RegisterPage() {
                 <Form onSubmit={handleSubmit}>
                     <FieldGroup>
                         <Label>이메일 *</Label>
-                        <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="이메일을 입력하세요" disabled={isLoading} required />
+                        <EmailInput value={formData.email} onChange={(email) => setFormData({ ...formData, email })} placeholder="이메일" disabled={isLoading} />
                     </FieldGroup>
 
                     <FieldGroup>

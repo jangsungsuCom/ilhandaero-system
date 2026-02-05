@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "styled-components";
-import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton, ToggleButton } from "../components/common/FormCard";
+import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton, ToggleButton, EmailInput } from "../components/common/FormCard";
 import { loginWithEmail, validateAccessCode } from "../utils/auth";
 import { useAppDispatch } from "../store/hooks";
 import { setAccessToken, setAccessCode } from "../store/slices/authSlice";
@@ -104,7 +104,7 @@ export default function LoginPage() {
                         <>
                             <FieldGroup>
                                 <Label>이메일</Label>
-                                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일을 입력하세요" disabled={isLoading} />
+                                <EmailInput value={email} onChange={setEmail} placeholder="이메일" disabled={isLoading} />
                             </FieldGroup>
 
                             <FieldGroup>

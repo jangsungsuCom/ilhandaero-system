@@ -1,5 +1,205 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
+
+const EMAIL_DOMAINS = [
+    { value: "naver.com", label: "naver.com" },
+    { value: "gmail.com", label: "gmail.com" },
+    { value: "daum.net", label: "daum.net" },
+    { value: "hanmail.net", label: "hanmail.net" },
+    { value: "kakao.com", label: "kakao.com" },
+    { value: "nate.com", label: "nate.com" },
+    { value: "", label: "직접입력" },
+];
+
+interface EmailInputProps {
+    value: string;
+    onChange: (email: string) => void;
+    placeholder?: string;
+    disabled?: boolean;
+}
+
+export const EmailInput = ({ value, onChange, placeholder = "이메일", disabled = false }: EmailInputProps) => {
+    // value에서 id와 domain 분리
+    const atIndex = value.indexOf("@");
+    const initialId = atIndex > -1 ? value.substring(0, atIndex) : value;
+    const initialDomain = atIndex > -1 ? value.substring(atIndex + 1) : "";
+    const isPresetDomain = EMAIL_DOMAINS.some((d) => d.value === initialDomain && d.value !== "");
+
+    const [emailId, setEmailId] = useState(initialId);
+    const [selectedDomain, setSelectedDomain] = useState(isPresetDomain ? initialDomain : initialDomain ? "" : "naver.com");
+    const [customDomain, setCustomDomain] = useState(isPresetDomain ? "" : initialDomain);
+
+    const updateEmail = (id: string, domain: string) => {
+        if (id && domain) {
+            onChange(`${id}@${domain}`);
+        } else if (id) {
+            onChange(id);
+        } else {
+            onChange("");
+        }
+    };
+
+    const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newId = e.target.value;
+        setEmailId(newId);
+        const domain = selectedDomain || customDomain;
+        updateEmail(newId, domain);
+    };
+
+    const handleDomainSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const domain = e.target.value;
+        setSelectedDomain(domain);
+        if (domain) {
+            setCustomDomain("");
+            updateEmail(emailId, domain);
+        } else {
+            updateEmail(emailId, customDomain);
+        }
+    };
+
+    const handleCustomDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const domain = e.target.value;
+        setCustomDomain(domain);
+        updateEmail(emailId, domain);
+    };
+
+    return (
+        <EmailInputContainer>
+            <EmailIdInput type="text" value={emailId} onChange={handleIdChange} placeholder={placeholder} disabled={disabled} />
+            <AtSymbol>@</AtSymbol>
+            {selectedDomain === "" && <EmailDomainInput type="text" value={customDomain} onChange={handleCustomDomainChange} placeholder="도메인 입력" disabled={disabled} />}
+            <EmailDomainSelect value={selectedDomain} onChange={handleDomainSelect} disabled={disabled}>
+                {EMAIL_DOMAINS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                        {d.label}
+                    </option>
+                ))}
+            </EmailDomainSelect>
+        </EmailInputContainer>
+    );
+};
+
+const EmailInputContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    ${media.mobile} {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+`;
+
+const EmailIdInput = styled.input`
+    flex: 1;
+    min-width: 100px;
+    height: 52px;
+    padding: 0 16px;
+    font-size: 17px;
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: #f9fbfc;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #00a8a5;
+        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+    }
+
+    &::placeholder {
+        color: #aaa;
+    }
+
+    &:disabled {
+        background: #f0f4f4;
+        color: #555;
+        cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        height: 46px;
+        font-size: 16px;
+        padding: 0 12px;
+        flex: 1;
+        min-width: 80px;
+    }
+`;
+
+const AtSymbol = styled.span`
+    font-size: 17px;
+    color: #666;
+    flex-shrink: 0;
+
+    ${media.mobile} {
+        font-size: 16px;
+    }
+`;
+
+const EmailDomainInput = styled.input`
+    width: 120px;
+    height: 52px;
+    padding: 0 12px;
+    font-size: 17px;
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: #f9fbfc;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #00a8a5;
+        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+    }
+
+    &::placeholder {
+        color: #aaa;
+    }
+
+    &:disabled {
+        background: #f0f4f4;
+        color: #555;
+        cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        width: 90px;
+        height: 46px;
+        font-size: 14px;
+        padding: 0 8px;
+    }
+`;
+
+const EmailDomainSelect = styled.select`
+    width: 110px;
+    height: 52px;
+    padding: 0 8px;
+    font-size: 15px;
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:focus {
+        outline: none;
+        border-color: #00a8a5;
+    }
+
+    &:disabled {
+        background: #f0f4f4;
+        cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        height: 46px;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+`;
 
 export const PageContainer = styled.div<{ width?: string }>`
     display: flex;

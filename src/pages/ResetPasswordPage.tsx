@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton } from "../components/common/FormCard";
+import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton, EmailInput } from "../components/common/FormCard";
 import urlAxios from "../utils/urlAxios";
 import { media } from "../styles/breakpoints";
 
@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
 
                         <FieldGroup>
                             <Label>이메일</Label>
-                            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="가입한 이메일을 입력하세요" disabled={isLoading} />
+                            <EmailInput value={email} onChange={setEmail} placeholder="이메일" disabled={isLoading} />
                         </FieldGroup>
 
                         <FieldGroup>
@@ -211,20 +211,6 @@ const ResultContainer = styled.div`
     align-items: center;
     gap: 12px;
     padding: 20px 0;
-`;
-
-const SuccessIcon = styled.div`
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #00cbc7 0%, #4dd0ae 100%);
-    color: white;
-    font-size: 32px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
 `;
 
 const ResultText = styled.p`
