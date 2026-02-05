@@ -14,7 +14,12 @@ import { getWorkerInfo, getWorkAmount } from "../utils/workLog";
 import { getCalendarSettings } from "../utils/calendarSettings";
 import { format } from "date-fns";
 import CalendarSettingModal from "../components/specific/workLog/CalendarSettingModal";
+import { IosWheelPicker, type WheelOption } from "../components/common/IosWheelPicker";
 import { media } from "../styles/breakpoints";
+
+const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
+
+const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
 
 const WorkLogPage = () => {
     const dispatch = useAppDispatch();
@@ -27,11 +32,46 @@ const WorkLogPage = () => {
     const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
     const [isCalendarSettingModalOpen, setIsCalendarSettingModalOpen] = useState(false);
     const [calendarSettings, setCalendarSettings] = useState(getCalendarSettings);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [pendingYear, setPendingYear] = useState(currentYear);
+    const [pendingMonth, setPendingMonth] = useState(currentMonth);
 
     const loginMethod = getLoginMethod();
     const { companies, selectedCompanyId, isLoading: companiesLoading } = useAppSelector((state: RootState) => state.company);
     const salaryTargets = useAppSelector((state: RootState) => state.salaryTarget.salaryTargetsByCompany);
     const workLogsByAccessCode = useAppSelector((state: RootState) => state.workLog.workLogsByAccessCode);
+
+    // 피커가 열릴 때 pending 값을 현재 값으로 동기화
+    useEffect(() => {
+        if (pickerOpen) {
+            setPendingYear(currentYear);
+            setPendingMonth(currentMonth);
+        }
+    }, [pickerOpen, currentYear, currentMonth]);
+
+    const handleSelectMonthYear = (year: number, month: number) => {
+        setCurrentYear(year);
+        setCurrentMonth(month);
+        setPickerOpen(false);
+        // accessCode 로그인인 경우 재로드
+        if (loginMethod === "accessCode") {
+            const ac = getAccessCode();
+            if (ac) {
+                dispatch(fetchWorkLogsByAccessCode({ accessCode: ac, year, month }));
+            }
+        }
+        // email 로그인인 경우 선택된 업장의 모든 직원들의 근무기록 재로드
+        else if (loginMethod === "email" && selectedCompanyId && salaryTargets[selectedCompanyId]) {
+            const targets = salaryTargets[selectedCompanyId];
+            targets.forEach((target: { codeStatus: string; accessCode: string }) => {
+                if (target.codeStatus === "ACTIVE") {
+                    dispatch(fetchWorkLogsByAccessCode({ accessCode: target.accessCode, year, month }));
+                }
+            });
+        }
+        // 총 급여 데이터도 다시 로드
+        loadWorkAmountData(year, month);
+    };
 
     // 이메일 로그인 시 업장 목록 로드
     useEffect(() => {
@@ -161,27 +201,6 @@ const WorkLogPage = () => {
         }
     }, [loginMethod]);
 
-    const handleMonthChange = (year: number, month: number) => {
-        setCurrentYear(year);
-        setCurrentMonth(month);
-        // accessCode 로그인인 경우 재로드
-        if (loginMethod === "accessCode") {
-            const accessCode = getAccessCode();
-            if (accessCode) {
-                dispatch(fetchWorkLogsByAccessCode({ accessCode, year, month }));
-            }
-        }
-        // email 로그인인 경우 선택된 업장의 모든 직원들의 근무기록 재로드
-        else if (loginMethod === "email" && selectedCompanyId && salaryTargets[selectedCompanyId]) {
-            const targets = salaryTargets[selectedCompanyId];
-            targets.forEach((target: { codeStatus: string; accessCode: string }) => {
-                if (target.codeStatus === "ACTIVE") {
-                    dispatch(fetchWorkLogsByAccessCode({ accessCode: target.accessCode, year, month }));
-                }
-            });
-        }
-    };
-
     const handleWorkLogCreated = () => {
         // accessCode 로그인인 경우 재로드
         if (loginMethod === "accessCode") {
@@ -229,6 +248,9 @@ const WorkLogPage = () => {
     return (
         <PageWrapper>
             <Header>
+                <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
+                    {currentYear}년 {currentMonth + 1}월 ˅
+                </PickerButton>
                 <div className="buttons">
                     <img src={DownloadImg} alt="download" />
                     <SettingButton type="button" onClick={() => setIsCalendarSettingModalOpen(true)} aria-label="달력 설정">
@@ -236,13 +258,25 @@ const WorkLogPage = () => {
                     </SettingButton>
                 </div>
             </Header>
+            {pickerOpen && (
+                <PickerBox>
+                    <WheelPickerRow>
+                        <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} allowDirectInput={false} />
+                        <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} allowDirectInput={false} />
+                    </WheelPickerRow>
+                    <PickerConfirmRow>
+                        <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
+                            적용
+                        </PickerConfirmButton>
+                    </PickerConfirmRow>
+                </PickerBox>
+            )}
             <CalendarSettingModal open={isCalendarSettingModalOpen} onClose={() => setIsCalendarSettingModalOpen(false)} onSettingsChange={() => setCalendarSettings(getCalendarSettings())} />
             <Calendar
                 workLogsByAccessCode={workLogsByAccessCode}
                 salaryTargets={loginMethod === "email" ? currentSalaryTargets : []}
                 currentYear={currentYear}
                 currentMonth={currentMonth}
-                onMonthChange={handleMonthChange}
                 onWorkLogCreated={handleWorkLogCreated}
                 loginMethod={loginMethod || undefined}
                 accessCode={accessCode || undefined}
@@ -275,7 +309,7 @@ const Header = styled.div`
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     margin-bottom: 20px;
 
     .buttons {
@@ -304,6 +338,76 @@ const Header = styled.div`
                 height: 28px;
             }
         }
+    }
+`;
+
+const PickerButton = styled.div`
+    width: 240px;
+    height: 72px;
+    background: #11d0c9;
+    border-radius: 36px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    cursor: pointer;
+
+    ${media.desktop} {
+        width: 200px;
+        height: 60px;
+        font-size: 22px;
+    }
+
+    ${media.tablet} {
+        width: 160px;
+        height: 48px;
+        font-size: 18px;
+        border-radius: 24px;
+    }
+
+    ${media.mobile} {
+        width: 140px;
+        height: 40px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
+`;
+
+const PickerBox = styled.div`
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    gap: 20px;
+`;
+
+const WheelPickerRow = styled.div`
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+`;
+
+const PickerConfirmRow = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+const PickerConfirmButton = styled.button`
+    width: 100px;
+    height: 32px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    background: #11d0c9;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.85;
     }
 `;
 

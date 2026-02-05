@@ -1,10 +1,9 @@
 // src/components/Calendar.tsx
-import React, { useState, useEffect, type JSX } from "react";
+import React, { useState, type JSX } from "react";
 import styled from "styled-components";
 import AddModal from "./AddModal";
 import EditModal from "./EditModal";
-import SummaryModal, { type SummaryRow } from "./SummaryModal";
-import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
+import SummaryModal, { type SummaryRow, type SummaryMode } from "./SummaryModal";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
@@ -22,7 +21,6 @@ interface CalendarProps {
     salaryTargets?: SalaryTarget[];
     currentYear: number;
     currentMonth: number;
-    onMonthChange: (year: number, month: number) => void;
     onWorkLogCreated?: () => void;
     loginMethod?: LoginMethod;
     accessCode?: string;
@@ -44,16 +42,11 @@ interface CalendarProps {
     workerColorHex?: string;
 }
 
-const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
-
-const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
-
 const Calendar: React.FC<CalendarProps> = ({
     workLogsByAccessCode = {},
     salaryTargets = [],
     currentYear,
     currentMonth,
-    onMonthChange,
     onWorkLogCreated,
     loginMethod,
     accessCode,
@@ -70,31 +63,13 @@ const Calendar: React.FC<CalendarProps> = ({
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [pickerOpen, setPickerOpen] = useState(false);
     const [editingWorkLog, setEditingWorkLog] = useState<WorkLog | null>(null);
     const [editingSalaryTarget, setEditingSalaryTarget] = useState<SalaryTarget | undefined>(undefined);
-    const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
-    /** 연/월 피커에서 스크롤로 고른 값 (선택하기 버튼 누르기 전) */
-    const [pendingYear, setPendingYear] = useState(currentYear);
-    const [pendingMonth, setPendingMonth] = useState(currentMonth);
-
-    useEffect(() => {
-        console.log("workAmountData", workAmountData);
-        if (pickerOpen) {
-            setPendingYear(currentYear);
-            setPendingMonth(currentMonth);
-        }
-    }, [pickerOpen, currentYear, currentMonth]);
+    const [summaryModalMode, setSummaryModalMode] = useState<SummaryMode | null>(null);
 
     const DAYS_ORDER = ["일", "월", "화", "수", "목", "금", "토"];
     const daysOfWeek = DAYS_ORDER.slice(calendarStartDay).concat(DAYS_ORDER.slice(0, calendarStartDay));
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-
-    const handleSelectMonthYear = (year: number, month: number) => {
-        onMonthChange(year, month);
-        setPickerOpen(false);
-        setSelectedDate(null);
-    };
 
     const getWorkLogsForDate = (date: Date): Array<{ workLog: WorkLog; salaryTarget?: SalaryTarget }> => {
         const dateStr = format(date, "yyyy-MM-dd");
@@ -206,18 +181,10 @@ const Calendar: React.FC<CalendarProps> = ({
         const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0=Sun .. 6=Sat
         const prevMonthCells = (firstDayOfMonth - calendarStartDay + 7) % 7;
         const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-        const daysInPrev = getDaysInMonth(currentYear, currentMonth - 1);
         const cells: JSX.Element[] = [];
 
-        for (let i = prevMonthCells - 1; i >= 0; i--) {
-            const d = daysInPrev - i;
-            const prevDate = new Date(currentYear, currentMonth - 1, d);
-            const prevDayOfWeek = prevDate.getDay();
-            cells.push(
-                <DayCell key={`prev-${d}`} className="other-month">
-                    <DateNumber dayOfWeek={prevDayOfWeek}>{d}</DateNumber>
-                </DayCell>
-            );
+        for (let i = 0; i < prevMonthCells; i++) {
+            cells.push(<DayCell key={`prev-${i}`} className="other-month" />);
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -265,16 +232,10 @@ const Calendar: React.FC<CalendarProps> = ({
         }
 
         const total = cells.length;
-        const remain = total <= 35 ? 35 - total : 42 - total;
+        const remain = total % 7 === 0 ? 0 : 7 - (total % 7);
 
         for (let d = 1; d <= remain; d++) {
-            const nextDate = new Date(currentYear, currentMonth + 1, d);
-            const nextDayOfWeek = nextDate.getDay();
-            cells.push(
-                <DayCell key={`next-${d}`} className="other-month">
-                    <DateNumber dayOfWeek={nextDayOfWeek}>{d}</DateNumber>
-                </DayCell>
-            );
+            cells.push(<DayCell key={`next-${d}`} className="other-month" />);
         }
         return cells;
     };
@@ -288,9 +249,6 @@ const Calendar: React.FC<CalendarProps> = ({
         <>
             <Container>
                 <TopBar>
-                    <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
-                        {currentYear}년 {currentMonth + 1}월 ˅
-                    </PickerButton>
                     <TopBarTitleBlock>
                         {loginMethod === "accessCode" && pageTitle != null && pageTitle !== "" ? (
                             <TitleText>{pageTitle}</TitleText>
@@ -308,28 +266,19 @@ const Calendar: React.FC<CalendarProps> = ({
                             </>
                         ) : null}
                     </TopBarTitleBlock>
-                    <SummaryCard onClick={() => setIsSummaryModalOpen(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setIsSummaryModalOpen(true)}>
-                        <SummaryLabel>{monthlyLabel}</SummaryLabel>
-                        <SummaryValue>
-                            {displayGross.toLocaleString()} 원 {displayTotalAdvanced != null && <SummarySubLine>선지급 {(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummarySubLine>}
-                        </SummaryValue>
-                        <div>˅</div>
-                    </SummaryCard>
+                    <SummaryCardsWrapper>
+                        <SummaryCard onClick={() => setSummaryModalMode("gross")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("gross")}>
+                            <SummaryLabel>{monthlyLabel}</SummaryLabel>
+                            <SummaryValue>{displayGross.toLocaleString()} 원</SummaryValue>
+                            <div>˅</div>
+                        </SummaryCard>
+                        <SummaryCard onClick={() => setSummaryModalMode("advanced")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("advanced")}>
+                            <SummaryLabel>선지급금</SummaryLabel>
+                            <SummaryValue>{(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummaryValue>
+                            <div>˅</div>
+                        </SummaryCard>
+                    </SummaryCardsWrapper>
                 </TopBar>
-
-                {pickerOpen && (
-                    <PickerBox>
-                        <WheelPickerRow>
-                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} allowDirectInput={false} />
-                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} allowDirectInput={false} />
-                        </WheelPickerRow>
-                        <PickerConfirmRow>
-                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
-                                적용
-                            </PickerConfirmButton>
-                        </PickerConfirmRow>
-                    </PickerBox>
-                )}
 
                 <WeekDays>
                     {daysOfWeek.map((d, index) => {
@@ -371,7 +320,14 @@ const Calendar: React.FC<CalendarProps> = ({
                     }}
                 />
             )}
-            <SummaryModal open={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} title="근무자 별 임금 확인" year={currentYear} month={currentMonth + 1} rows={getSummaryRows()} />
+            <SummaryModal
+                open={summaryModalMode !== null}
+                onClose={() => setSummaryModalMode(null)}
+                year={currentYear}
+                month={currentMonth + 1}
+                rows={getSummaryRows()}
+                mode={summaryModalMode ?? "gross"}
+            />
         </>
     );
 };
@@ -406,42 +362,7 @@ const TopBar = styled.div`
     }
 `;
 
-const PickerButton = styled.div`
-    width: 240px;
-    height: 72px;
-    background: #11d0c9;
-    border-radius: 36px;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    font-weight: 700;
-    cursor: pointer;
-
-    ${media.desktop} {
-        width: 200px;
-        height: 60px;
-        font-size: 22px;
-    }
-
-    ${media.tablet} {
-        width: 160px;
-        height: 48px;
-        font-size: 18px;
-        border-radius: 24px;
-    }
-
-    ${media.mobile} {
-        width: 140px;
-        height: 40px;
-        font-size: 14px;
-        border-radius: 20px;
-    }
-`;
-
 const TopBarTitleBlock = styled.div`
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -519,8 +440,23 @@ const CompanySelect = styled.select`
     }
 `;
 
+const SummaryCardsWrapper = styled.div`
+    display: flex;
+    flex: 1;
+    gap: 16px;
+
+    ${media.tablet} {
+        gap: 12px;
+    }
+
+    ${media.mobile} {
+        gap: 8px;
+    }
+`;
+
 const SummaryCard = styled.div`
-    width: 400px;
+    flex: 1;
+    min-width: 200px;
     height: 72px;
     background: #11d0c9;
     border-radius: 36px;
@@ -528,36 +464,39 @@ const SummaryCard = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 32px;
-    font-size: 26px;
+    padding: 0 24px;
+    font-size: 20px;
     cursor: pointer;
     user-select: none;
+    gap: 12px;
 
     &:hover {
         opacity: 0.95;
     }
 
     ${media.desktop} {
-        width: 340px;
+        min-width: 180px;
         height: 60px;
-        font-size: 22px;
-        padding: 0 24px;
+        font-size: 18px;
+        padding: 0 20px;
     }
 
     ${media.tablet} {
-        width: 280px;
+        min-width: 140px;
         height: 48px;
-        font-size: 16px;
-        padding: 0 20px;
+        font-size: 14px;
+        padding: 0 16px;
         border-radius: 24px;
+        gap: 8px;
     }
 
     ${media.mobile} {
-        width: 200px;
+        min-width: 110px;
         height: 40px;
-        font-size: 12px;
-        padding: 0 16px;
+        font-size: 11px;
+        padding: 0 12px;
         border-radius: 20px;
+        gap: 6px;
     }
 `;
 
@@ -579,61 +518,6 @@ const SummaryValue = styled.div`
 
     ${media.mobile} {
         padding-right: 8px;
-    }
-`;
-
-const SummarySubLine = styled.span`
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-
-    ${media.tablet} {
-        font-size: 12px;
-    }
-
-    ${media.mobile} {
-        font-size: 10px;
-    }
-`;
-
-const PickerBox = styled.div`
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-    gap: 20px;
-`;
-
-const WheelPickerRow = styled.div`
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-`;
-
-const PickerConfirmRow = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    //margin-top: 16px;
-`;
-
-const PickerConfirmButton = styled.button`
-    width: 100px;
-    height: 32px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #fff;
-    background: #11d0c9;
-    border: none;
-    border-radius: 24px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        opacity: 0.9;
     }
 `;
 
