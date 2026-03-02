@@ -83,12 +83,12 @@ export default function AdvancePaymentPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!advanceAmount || advanceAmount > maxAdvanceAmount) {
-            alert("선지급 가능 금액을 초과했습니다.");
+            alert("선정산 가능 금액을 초과했습니다.");
             return;
         }
 
         if (typeof advanceAmount !== "number") {
-            alert("선지급 금액을 입력해주세요.");
+            alert("선정산 금액을 입력해주세요.");
             return;
         }
 
@@ -100,11 +100,11 @@ export default function AdvancePaymentPage() {
                 return;
             }
             await createAdvanceRequest(advanceAmount, accessCode);
-            alert("선지급 요청이 완료되었습니다!");
+            alert("선정산 요청이 완료되었습니다!");
             // 폼 초기화
             setAdvanceAmount("");
         } catch (error: any) {
-            alert(error.response?.data?.message || "선지급 요청에 실패했습니다. 다시 시도해주세요.");
+            alert(error.response?.data?.message || "선정산 요청에 실패했습니다. 다시 시도해주세요.");
         } finally {
             setIsSubmitting(false);
         }
@@ -120,26 +120,26 @@ export default function AdvancePaymentPage() {
     return (
         <PageContainer width="525px">
             <FormCard>
-                <Title>선지급 요청</Title>
+                <Title>선정산 요청</Title>
 
                 <Form onSubmit={handleSubmit}>
                     <RowFieldGroup>
                         <RowLabel>누적 급여</RowLabel>
                         <ControlArea>
-                            <ReadOnlyInput value={`${cumulativeReceived.toLocaleString()} 원`} readOnly />
+                            <ReadOnlyInput value={`${(cumulativeReceived || 0).toLocaleString()} 원`} readOnly />
                         </ControlArea>
                     </RowFieldGroup>
 
                     <RowFieldGroup>
-                        <RowLabel>누적 선지급액</RowLabel>
+                        <RowLabel>누적 선정산액</RowLabel>
                         <ControlArea>
-                            <ReadOnlyInput value={`${cumulativeAdvance.toLocaleString()} 원`} readOnly />
+                            <ReadOnlyInput value={`${(cumulativeAdvance || 0).toLocaleString()} 원`} readOnly />
                         </ControlArea>
                     </RowFieldGroup>
 
                     <RowFieldGroup>
                         <RowLabel>
-                            선지급 금액 <span style={{ fontSize: "12px", color: "#666", fontWeight: "normal" }}>(최대 {maxAdvanceAmount.toLocaleString()}원)</span>
+                            선정산 금액 <span style={{ fontSize: "12px", color: "#666", fontWeight: "normal" }}>(최대 {(maxAdvanceAmount || 0).toLocaleString()}원)</span>
                         </RowLabel>
                         <ControlArea>
                             <InputWrapper>

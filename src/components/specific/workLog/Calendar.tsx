@@ -30,7 +30,7 @@ interface CalendarProps {
     onCompanyChange?: (companyId: number | null) => void;
     /** 페이지 제목 (WorkLogPage에서 계산해 전달) */
     pageTitle?: string;
-    /** accessCode 로그인 시 해당 월 work-amount (총 급여/선지급액 표시용) */
+    /** accessCode 로그인 시 해당 월 work-amount (총 급여/선정산액 표시용) */
     workAmountData?: { grossAmount: number; totalAdvanced: number } | null;
     /** 이메일 로그인 시 근무자별 work-amount (SummaryModal용) */
     workAmountRows?: { workerName: string; grossAmount: number; totalAdvanced: number }[];
@@ -243,7 +243,31 @@ const Calendar: React.FC<CalendarProps> = ({
     const monthlyTotalAmount = getMonthlyTotalAmount();
     const monthlyLabel = "총 급여";
     const displayGross = workAmountData != null ? workAmountData.grossAmount : monthlyTotalAmount;
-    const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced ?? 0 : null;
+    
+    // 선정산금 계산: workAmountData가 있으면 사용, 없으면 workLogs에서 계산
+    let calculatedAdvanced = 0;
+    if (loginMethod === "accessCode" && accessCode) {
+        const logs = workLogsByAccessCode[accessCode] || [];
+        const yearStr = String(currentYear);
+        const monthStr = String(currentMonth + 1).padStart(2, "0");
+        const prefix = `${yearStr}-${monthStr}`;
+        calculatedAdvanced = logs
+            .filter((log) => log.workDate.startsWith(prefix))
+            .reduce((sum, log) => sum + (log.advancedAmount || 0), 0);
+    } else if (loginMethod === "email") {
+        const yearStr = String(currentYear);
+        const monthStr = String(currentMonth + 1).padStart(2, "0");
+        const prefix = `${yearStr}-${monthStr}`;
+        Object.values(workLogsByAccessCode).forEach((logs) => {
+            logs.forEach((log) => {
+                if (log.workDate.startsWith(prefix)) {
+                    calculatedAdvanced += log.advancedAmount || 0;
+                }
+            });
+        });
+    }
+    
+    const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced : calculatedAdvanced;
 
     return (
         <>
@@ -273,7 +297,7 @@ const Calendar: React.FC<CalendarProps> = ({
                             <div>˅</div>
                         </SummaryCard>
                         <SummaryCard onClick={() => setSummaryModalMode("advanced")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("advanced")}>
-                            <SummaryLabel>선지급금</SummaryLabel>
+                            <SummaryLabel>선정산금</SummaryLabel>
                             <SummaryValue>{(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummaryValue>
                             <div>˅</div>
                         </SummaryCard>

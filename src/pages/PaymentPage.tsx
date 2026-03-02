@@ -256,7 +256,7 @@ export default function PaymentPage() {
                         </RowFieldGroup>
 
                         <RowFieldGroup>
-                            <RowLabel>선지급금</RowLabel>
+                            <RowLabel>선정산금</RowLabel>
                             <ControlArea>
                                 <ReadOnlyInput value={`${advancePayment.toLocaleString()} 원`} readOnly />
                             </ControlArea>

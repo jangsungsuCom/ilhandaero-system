@@ -42,6 +42,7 @@ const Footer: React.FC = () => {
                     <FooterCompanyName>(주)피우다컴퍼니</FooterCompanyName>
                     <FooterText>전라남도 광양시 광장로 112-20, 109동(상가동), 303호 | 대표자: 강미선</FooterText>
                     <FooterText>사업자등록번호: 818-86-03417 | 통신판매업번호: 제 2026-전남광양-0043 호 | 전화번호: 1555-6890</FooterText>
+                    <CopyrightText>Copyright © 2026 피우다컴퍼니. All rights reserved.</CopyrightText>
                 </FooterLeft>
                 <FooterRight>
                     <PolicyButton type="button" onClick={() => setOpenPolicy("terms")}>
@@ -75,7 +76,7 @@ export default Footer;
 
 const FooterContainer = styled.footer`
     width: 100%;
-    height: 230px;
+    height: 270px;
     background-color: #001129;
     padding: 40px 90px;
 
@@ -109,6 +110,12 @@ const FooterCompanyName = styled.div`
 `;
 
 const FooterText = styled.div``;
+
+const CopyrightText = styled.div`
+    margin-top: 12px;
+    font-size: 14px;
+    opacity: 0.7;
+`;
 
 const FooterRight = styled.div`
     display: flex;

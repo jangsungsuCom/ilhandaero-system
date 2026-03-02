@@ -8,7 +8,7 @@ export default function AdvanceRequestPage() {
     const [processingId, setProcessingId] = useState<number | null>(null);
 
     const handleApprove = async (request: any) => {
-        if (window.confirm("선지급 요청을 승인하시겠습니까?")) {
+        if (window.confirm("선정산 요청을 승인하시겠습니까?")) {
             setProcessingId(request.requestId);
             try {
                 await approveRequest(request);
@@ -33,7 +33,7 @@ export default function AdvanceRequestPage() {
     };
 
     const handleReject = async (request: any) => {
-        if (window.confirm("선지급 요청을 거절하시겠습니까?")) {
+        if (window.confirm("선정산 요청을 거절하시겠습니까?")) {
             setProcessingId(request.requestId);
             try {
                 await rejectRequest(request);
@@ -46,7 +46,7 @@ export default function AdvanceRequestPage() {
     if (loading) {
         return (
             <Container>
-                <PageTitle>선지급 요청 목록</PageTitle>
+                <PageTitle>선정산 요청 목록</PageTitle>
                 <ContentWrapper>
                     <LoadingText>로딩 중...</LoadingText>
                 </ContentWrapper>
@@ -56,10 +56,10 @@ export default function AdvanceRequestPage() {
 
     return (
         <Container>
-            <PageTitle>선지급 요청 목록</PageTitle>
+            <PageTitle>선정산 요청 목록</PageTitle>
             <ContentWrapper>
                 {requests.length === 0 ? (
-                    <EmptyState>선지급 요청이 없습니다.</EmptyState>
+                    <EmptyState>선정산 요청이 없습니다.</EmptyState>
                 ) : (
                     <Table>
                         <TableHeader>

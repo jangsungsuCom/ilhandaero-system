@@ -57,7 +57,7 @@ export const deleteWorkLog = async (companyId: number, salaryTargetId: number, w
     await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs/${workLogId}`);
 };
 
-// 선지급 요청 관련 API
+// 선정산 요청 관련 API
 export const mypageAdvanceRequestApi = {
     getAdvanceRequests: async (companyId: number, salaryTargetId: number): Promise<MyPageAdvanceRequest[]> => {
         const res = await urlAxios.get<ApiSuccessResponse<MyPageAdvanceRequest[]>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests`);

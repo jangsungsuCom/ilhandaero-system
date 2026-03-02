@@ -3,6 +3,7 @@ import HeaderBg from "../../assets/images/layout/header.png";
 import KakaoLogo from "../../assets/images/layout/kakao_logo.png";
 import styled from "styled-components";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { getLoginMethod, removeAuthToken } from "../../utils/auth";
 import { media } from "../../styles/breakpoints";
 
@@ -38,11 +39,12 @@ const NavBar = () => {
     const navigate = useNavigate();
     const loginMethod = getLoginMethod();
     const isAuthenticated = !!loginMethod;
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const navLinks: NavLink[] = [
         { path: "/work-log", name: "기록하기", requiresAuth: true },
         { path: "/payment", name: "결제하기", requiresAuth: true },
-        { path: "/advance-payment", name: "선지급 요청", requiresAuth: true },
+        { path: "/advance-payment", name: "선정산 요청", requiresAuth: true },
         { path: "/faq", name: "자주묻는 질문" },
         { path: "/mypage", name: "마이페이지", requiresAuth: true },
         { path: "/login", name: isAuthenticated ? "로그아웃" : "로그인" },
@@ -55,23 +57,33 @@ const NavBar = () => {
         }
 
         if (link.path === "/login" && isAuthenticated) {
-            // Handle logout
             removeAuthToken();
             navigate("/login");
             return;
         }
 
         navigate(link.path);
+        setIsMenuOpen(false);
     };
 
     return (
-        <BarContainer>
-            {navLinks.map((link) => (
-                <NavMenu key={link.path} isActive={location.pathname === link.path} onClick={() => handleNavClick(link)}>
-                    {link.name}
-                </NavMenu>
-            ))}
-        </BarContainer>
+        <>
+            <BarContainer>
+                <HamburgerButton onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                    <span />
+                    <span />
+                    <span />
+                </HamburgerButton>
+                <NavLinksContainer $isOpen={isMenuOpen}>
+                    {navLinks.map((link) => (
+                        <NavMenu key={link.path} isActive={location.pathname === link.path} onClick={() => handleNavClick(link)}>
+                            {link.name}
+                        </NavMenu>
+                    ))}
+                </NavLinksContainer>
+            </BarContainer>
+            {isMenuOpen && <Overlay onClick={() => setIsMenuOpen(false)} />}
+        </>
     );
 };
 
@@ -144,6 +156,7 @@ const BarContainer = styled.div`
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    position: relative;
 
     ${media.desktop} {
         width: 720px;
@@ -153,20 +166,115 @@ const BarContainer = styled.div`
     ${media.tablet} {
         width: auto;
         font-size: 14px;
-        gap: 12px;
     }
 
     ${media.mobile} {
-        font-size: 12px;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+        font-size: 14px;
+    }
+`;
+
+const HamburgerButton = styled.button`
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+
+    span {
+        width: 28px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+        transition: all 0.3s linear;
+    }
+
+    ${media.tablet} {
+        display: flex;
+    }
+`;
+
+const NavLinksContainer = styled.div<{ $isOpen: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+
+    ${media.desktop} {
+        gap: 16px;
+    }
+
+    ${media.tablet} {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: 280px;
+        background: rgba(0, 20, 41, 0.98);
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-top: 100px;
+        gap: 24px;
+        transform: translateX(${({ $isOpen }) => ($isOpen ? "0" : "100%")});
+        transition: transform 0.3s ease-in-out;
+        z-index: 1000;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    ${media.mobile} {
+        width: 250px;
+        padding-top: 80px;
+        gap: 20px;
     }
 `;
 
 const NavMenu = styled.div<{ isActive?: boolean }>`
     cursor: pointer;
     color: ${({ isActive }) => (isActive ? "#000000" : "#ffffff")};
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+        opacity: 0.8;
+    }
+
+    ${media.tablet} {
+        font-size: 18px;
+        padding: 12px 24px;
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: ${({ isActive }) => (isActive ? "#00ccc7" : "#ffffff")};
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    }
+
+    ${media.mobile} {
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+`;
+
+const Overlay = styled.div`
+    display: none;
+
+    ${media.tablet} {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
 `;
 
 const PageWrapper = styled.div`

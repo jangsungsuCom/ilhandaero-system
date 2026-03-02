@@ -127,7 +127,7 @@ export default function WorkHistoryPage() {
                     </SummaryMainItem>
                     <SummaryDivider />
                     <SummarySubItem>
-                        <SummaryLabel>선지급액</SummaryLabel>
+                        <SummaryLabel>선정산액</SummaryLabel>
                         <SummaryValue>{workAmount?.totalAdvanced?.toLocaleString() || 0}원</SummaryValue>
                     </SummarySubItem>
                     <SummarySubItem>
@@ -135,7 +135,7 @@ export default function WorkHistoryPage() {
                         <SummaryValue>{workAmount?.available?.toLocaleString() || 0}원</SummaryValue>
                     </SummarySubItem>
                     <SummarySubItem>
-                        <SummaryLabel>최대 선지급 가능액</SummaryLabel>
+                        <SummaryLabel>최대 선정산 가능액</SummaryLabel>
                         <SummaryValue>{workAmount?.maxAdvance?.toLocaleString() || 0}원</SummaryValue>
                     </SummarySubItem>
                 </SummaryCard>

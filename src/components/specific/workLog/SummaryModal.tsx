@@ -5,7 +5,7 @@ import { media } from "../../../styles/breakpoints";
 export interface SummaryRow {
     workerName: string;
     totalAmount: number;
-    /** 선지급액 (원). 없으면 0으로 표시 */
+    /** 선정산액 (원). 없으면 0으로 표시 */
     totalAdvanced?: number;
 }
 
@@ -18,12 +18,12 @@ type Props = {
     year: number;
     month: number; // 1-based (1 = January)
     rows: SummaryRow[];
-    /** 'gross' = 총 급여만, 'advanced' = 선지급금만 */
+    /** 'gross' = 총 급여만, 'advanced' = 선정산금만 */
     mode?: SummaryMode;
 };
 
 const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows, mode = "gross" }) => {
-    const defaultTitle = mode === "gross" ? "총 급여 확인" : "선지급금 확인";
+    const defaultTitle = mode === "gross" ? "총 급여 확인" : "선정산금 확인";
     const dialogRef = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
@@ -94,7 +94,7 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows
                                 <thead>
                                     <tr>
                                         <Th>근무자</Th>
-                                        <Th alignRight>선지급 (원)</Th>
+                                        <Th alignRight>선정산 (원)</Th>
                                     </tr>
                                 </thead>
                                 <tbody>

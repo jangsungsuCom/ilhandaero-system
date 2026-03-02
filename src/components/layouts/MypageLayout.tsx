@@ -27,7 +27,7 @@ export default function MypageLayout() {
             ? [{ path: "/mypage/work-history", name: "근무내역" }]
             : [
                   { path: "/mypage/dashboard", name: "업장 관리" },
-                  { path: "/mypage/advance-requests", name: "선지급 요청" },
+                  { path: "/mypage/advance-requests", name: "선정산 요청" },
               ];
 
     // 로그인 방법에 따라 접근 불가한 경로로 가면 리다이렉트
