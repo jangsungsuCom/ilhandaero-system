@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import BackgroundImage from "../assets/images/home/bg1.png";
-import Bg2 from "../assets/images/home/bg2.png";
+//import Bg2 from "../assets/images/home/bg2.png";
 import LogoImg from "../assets/images/layout/logo1.svg";
 import PaymentButton from "../assets/images/home/PaymentLink.png";
 import DownloadButton from "../assets/images/home/download.png";
@@ -30,17 +30,17 @@ const HomePage = () => {
                         <div style={{ height: "48px" }} />
                         <div className="more">{`더 알아보기 >`}</div>
                     </Introduction>
-                    <BottomContentsContainer>
+                    <KakaoButtonContainer>
+                        <img src={Kakao} style={{ cursor: "pointer" }} />
+                    </KakaoButtonContainer>
+                    <RightBotTriangle>
                         <div>앱스토어 오픈예정</div>
                         <img src={DownloadButton} alt="download" />
-                    </BottomContentsContainer>
-                    <RightBotTriangle>
-                        <img src={Kakao} style={{ cursor: "pointer" }} />
                     </RightBotTriangle>
                 </Content>
             </PageWrapper>
 
-            <img src={Bg2} alt="x" width={"100%"} style={{ marginBottom: 0 }} />
+            {/* <img src={Bg2} alt="x" width={"100%"} style={{ marginBottom: 0 }} /> */}
             <Footer />
         </>
     );
@@ -160,6 +160,8 @@ const RightBotTriangle = styled.div`
     background: linear-gradient(to right, #92f972, #00ccc7);
     clip-path: polygon(100% 100%, 0 100%, 100% 0);
     display: flex;
+    flex-direction: column;
+    color: white;
     justify-content: flex-end;
     align-items: flex-end;
     padding: 20px;
@@ -287,44 +289,35 @@ const NavLink = styled.div`
     }
 `;
 
-const BottomContentsContainer = styled.div`
-    height: 100%;
-    padding: 0 85px 50px 0;
-    font-size: 25px;
-    font-weight: 500;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    justify-content: end;
-    gap: 20px;
+const KakaoButtonContainer = styled.div`
+    z-index: 3;
     position: absolute;
-    bottom: 0;
-    left: 86px;
+    bottom: 240px;
+    right: 40px;
 
-    ${media.desktop} {
-        padding: 0 50px 40px 0;
-        font-size: 20px;
-        left: 50px;
-    }
+    // ${media.desktop} {
+    //     padding: 0 50px 40px 0;
+    //     font-size: 20px;
+    //     left: 50px;
+    // }
 
-    ${media.tablet} {
-        padding: 0 30px 30px 0;
-        font-size: 16px;
-        left: 30px;
-        gap: 12px;
-    }
+    // ${media.tablet} {
+    //     padding: 0 30px 30px 0;
+    //     font-size: 16px;
+    //     left: 30px;
+    //     gap: 12px;
+    // }
 
-    ${media.mobile} {
-        padding: 0 16px 20px 0;
-        font-size: 12px;
-        left: 16px;
-        gap: 8px;
+    // ${media.mobile} {
+    //     padding: 0 16px 20px 0;
+    //     font-size: 12px;
+    //     left: 16px;
+    //     gap: 8px;
 
-        img {
-            width: 100px;
-        }
-    }
+    //     img {
+    //         width: 100px;
+    //     }
+    // }
 `;
 
 const Introduction = styled.div`

@@ -11,22 +11,24 @@ import type { CreateWorkerRequest } from "../../types/mypage";
 const DEFAULT_COLOR = "#00ccc7";
 
 const COLOR_PALETTE: string[] = [
-    "#A8E6CF", // 민트
-    "#88D8B0", // 연두
-    "#B8E0D2", // 청록
-    "#95E1D3", // 아쿠아
-    "#F6D6AD", // 살구
-    "#FFCBA4", // 복숭아
-    "#FFB3BA", // 코랄핑크
-    "#FFDAC1", // 피치
-    "#E2F0CB", // 라임
-    "#B5EAD7", // 세이지
-    "#C7CEEA", // 라벤더
-    "#D4A5A5", // 로즈
-    "#A0CED9", // 스카이블루
-    "#AEC6CF", // 파스텔블루
-    "#CFCFC4", // 웜그레이
-    "#E6E6FA", // 라일락
+    "#fdfab7",
+    "#fdde63",
+    "#fdad68",
+    "#ffd0d0",
+    "#faa3a3",
+    "#f6a9fd",
+    "#c984f8",
+    "#8fd3fd",
+    "#dcf4ff",
+    "#c4d3fa",
+    "#defdd5",
+    "#bdf8a4",
+    "#98cc81",
+    "#cccccc",
+    "#eeeeee",
+    "#edff3b",
+    "#8cff68",
+    "#79dfbc",
 ];
 
 export default function WorkerFormPage() {
@@ -82,7 +84,7 @@ export default function WorkerFormPage() {
             }
             if (result.success && storeId) {
                 dispatch(fetchSalaryTargets(Number(storeId)));
-                navigate(`/mypage/stores/${storeId}/workers`);
+                navigate(`/mypage/dashboard`);
             } else {
                 alert("저장에 실패했습니다.");
             }
@@ -241,7 +243,7 @@ export default function WorkerFormPage() {
                             <SubmitButton type="submit" disabled={loading} style={{ width: "100%" }}>
                                 {loading ? "저장 중..." : isEdit ? "수정" : "등록"}
                             </SubmitButton>
-                            <CancelButton type="button" onClick={() => navigate(`/mypage/stores/${storeId}/workers`)}>
+                            <CancelButton type="button" onClick={() => navigate(`/mypage/dashboard`)}>
                                 취소
                             </CancelButton>
                         </ButtonGroup>
@@ -377,7 +379,9 @@ const ColorSwatch = styled.button<{ $color: string; $selected: boolean }>`
     cursor: pointer;
     padding: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
 
     &:hover {
         transform: scale(1.1);

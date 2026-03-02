@@ -537,7 +537,7 @@ const DayHeader = styled.div<{ isSunday?: boolean; isSaturday?: boolean }>`
 const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 1px 0;
+    gap: 1px;
     background: #e1e1e1;
 `;
 

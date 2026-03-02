@@ -5,6 +5,7 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchCompanies } from "../../store/slices/companySlice";
 import { media } from "../../styles/breakpoints";
+import { WorkerListInline } from "./WorkerListPage";
 
 export default function DashboardPage() {
     const dispatch = useAppDispatch();
@@ -38,10 +39,6 @@ export default function DashboardPage() {
         }
     };
 
-    const handleCardClick = (storeId: number) => {
-        navigate(`/mypage/stores/${storeId}/workers`);
-    };
-
     if (loading) {
         return (
             <Container>
@@ -66,7 +63,7 @@ export default function DashboardPage() {
                 ) : (
                     <StoresGrid>
                         {stores.map((store) => (
-                            <StoreCard key={store.companyId} onClick={() => handleCardClick(store.companyId)}>
+                            <StoreCard key={store.companyId}>
                                 {editingId === store.companyId ? (
                                     <EditForm>
                                         <EditInput type="text" value={editName} onChange={(e) => setEditName(e.target.value)} onClick={(e) => e.stopPropagation()} />
@@ -93,27 +90,32 @@ export default function DashboardPage() {
                                     </EditForm>
                                 ) : (
                                     <>
-                                        <StoreName>{store.name}</StoreName>
-                                        <ActionButtons>
-                                            <ActionButton
-                                                $variant="edit"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEdit(store);
-                                                }}
-                                            >
-                                                수정
-                                            </ActionButton>
-                                            <ActionButton
-                                                $variant="delete"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(store.companyId);
-                                                }}
-                                            >
-                                                삭제
-                                            </ActionButton>
-                                        </ActionButtons>
+                                        <StoreHeader>
+                                            <StoreName>{store.name}</StoreName>
+                                            <ActionButtons>
+                                                <ActionButton
+                                                    $variant="edit"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEdit(store);
+                                                    }}
+                                                >
+                                                    수정
+                                                </ActionButton>
+                                                <ActionButton
+                                                    $variant="delete"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(store.companyId);
+                                                    }}
+                                                >
+                                                    삭제
+                                                </ActionButton>
+                                            </ActionButtons>
+                                        </StoreHeader>
+                                        <InlineWorkersWrapper>
+                                            <WorkerListInline storeId={store.companyId} />
+                                        </InlineWorkersWrapper>
                                     </>
                                 )}
                             </StoreCard>
@@ -150,7 +152,7 @@ const PageTitle = styled.h1`
 `;
 
 const ContentWrapper = styled.div`
-    width: 922px;
+    width: 1200px;
     max-width: 100%;
 
     ${media.desktop} {
@@ -189,32 +191,38 @@ const TextButton = styled.button`
 `;
 
 const StoresGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 20px;
 
     ${media.mobile} {
-        grid-template-columns: 1fr;
         gap: 16px;
     }
 `;
 
 const StoreCard = styled.div`
+    width: 100%;
     background: #f9fbfc;
     padding: 24px;
     border-radius: 12px;
     border: 1.5px solid #00ccc7;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.2s ease;
-
-    &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(0, 204, 199, 0.2);
-    }
 
     ${media.mobile} {
         padding: 16px;
     }
+`;
+
+const InlineWorkersWrapper = styled.div`
+    margin-top: 16px;
+`;
+
+const StoreHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 `;
 
 const StoreName = styled.h3`

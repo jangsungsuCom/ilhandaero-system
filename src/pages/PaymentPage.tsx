@@ -9,10 +9,11 @@ import type { RootState } from "../store/store";
 import { fetchCompanies, setSelectedCompany } from "../store/slices/companySlice";
 import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
 import { getWorkAmount } from "../utils/workLog";
-import { postSalaryPay } from "../utils/paymentApi";
+//import { postSalaryPay } from "../utils/paymentApi";
 import { getLoginMethod } from "../utils/auth";
 import { RiShareBoxLine } from "react-icons/ri";
 import type { DeductionType } from "../types/salaryTarget";
+import { calculateDeduction } from "../utils/calculateDeduction";
 
 export default function PaymentPage() {
     const dispatch = useAppDispatch();
@@ -37,12 +38,12 @@ export default function PaymentPage() {
     const [additionalPayment, setAdditionalPayment] = useState<number>(0);
     const [additionalPaymentDescription, setAdditionalPaymentDescription] = useState<string>("");
     const [deductionType, setDeductionType] = useState<DeductionType | undefined>(undefined);
-    const [isCardPaying, setIsCardPaying] = useState(false);
+    //const [isCardPaying, setIsCardPaying] = useState(false);
 
     // 3.3% 공제액 계산 (1의 자리 버림)
     const totalBeforeDeduction = available + additionalPayment;
-    const calculatedDeduction = deductionType === "THREE_POINT_THREE" ? Math.floor((totalBeforeDeduction * 0.033) / 10) * 10 : 0;
-    const netPayment = totalBeforeDeduction - calculatedDeduction;
+    const calculatedDeduction = calculateDeduction(basicSalary + weeklyAllowance, deductionType || "NONE");
+    const netPayment = totalBeforeDeduction - calculatedDeduction.total;
 
     // 이메일 로그인 시 업장 목록 로드
     useEffect(() => {
@@ -117,34 +118,34 @@ export default function PaymentPage() {
     };
     const dateRangeDisplay = workPeriod?.from && workPeriod?.to ? `${format(workPeriod.from, "yyyy.MM.dd")} ~ ${format(workPeriod.to, "yyyy.MM.dd")}` : "근무기간 선택";
 
-    const handleCardPay = async () => {
-        if (!selectedCompanyId) {
-            alert("업장을 선택해주세요.");
-            return;
-        }
-        if (!selectedEmployeeId) {
-            alert("직원을 선택해주세요.");
-            return;
-        }
-        if (!fromStr || !toStr) {
-            alert("근무기간을 선택해주세요.");
-            return;
-        }
-        setIsCardPaying(true);
-        try {
-            await postSalaryPay(selectedCompanyId, selectedEmployeeId, fromStr, toStr, {
-                extraPay: additionalPayment,
-                extraMemo: additionalPaymentDescription || "",
-            });
-            alert("일반 급여 지급 처리되었습니다.");
-            window.location.reload();
-        } catch (err: unknown) {
-            const message = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-            alert(message || "일반 급여 지급 처리에 실패했습니다.");
-        } finally {
-            setIsCardPaying(false);
-        }
-    };
+    // const handleCardPay = async () => {
+    //     if (!selectedCompanyId) {
+    //         alert("업장을 선택해주세요.");
+    //         return;
+    //     }
+    //     if (!selectedEmployeeId) {
+    //         alert("직원을 선택해주세요.");
+    //         return;
+    //     }
+    //     if (!fromStr || !toStr) {
+    //         alert("근무기간을 선택해주세요.");
+    //         return;
+    //     }
+    //     setIsCardPaying(true);
+    //     try {
+    //         await postSalaryPay(selectedCompanyId, selectedEmployeeId, fromStr, toStr, {
+    //             extraPay: additionalPayment,
+    //             extraMemo: additionalPaymentDescription || "",
+    //         });
+    //         alert("일반 급여 지급 처리되었습니다.");
+    //         window.location.reload();
+    //     } catch (err: unknown) {
+    //         const message = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+    //         alert(message || "일반 급여 지급 처리에 실패했습니다.");
+    //     } finally {
+    //         setIsCardPaying(false);
+    //     }
+    // };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,7 +167,7 @@ export default function PaymentPage() {
         <>
             <PageContainer width="525px">
                 <FormCard>
-                    <Title>급여 결제</Title>
+                    <Title>정산금액 지급</Title>
 
                     <Form onSubmit={handleSubmit}>
                         <RowFieldGroup>
@@ -219,8 +220,9 @@ export default function PaymentPage() {
                             <RowLabel>시급</RowLabel>
                             <ControlArea>
                                 <InputWrapper>
-                                    <Input type="number" value={hourlyWage} onChange={(e) => setHourlyWage(e.target.value ? Number(e.target.value) : "")} placeholder="시급 입력" min={0} disabled />
-                                    <Unit>원</Unit>
+                                    {/* <Input type="number" value={hourlyWage} onChange={(e) => setHourlyWage(e.target.value ? Number(e.target.value) : "")} placeholder="시급 입력" min={0} disabled /> */}
+
+                                    <ReadOnlyInput value={`${hourlyWage.toLocaleString()} 원`} readOnly />
                                 </InputWrapper>
                             </ControlArea>
                         </RowFieldGroup>
@@ -240,7 +242,7 @@ export default function PaymentPage() {
                         </RowFieldGroup>
 
                         <RowFieldGroup>
-                            <RowLabel>기본급여</RowLabel>
+                            <RowLabel>기본 정산금</RowLabel>
                             <ControlArea>
                                 <ReadOnlyInput value={`${basicSalary.toLocaleString()} 원`} readOnly />
                             </ControlArea>
@@ -297,13 +299,21 @@ export default function PaymentPage() {
                         <RowFieldGroup>
                             <RowLabel>전체 공제액</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${calculatedDeduction.toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${calculatedDeduction.total.toLocaleString()} 원`} readOnly />
+                                {Object.entries(calculatedDeduction).map(([key, value], i) => {
+                                    if (i === 0) return null;
+                                    return (
+                                        <div style={{ fontSize: "14px", color: "#666" }}>
+                                            {key}: {value.toLocaleString()} 원
+                                        </div>
+                                    );
+                                })}
                             </ControlArea>
                         </RowFieldGroup>
                         <SectionDivider />
                         <RowFieldGroup>
                             <RowLabel>
-                                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#00ccc7" }}>실급여</div>
+                                <div style={{ fontSize: "16px", fontWeight: "bold", color: "#00ccc7" }}>최종 정산금</div>
                             </RowLabel>
                             <ControlArea>
                                 <ReadOnlyInput value={`${netPayment.toLocaleString()} 원`} readOnly />
@@ -317,16 +327,16 @@ export default function PaymentPage() {
                         </AgreementRow>
 
                         <PrimaryActionButton type="submit">
-                            급여명세서 전송하기
+                            정산내역서 결제 후 전송하기
                             <RiShareBoxLine style={{ fontSize: "24px", color: "white", marginLeft: "10px" }} />
                         </PrimaryActionButton>
 
-                        <PaymentButtonsRow>
+                        {/* <PaymentButtonsRow>
                             <PaymentButton type="button" onClick={handleCardPay} disabled={isCardPaying}>
                                 {isCardPaying ? "처리 중..." : "카드결제"}
                             </PaymentButton>
                             <PaymentButton type="button">송금하기</PaymentButton>
-                        </PaymentButtonsRow>
+                        </PaymentButtonsRow> */}
                     </Form>
                 </FormCard>
             </PageContainer>
@@ -388,31 +398,31 @@ const PrimaryActionButton = styled.button`
     }
 `;
 
-const PaymentButtonsRow = styled.div`
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-`;
+// const PaymentButtonsRow = styled.div`
+//     display: flex;
+//     justify-content: center;
+//     gap: 20px;
+// `;
 
-const PaymentButton = styled.button`
-    width: 212px;
-    height: 63px;
-    border-radius: 10px;
-    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
-    border: 2px solid transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 21px;
-    letter-spacing: 2px;
-    color: #ffffff;
-    font-weight: 800;
-    cursor: pointer;
+// const PaymentButton = styled.button`
+//     width: 212px;
+//     height: 63px;
+//     border-radius: 10px;
+//     background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+//     border: 2px solid transparent;
+//     display: flex;
+//     align-items: center;
+//     justify-content: center;
+//     font-size: 21px;
+//     letter-spacing: 2px;
+//     color: #ffffff;
+//     font-weight: 800;
+//     cursor: pointer;
 
-    &:hover {
-        border-color: #00ccc7;
-    }
-`;
+//     &:hover {
+//         border-color: #00ccc7;
+//     }
+// `;
 
 const AgreementRow = styled.div`
     display: flex;

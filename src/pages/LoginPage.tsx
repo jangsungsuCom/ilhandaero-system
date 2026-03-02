@@ -20,6 +20,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [autoLogin, setAutoLogin] = useState(false);
 
     useEffect(() => {
         if (location.state?.message) {
@@ -125,6 +126,11 @@ export default function LoginPage() {
                     <SubmitButton type="submit" disabled={isLoading}>
                         {isLoading ? "로그인 중..." : "로그인"}
                     </SubmitButton>
+
+                    <AutoLoginRow>
+                        <AutoLoginCheckbox type="checkbox" id="autoLogin" checked={autoLogin} onChange={(e) => setAutoLogin(e.target.checked)} />
+                        <AutoLoginLabel htmlFor="autoLogin">자동 로그인</AutoLoginLabel>
+                    </AutoLoginRow>
                 </Form>
 
                 {loginMethod === "email" && (
@@ -211,6 +217,29 @@ const SuccessText = styled.p`
     ${media.mobile} {
         font-size: 13px;
     }
+`;
+
+const AutoLoginRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+`;
+
+const AutoLoginCheckbox = styled.input`
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #00ccc7;
+    cursor: pointer;
+    accent-color: #00ccc7;
+`;
+
+const AutoLoginLabel = styled.label`
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
 `;
 
 const LoginFormCard = styled(FormCard)`

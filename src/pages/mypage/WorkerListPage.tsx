@@ -101,6 +101,75 @@ export default function WorkerListPage() {
     );
 }
 
+export function WorkerListInline({ storeId }: { storeId: number }) {
+    const { workers, loading } = useMypageWorkers(storeId);
+    const navigate = useNavigate();
+
+    if (loading) {
+        return (
+            <InlineWrapper>
+                <LoadingText>로딩 중...</LoadingText>
+            </InlineWrapper>
+        );
+    }
+
+    return (
+        <InlineWrapper>
+            <InlineHeader>
+                <InlineTitle>직원 목록</InlineTitle>
+                <TextButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/new`)}>+ 직원 등록</TextButton>
+            </InlineHeader>
+
+            {workers.length === 0 ? (
+                <EmptyState>등록된 직원이 없습니다. 직원을 등록해주세요.</EmptyState>
+            ) : (
+                <InlineTableWrapper>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHeaderCell>색상</TableHeaderCell>
+                                <TableHeaderCell>이름</TableHeaderCell>
+                                <TableHeaderCell>전화번호</TableHeaderCell>
+                                <TableHeaderCell>시급</TableHeaderCell>
+                                <TableHeaderCell>지급일</TableHeaderCell>
+                                <TableHeaderCell>은행</TableHeaderCell>
+                                <TableHeaderCell>계좌번호</TableHeaderCell>
+                                <TableHeaderCell>주휴수당</TableHeaderCell>
+                                <TableHeaderCell>고용형태</TableHeaderCell>
+                                <TableHeaderCell>접근코드</TableHeaderCell>
+                                <TableHeaderCell>작업</TableHeaderCell>
+                            </TableRow>
+                        </TableHeader>
+                        <tbody>
+                            {workers.map((worker) => (
+                                <TableRow key={worker.id}>
+                                    <TableCell>
+                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
+                                    </TableCell>
+                                    <TableCell>{worker.workerName}</TableCell>
+                                    <TableCell>{worker.phoneNumber}</TableCell>
+                                    <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
+                                    <TableCell>{worker.payDay}일</TableCell>
+                                    <TableCell>{worker.bankName}</TableCell>
+                                    <TableCell>{worker.accountNumber}</TableCell>
+                                    <TableCell>{worker.weeklyAllowanceEnabled ? "적용" : "미적용"}</TableCell>
+                                    <TableCell>{getDeductionLabel(worker.deductionType)}</TableCell>
+                                    <TableCell>
+                                        <AccessCode>{worker.accessCode}</AccessCode>
+                                    </TableCell>
+                                    <TableCell>
+                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </tbody>
+                    </Table>
+                </InlineTableWrapper>
+            )}
+        </InlineWrapper>
+    );
+}
+
 const Container = styled.div`
     width: 100%;
     display: flex;
@@ -133,6 +202,29 @@ const ContentWrapper = styled.div`
     ${media.desktop} {
         width: 100%;
     }
+`;
+
+const InlineWrapper = styled.div`
+    margin-top: 16px;
+`;
+
+const InlineHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+`;
+
+const InlineTitle = styled.h4`
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+`;
+
+const InlineTableWrapper = styled.div`
+    width: 100%;
+    overflow-x: auto;
 `;
 
 const Header = styled.div`
