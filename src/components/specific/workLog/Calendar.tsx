@@ -243,31 +243,7 @@ const Calendar: React.FC<CalendarProps> = ({
     const monthlyTotalAmount = getMonthlyTotalAmount();
     const monthlyLabel = "총 급여";
     const displayGross = workAmountData != null ? workAmountData.grossAmount : monthlyTotalAmount;
-    
-    // 선정산금 계산: workAmountData가 있으면 사용, 없으면 workLogs에서 계산
-    let calculatedAdvanced = 0;
-    if (loginMethod === "accessCode" && accessCode) {
-        const logs = workLogsByAccessCode[accessCode] || [];
-        const yearStr = String(currentYear);
-        const monthStr = String(currentMonth + 1).padStart(2, "0");
-        const prefix = `${yearStr}-${monthStr}`;
-        calculatedAdvanced = logs
-            .filter((log) => log.workDate.startsWith(prefix))
-            .reduce((sum, log) => sum + (log.advancedAmount || 0), 0);
-    } else if (loginMethod === "email") {
-        const yearStr = String(currentYear);
-        const monthStr = String(currentMonth + 1).padStart(2, "0");
-        const prefix = `${yearStr}-${monthStr}`;
-        Object.values(workLogsByAccessCode).forEach((logs) => {
-            logs.forEach((log) => {
-                if (log.workDate.startsWith(prefix)) {
-                    calculatedAdvanced += log.advancedAmount || 0;
-                }
-            });
-        });
-    }
-    
-    const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced : calculatedAdvanced;
+    const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced : 0;
 
     return (
         <>

@@ -220,9 +220,7 @@ export default function PaymentPage() {
                             <RowLabel>시급</RowLabel>
                             <ControlArea>
                                 <InputWrapper>
-                                    {/* <Input type="number" value={hourlyWage} onChange={(e) => setHourlyWage(e.target.value ? Number(e.target.value) : "")} placeholder="시급 입력" min={0} disabled /> */}
-
-                                    <ReadOnlyInput value={`${hourlyWage.toLocaleString()} 원`} readOnly />
+                                    <ReadOnlyInput value={`${(hourlyWage || 0).toLocaleString()} 원`} readOnly />
                                 </InputWrapper>
                             </ControlArea>
                         </RowFieldGroup>
@@ -244,28 +242,28 @@ export default function PaymentPage() {
                         <RowFieldGroup>
                             <RowLabel>기본 정산금</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${basicSalary.toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${(basicSalary || 0).toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 
                         <RowFieldGroup>
                             <RowLabel>주휴수당</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${weeklyAllowance.toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${(weeklyAllowance || 0).toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 
                         <RowFieldGroup>
                             <RowLabel>선정산금</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${advancePayment.toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${(advancePayment || 0).toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 
                         <RowFieldGroup>
                             <RowLabel>잔여금액</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${available.toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${(available || 0).toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 

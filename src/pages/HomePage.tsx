@@ -35,7 +35,7 @@ const HomePage = () => {
                         <img src={Kakao} style={{ cursor: "pointer" }} />
                     </KakaoButtonContainer>
                     <RightBotTriangle>
-                        <div>앱스토어 오픈예정</div>
+                        <AppStoreText>앱스토어 오픈예정</AppStoreText>
                         <img src={DownloadButton} alt="download" />
                     </RightBotTriangle>
                 </Content>
@@ -128,7 +128,7 @@ const PageWrapper = styled.div`
 const BackgroundOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.1);
     z-index: 1;
 `;
 
@@ -176,23 +176,23 @@ const RightBotTriangle = styled.div`
     color: white;
     justify-content: flex-end;
     align-items: flex-end;
-    padding: 20px;
+    padding: 80px 50px 35px 20px;
+    gap: 0.75em;
 
     ${media.desktop} {
         width: 750px;
         height: 180px;
+        padding: 64px 40px 28px 16px;
     }
 
     ${media.tablet} {
         width: 500px;
         height: 120px;
-        padding: 16px;
+        padding: 49px 30px 21px 16px;
     }
 
     ${media.mobile} {
-        width: 300px;
-        height: 80px;
-        padding: 12px;
+        display: none;
     }
 
     img {
@@ -208,44 +208,70 @@ const RightBotTriangle = styled.div`
     }
 `;
 
-const Logo = styled.img`
-    width: 224px;
-    margin-right: 358px;
-    flex-shrink: 0;
-    object-fit: contain;
+const AppStoreText = styled.div`
+    transform: translate(-10px, 0px);
+    font-size: 130%;
 
     ${media.desktop} {
-        width: 168px;
-        margin-right: 60px;
+        transform: translate(-8px, 4px);
     }
 
     ${media.tablet} {
-        width: 126px;
-        margin-right: 30px;
+        transform: translate(-6px, 8px);
     }
 
     ${media.mobile} {
-        width: 84px;
+        transform: translate(-4px, 12px);
+    }
+`;
+
+const Logo = styled.img`
+    width: 435px;
+    margin-right: 100px;
+    flex-shrink: 0;
+    object-fit: contain;
+    position: relative;
+    left: -40px;
+    top: -20px;
+
+    ${media.desktop} {
+        width: 325px;
+        margin-right: 60px;
+        left: -32px;
+        top: -16px;
+    }
+
+    ${media.tablet} {
+        width: 245px;
+        margin-right: 30px;
+        left: -24px;
+        top: -12px;
+    }
+
+    ${media.mobile} {
+        width: 163px;
         margin-right: 0;
+        left: -16px;
+        top: -8px;
     }
 `;
 
 const PaymentBtnContainer = styled.img`
     position: absolute;
-    top: 494px;
-    right: 100px;
+    top: 514px;
+    right: 70px;
     width: auto;
     max-width: 300px;
 
     ${media.desktop} {
-        top: 380px;
-        right: 60px;
+        top: 396px;
+        right: 36px;
         max-width: 240px;
     }
 
     ${media.tablet} {
-        top: 280px;
-        right: 40px;
+        top: 292px;
+        right: 22px;
         max-width: 180px;
     }
 
@@ -266,19 +292,20 @@ const NavContainer = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 100px;
 
     ${media.desktop} {
         height: 180px;
         padding: 0 50px;
         font-size: 18px;
+        gap: 60px;
     }
 
     ${media.tablet} {
         height: 120px;
         padding: 0 30px;
         font-size: 14px;
-        gap: 12px;
+        gap: 40px;
     }
 
     ${media.mobile} {
@@ -316,10 +343,10 @@ const HamburgerButton = styled.button`
 const NavLinksContainer = styled.div<{ $isOpen: boolean }>`
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 100px;
 
     ${media.desktop} {
-        gap: 16px;
+        gap: 60px;
     }
 
     ${media.tablet} {
@@ -391,37 +418,22 @@ const Overlay = styled.div`
 const KakaoButtonContainer = styled.div`
     z-index: 3;
     position: absolute;
-    bottom: 240px;
+    bottom: 193px;
     right: 40px;
 
-    // ${media.desktop} {
-    //     padding: 0 50px 40px 0;
-    //     font-size: 20px;
-    //     left: 50px;
-    // }
+    img {
+        width: 90%;
+        height: 90%;
+    }
 
-    // ${media.tablet} {
-    //     padding: 0 30px 30px 0;
-    //     font-size: 16px;
-    //     left: 30px;
-    //     gap: 12px;
-    // }
-
-    // ${media.mobile} {
-    //     padding: 0 16px 20px 0;
-    //     font-size: 12px;
-    //     left: 16px;
-    //     gap: 8px;
-
-    //     img {
-    //         width: 100px;
-    //     }
-    // }
+    ${media.mobile} {
+        display: none;
+    }
 `;
 
 const Introduction = styled.div`
     position: absolute;
-    top: 351px;
+    top: 366px;
     left: 94px;
     color: white;
 
@@ -452,10 +464,12 @@ const Introduction = styled.div`
         color: #14cec5;
         font-weight: 500;
         cursor: pointer;
+        position: relative;
+        left: 8px;
     }
 
     ${media.desktop} {
-        top: 260px;
+        top: 272px;
         left: 50px;
 
         .title {
@@ -473,7 +487,7 @@ const Introduction = styled.div`
     }
 
     ${media.tablet} {
-        top: 180px;
+        top: 189px;
         left: 30px;
 
         .title {
@@ -492,7 +506,7 @@ const Introduction = styled.div`
     }
 
     ${media.mobile} {
-        top: 110px;
+        top: 121px;
         left: 16px;
 
         .title {
