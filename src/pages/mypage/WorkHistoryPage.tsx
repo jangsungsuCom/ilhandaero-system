@@ -379,7 +379,7 @@ const WorkLogTable = styled.table`
     border: 1.5px solid #00ccc7;
 
     ${media.mobile} {
-        min-width: 320px;
+        min-width: 120px;
         border-radius: 8px;
     }
 `;
@@ -426,7 +426,8 @@ const TableCell = styled.td`
     }
 
     ${media.mobile} {
-        font-size: 3.2vw;
+        font-size: clamp(8px, 3.2vw, 16px);
+        //font-size: 3.2vw;
         padding: 10px 8px;
     }
 `;
