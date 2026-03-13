@@ -114,7 +114,7 @@ const MenuTab = styled.div<{ $isActive: boolean }>`
     padding: 12px 24px;
     font-size: 18px;
     font-weight: 600;
-    color: ${({ $isActive }) => ($isActive ? "#00ccc7" : "#888")};
+    color: ${({ $isActive }) => ($isActive ? "#00ccc7" : "#000")};
     background: transparent;
     border-bottom: 3px solid transparent;
     cursor: pointer;
