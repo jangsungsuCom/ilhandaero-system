@@ -315,7 +315,7 @@ const Calendar: React.FC<CalendarProps> = ({
                             </WorkTimeBadge>
                         );
                     })}
-                </DayCell>
+                </DayCell>,
             );
         }
 
@@ -350,10 +350,10 @@ const Calendar: React.FC<CalendarProps> = ({
                                 <BulkCancelButton onClick={toggleBulkEditMode}>취소</BulkCancelButton>
                             </BulkEditActions>
                         ) : (
-                            <>
-                                <BulkEditToggle onClick={toggleBulkEditMode}>선택 수정</BulkEditToggle>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 {headerRight}
-                            </>
+                                <BulkEditToggle onClick={toggleBulkEditMode}>선택 수정</BulkEditToggle>
+                            </div>
                         )}
                     </HeaderRightArea>
                 </Row1>
@@ -693,7 +693,6 @@ const SummaryCard = styled.div`
     }
 `;
 
-
 const SummaryValue = styled.div`
     flex: 1;
     display: flex;
@@ -739,7 +738,7 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 1px;
-    background: rgba(0,0,0,0.1);
+    background: rgba(0, 0, 0, 0.1);
 `;
 
 const DayCell = styled.div`
@@ -754,7 +753,7 @@ const DayCell = styled.div`
     }
 
     &.selected {
-        background: rgba(0,204,199,0.1);
+        background: rgba(0, 204, 199, 0.1);
     }
 
     ${media.desktop} {
@@ -805,7 +804,11 @@ const WorkTimeBadge = styled.div<{ $color?: string; $bulkMode?: boolean; $checke
     margin-top: 8px;
     color: #000;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s, filter 0.2s, opacity 0.2s;
+    transition:
+        background-color 0.2s,
+        transform 0.1s,
+        filter 0.2s,
+        opacity 0.2s;
     opacity: ${({ $bulkMode, $checked }) => ($bulkMode && !$checked ? 0.6 : 1)};
 
     &:hover {
@@ -861,14 +864,22 @@ const BulkCheckbox = styled.span<{ $checked: boolean }>`
     ${media.tablet} {
         width: 10px;
         height: 10px;
-        &::after { font-size: 8px; top: -2px; left: 0; }
+        &::after {
+            font-size: 8px;
+            top: -2px;
+            left: 0;
+        }
     }
 
     ${media.mobile} {
         width: 8px;
         height: 8px;
         border-width: 1px;
-        &::after { font-size: 6px; top: -2px; left: 0; }
+        &::after {
+            font-size: 6px;
+            top: -2px;
+            left: 0;
+        }
     }
 `;
 
