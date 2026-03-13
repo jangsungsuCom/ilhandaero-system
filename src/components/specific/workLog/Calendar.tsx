@@ -811,10 +811,10 @@ const WorkTimeBadge = styled.div<{ $color?: string; $bulkMode?: boolean; $checke
         opacity 0.2s;
     opacity: ${({ $bulkMode, $checked }) => ($bulkMode && !$checked ? 0.6 : 1)};
 
-    &:hover {
-        filter: brightness(0.9);
-        transform: scale(1.05);
-    }
+    // &:hover {
+    //     filter: brightness(0.9);
+    //     transform: scale(1.05);
+    // }
 
     ${media.desktop} {
         width: 120px;
