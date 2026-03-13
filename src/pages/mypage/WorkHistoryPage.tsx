@@ -426,6 +426,7 @@ const TableCell = styled.td`
     }
 
     ${media.mobile} {
+        font-size: 3.2vw;
         padding: 10px 8px;
     }
 `;
