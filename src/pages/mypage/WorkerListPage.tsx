@@ -4,13 +4,14 @@ import { useMypageWorkers } from "../../hooks/useMypageWorkers";
 import { useMypageStores } from "../../hooks/useMypageStores";
 import type { DeductionType } from "../../types/mypage";
 import { media } from "../../styles/breakpoints";
+import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 
 function getDeductionLabel(type?: DeductionType): string {
     switch (type) {
         case "FOUR_INSURANCE":
             return "4대보험";
         case "THREE_POINT_THREE":
-            return "3.3% 원천징수";
+            return "3.3%";
         default:
             return "-";
     }
@@ -54,7 +55,7 @@ export default function WorkerListPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHeaderCell>색상</TableHeaderCell>
+                                <TableHeaderCell>작업</TableHeaderCell>
                                 <TableHeaderCell>이름</TableHeaderCell>
                                 <TableHeaderCell>전화번호</TableHeaderCell>
                                 <TableHeaderCell>시급</TableHeaderCell>
@@ -64,15 +65,15 @@ export default function WorkerListPage() {
                                 <TableHeaderCell>주휴수당</TableHeaderCell>
                                 <TableHeaderCell>고용형태</TableHeaderCell>
                                 <TableHeaderCell>접근코드</TableHeaderCell>
+                                <TableHeaderCell>색상</TableHeaderCell>
                                 {/* <TableHeaderCell>상태</TableHeaderCell> */}
-                                <TableHeaderCell>작업</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
                         <tbody>
                             {workers.map((worker) => (
                                 <TableRow key={worker.id}>
                                     <TableCell>
-                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
+                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
                                     </TableCell>
                                     <TableCell>{worker.workerName}</TableCell>
                                     <TableCell>{worker.phoneNumber}</TableCell>
@@ -85,12 +86,12 @@ export default function WorkerListPage() {
                                     <TableCell>
                                         <AccessCode>{worker.accessCode}</AccessCode>
                                     </TableCell>
+                                    <TableCell>
+                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
+                                    </TableCell>
                                     {/* <TableCell>
                                         <StatusBadge $status={worker.codeStatus}>{worker.codeStatus === "ACTIVE" ? "활성" : "비활성"}</StatusBadge>
                                     </TableCell> */}
-                                    <TableCell>
-                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </tbody>
@@ -127,7 +128,7 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHeaderCell>색상</TableHeaderCell>
+                                <TableHeaderCell>작업</TableHeaderCell>
                                 <TableHeaderCell>이름</TableHeaderCell>
                                 <TableHeaderCell>전화번호</TableHeaderCell>
                                 <TableHeaderCell>시급</TableHeaderCell>
@@ -137,14 +138,14 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
                                 <TableHeaderCell>주휴수당</TableHeaderCell>
                                 <TableHeaderCell>고용형태</TableHeaderCell>
                                 <TableHeaderCell>접근코드</TableHeaderCell>
-                                <TableHeaderCell>작업</TableHeaderCell>
+                                <TableHeaderCell>색상</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
                         <tbody>
                             {workers.map((worker) => (
                                 <TableRow key={worker.id}>
                                     <TableCell>
-                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
+                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
                                     </TableCell>
                                     <TableCell>{worker.workerName}</TableCell>
                                     <TableCell>{worker.phoneNumber}</TableCell>
@@ -158,7 +159,7 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
                                         <AccessCode>{worker.accessCode}</AccessCode>
                                     </TableCell>
                                     <TableCell>
-                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
+                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -177,19 +178,17 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 0 0 30px 0;
     align-self: flex-start;
 
     ${media.tablet} {
-        font-size: 24px;
         margin-bottom: 20px;
     }
 
     ${media.mobile} {
-        font-size: 20px;
         margin-bottom: 16px;
     }
 `;
@@ -216,10 +215,10 @@ const InlineHeader = styled.div`
 `;
 
 const InlineTitle = styled.h4`
+    ${mypageSubtitle}
     margin: 0;
-    font-size: 16px;
     font-weight: 600;
-    color: #2c3e50;
+    color: #000;
 `;
 
 const InlineTableWrapper = styled.div`
@@ -248,47 +247,39 @@ const ButtonGroup = styled.div`
 `;
 
 const TextButton = styled.button`
+    ${mypageContent}
     background: none;
     border: none;
-    color: #00a8a5;
-    font-size: 18px;
+    color: #00ccc7;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00cbc7;
-    }
-
-    ${media.mobile} {
-        font-size: 14px;
+        color: #00ccc7;
     }
 `;
 
 const BackButton = styled.button`
+    ${mypageContent}
     background: none;
     border: none;
-    color: #555;
-    font-size: 18px;
+    color: #000;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #333;
-    }
-
-    ${media.mobile} {
-        font-size: 14px;
+        color: #000;
     }
 `;
 
 const Table = styled.table`
     width: 100%;
     min-width: 900px;
-    background: white;
+    background: transparent;
     border-radius: 12px;
     overflow: hidden;
     border-collapse: collapse;
@@ -296,14 +287,14 @@ const Table = styled.table`
 `;
 
 const TableHeader = styled.thead`
-    background-color: #f0f9f8;
+    background-color: #ffffff;
 `;
 
 const TableRow = styled.tr`
     border-bottom: 1px solid #e0e0e0;
 
     &:hover {
-        background-color: #f9fbfc;
+        background-color: #ffffff;
     }
 
     &:last-child {
@@ -312,28 +303,26 @@ const TableRow = styled.tr`
 `;
 
 const TableHeaderCell = styled.th`
+    ${mypageContent}
     padding: 16px;
     text-align: left;
     font-weight: 600;
-    color: #2c3e50;
-    font-size: 14px;
+    color: #000;
     white-space: nowrap;
 
     ${media.tablet} {
         padding: 12px 8px;
-        font-size: 13px;
     }
 `;
 
 const TableCell = styled.td`
+    ${mypageContent}
     padding: 16px;
-    color: #555;
-    font-size: 14px;
+    color: #000;
     white-space: nowrap;
 
     ${media.tablet} {
         padding: 12px 8px;
-        font-size: 13px;
     }
 `;
 
@@ -348,15 +337,14 @@ const ColorDot = styled.span<{ $color: string }>`
 `;
 
 const AccessCode = styled.code`
+    ${mypageContent}
     background-color: #f0f0f0;
     padding: 4px 8px;
     border-radius: 6px;
     font-family: monospace;
-    font-size: 13px;
-    color: #2c3e50;
+    color: #000;
 
     ${media.tablet} {
-        font-size: 11px;
         padding: 3px 6px;
     }
 `;
@@ -371,11 +359,11 @@ const AccessCode = styled.code`
 // `;
 
 const ActionButton = styled.button`
+    ${mypageContent}
     padding: 4px 8px;
     width: 48px;
     border: none;
     border-radius: 8px;
-    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: #00cbc7;
@@ -388,25 +376,23 @@ const ActionButton = styled.button`
 `;
 
 const EmptyState = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;
 
 const LoadingText = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;

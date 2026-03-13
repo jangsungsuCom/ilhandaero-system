@@ -87,8 +87,7 @@ const EmailInputContainer = styled.div`
     width: 100%;
 
     ${media.mobile} {
-        flex-wrap: wrap;
-        gap: 6px;
+        gap: 4px;
     }
 `;
 
@@ -100,41 +99,42 @@ const EmailIdInput = styled.input`
     font-size: 17px;
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
-    background: #f9fbfc;
+    background: #ffffff;
+    color: #000;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     &::placeholder {
-        color: #aaa;
+        color: #000;
     }
 
     &:disabled {
-        background: #f0f4f4;
-        color: #555;
+        background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
     }
 
     ${media.mobile} {
         height: 46px;
-        font-size: 16px;
-        padding: 0 12px;
+        font-size: 14px;
+        padding: 0 8px;
         flex: 1;
-        min-width: 80px;
+        min-width: 0;
     }
 `;
 
 const AtSymbol = styled.span`
     font-size: 17px;
-    color: #666;
+    color: #000;
     flex-shrink: 0;
 
     ${media.mobile} {
-        font-size: 16px;
+        font-size: 14px;
     }
 `;
 
@@ -145,30 +145,33 @@ const EmailDomainInput = styled.input`
     font-size: 17px;
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
-    background: #f9fbfc;
+    background: #ffffff;
+    color: #000;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     &::placeholder {
-        color: #aaa;
+        color: #000;
     }
 
     &:disabled {
-        background: #f0f4f4;
-        color: #555;
+        background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
     }
 
     ${media.mobile} {
-        width: 90px;
+        width: auto;
+        min-width: 70px;
+        flex: 1;
         height: 46px;
-        font-size: 14px;
-        padding: 0 8px;
+        font-size: 13px;
+        padding: 0 6px;
     }
 `;
 
@@ -185,19 +188,21 @@ const EmailDomainSelect = styled.select`
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
     }
 
     &:disabled {
-        background: #f0f4f4;
+        background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
     }
 
     ${media.mobile} {
-        width: 100%;
+        width: auto;
+        min-width: 80px;
         height: 46px;
-        font-size: 14px;
-        margin-top: 4px;
+        font-size: 13px;
+        padding: 0 4px;
     }
 `;
 
@@ -211,6 +216,10 @@ export const PageContainer = styled.div<{ width?: string }>`
 
     ${media.mobile} {
         padding: 24px 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
     }
 `;
 
@@ -228,7 +237,7 @@ export const FormCard = styled.div`
 export const Title = styled.h1`
     font-size: 28px;
     font-weight: bold;
-    color: #00a8a5;
+    color: #00ccc7;
     text-align: center;
     margin: 0 0 40px 0;
 
@@ -262,7 +271,7 @@ export const FieldGroup = styled.div`
 export const Label = styled.label`
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: #00ccc7;
 `;
 
 export const Input = styled.input`
@@ -272,22 +281,23 @@ export const Input = styled.input`
     font-size: 17px;
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
-    background: #f9fbfc;
+    background: #ffffff;
+    color: #000;
     transition: all 0.2s ease;
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     &::placeholder {
-        color: #aaa;
+        color: #000;
     }
 
     &:disabled {
-        background: #f0f4f4;
-        color: #555;
+        background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
     }
 
@@ -311,8 +321,8 @@ export const Input = styled.input`
 `;
 
 export const ReadOnlyInput = styled(Input)`
-    background: #f0f4f4;
-    color: #555;
+    background: #f5f5f5;
+    color: #000;
     cursor: default;
 `;
 
@@ -325,7 +335,7 @@ export const InputWrapper = styled.div`
 export const Unit = styled.span`
     position: absolute;
     right: 16px;
-    color: #00a8a5;
+    color: #00ccc7;
     font-weight: 600;
     pointer-events: none;
 `;
@@ -336,7 +346,7 @@ export const SubmitButton = styled.button`
     font-size: 22px;
     font-weight: bold;
     color: white;
-    background: linear-gradient(135deg, #00cbc7 0%, #4dd0ae 100%);
+    background: #00ccc7;
     border: none;
     border-radius: 16px;
     cursor: pointer;
@@ -370,7 +380,7 @@ export const SubmitButton = styled.button`
 
 export const HelperText = styled.p`
     font-size: 13px;
-    color: #e57373;
+    color: #000;
     margin: 4px 0 0 4px;
 `;
 
@@ -379,14 +389,14 @@ export const Divider = styled.div`
     align-items: center;
     text-align: center;
     margin: 20px 0;
-    color: #999;
+    color: #000;
     font-size: 14px;
 
     &::before,
     &::after {
         content: "";
         flex: 1;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid #000;
     }
 
     &::before {
@@ -403,15 +413,15 @@ export const ToggleButton = styled.button<{ isActive: boolean }>`
     padding: 8px 16px;
     font-size: 14px;
     font-weight: 600;
-    border: 1.5px solid ${({ isActive }) => (isActive ? "#00a8a5" : "#ddd")};
+    border: 1.5px solid ${({ isActive }) => (isActive ? "#00ccc7" : "#000")};
     border-radius: 8px;
-    background: ${({ isActive }) => (isActive ? "#00a8a5" : "white")};
-    color: ${({ isActive }) => (isActive ? "white" : "#666")};
+    background: ${({ isActive }) => (isActive ? "#00ccc7" : "white")};
+    color: ${({ isActive }) => (isActive ? "white" : "#000")};
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        border-color: #00a8a5;
-        background: ${({ isActive }) => (isActive ? "#00a8a5" : "#f0f9f8")};
+        border-color: #00ccc7;
+        background: ${({ isActive }) => (isActive ? "#00ccc7" : "#fff")};
     }
 `;

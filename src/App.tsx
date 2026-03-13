@@ -19,6 +19,7 @@ import WorkerListPage from "./pages/mypage/WorkerListPage";
 import WorkerFormPage from "./pages/mypage/WorkerFormPage";
 import AdvanceRequestPage from "./pages/mypage/AdvanceRequestPage";
 import WorkHistoryPage from "./pages/mypage/WorkHistoryPage";
+import MyInfoPage from "./pages/mypage/MyInfoPage";
 import FAQPage from "./pages/FAQPage";
 import FindEmailPage from "./pages/FindEmailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -126,6 +127,14 @@ function App() {
                                 element={
                                     <ProtectedRoute allowedMethods={["email"]}>
                                         <AdvanceRequestPage />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="profile"
+                                element={
+                                    <ProtectedRoute allowedMethods={["email"]}>
+                                        <MyInfoPage />
                                     </ProtectedRoute>
                                 }
                             />

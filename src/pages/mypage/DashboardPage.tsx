@@ -5,6 +5,7 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchCompanies } from "../../store/slices/companySlice";
 import { media } from "../../styles/breakpoints";
+import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 import { WorkerListInline } from "./WorkerListPage";
 
 export default function DashboardPage() {
@@ -134,19 +135,17 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
-    margin: 0 0 30px 0;
+    color: #00ccc7;
+    margin: 0 0 30px 3px;
     align-self: flex-start;
 
     ${media.tablet} {
-        font-size: 24px;
         margin-bottom: 20px;
     }
 
     ${media.mobile} {
-        font-size: 20px;
         margin-bottom: 16px;
     }
 `;
@@ -165,6 +164,7 @@ const Header = styled.div`
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 30px;
+    padding-right: 14px;
 
     ${media.tablet} {
         margin-bottom: 20px;
@@ -172,21 +172,17 @@ const Header = styled.div`
 `;
 
 const TextButton = styled.button`
+    ${mypageContent}
     background: none;
     border: none;
-    color: #00a8a5;
-    font-size: 18px;
+    color: #00ccc7;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00cbc7;
-    }
-
-    ${media.mobile} {
-        font-size: 16px;
+        color: #00ccc7;
     }
 `;
 
@@ -202,7 +198,7 @@ const StoresGrid = styled.div`
 
 const StoreCard = styled.div`
     width: 100%;
-    background: #f9fbfc;
+    background: #ffffff;
     padding: 24px;
     border-radius: 12px;
     border: 1.5px solid #00ccc7;
@@ -226,13 +222,12 @@ const StoreHeader = styled.div`
 `;
 
 const StoreName = styled.h3`
+    ${mypageSubtitle}
     margin: 0 0 16px 0;
-    font-size: 20px;
     font-weight: 600;
-    color: #2c3e50;
+    color: #000;
 
     ${media.mobile} {
-        font-size: 18px;
         margin-bottom: 12px;
     }
 `;
@@ -244,15 +239,14 @@ const EditForm = styled.div`
 `;
 
 const EditInput = styled.input`
+    ${mypageContent}
     width: 100%;
     padding: 12px;
     border: 1.5px solid #00ccc7;
     border-radius: 8px;
-    font-size: 16px;
 
     ${media.mobile} {
         padding: 10px;
-        font-size: 14px;
     }
 `;
 
@@ -262,11 +256,11 @@ const ActionButtons = styled.div`
 `;
 
 const ActionButton = styled.button<{ $variant?: "edit" | "delete" | "save" | "cancel" }>`
+    ${mypageContent}
     flex: 1;
     padding: 8px 16px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -275,26 +269,26 @@ const ActionButton = styled.button<{ $variant?: "edit" | "delete" | "save" | "ca
         switch (props.$variant) {
             case "delete":
                 return `
-                    background-color: #e74c3c;
+                    background: #00ccc7;
                     color: white;
                     &:hover {
-                        background-color: #c0392b;
+                        opacity: 0.85;
                     }
                 `;
             case "save":
                 return `
-                    background-color: #00cbc7;
+                    background-color: #00ccc7;
                     color: white;
                     &:hover {
-                        background-color: #00a8a5;
+                        background-color: #00ccc7;
                     }
                 `;
             case "cancel":
                 return `
-                    background-color: #95a5a6;
+                    background-color: #000;
                     color: white;
                     &:hover {
-                        background-color: #7f8c8d;
+                        background-color: #000;
                     }
                 `;
             default:
@@ -310,30 +304,27 @@ const ActionButton = styled.button<{ $variant?: "edit" | "delete" | "save" | "ca
 
     ${media.mobile} {
         padding: 6px 12px;
-        font-size: 13px;
     }
 `;
 
 const EmptyState = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;
 
 const LoadingText = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;

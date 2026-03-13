@@ -6,29 +6,28 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchSalaryTargets } from "../../store/slices/salaryTargetSlice";
 import { FormCard, Form, FieldGroup, Label, Input, SubmitButton } from "../../components/common/FormCard";
+import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 import type { CreateWorkerRequest } from "../../types/mypage";
 
 const DEFAULT_COLOR = "#00ccc7";
 
 const COLOR_PALETTE: string[] = [
-    "#fdfab7",
-    "#fdde63",
-    "#fdad68",
-    "#ffd0d0",
-    "#faa3a3",
-    "#f6a9fd",
-    "#c984f8",
-    "#8fd3fd",
-    "#dcf4ff",
-    "#c4d3fa",
-    "#defdd5",
-    "#bdf8a4",
-    "#98cc81",
-    "#cccccc",
-    "#eeeeee",
-    "#edff3b",
-    "#8cff68",
-    "#79dfbc",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
+    "#00ccc7",
+    "#000",
 ];
 
 export default function WorkerFormPage() {
@@ -102,7 +101,7 @@ export default function WorkerFormPage() {
                 {store?.name || "업장"} - {isEdit ? "직원 수정" : "직원 등록"}
             </PageTitle>
             <ContentWrapper>
-                <FormCard>
+                <TransparentFormCard>
                     <Form onSubmit={handleSubmit}>
                         <FieldGroup>
                             <Label>이름</Label>
@@ -216,7 +215,7 @@ export default function WorkerFormPage() {
                                     onClick={() => setFormData({ ...formData, deductionType: "THREE_POINT_THREE" })}
                                 >
                                     <CheckboxCircle $checked={formData.deductionType === "THREE_POINT_THREE"} />
-                                    <span>3.3% 원천징수</span>
+                                    <span>3.3%</span>
                                 </CheckboxOption>
                             </CheckboxRow>
                         </FieldGroup>
@@ -236,11 +235,11 @@ export default function WorkerFormPage() {
                                     />
                                 ))}
                             </ColorPalette>
-                            <ColorValue>{formData.colorHex}</ColorValue>
+                            {/* <ColorValue>{formData.colorHex}</ColorValue> */}
                         </FieldGroup>
 
                         <ButtonGroup>
-                            <SubmitButton type="submit" disabled={loading} style={{ width: "100%" }}>
+                            <SubmitButton type="submit" disabled={loading} style={{ width: "100%", marginTop: 0 }}>
                                 {loading ? "저장 중..." : isEdit ? "수정" : "등록"}
                             </SubmitButton>
                             <CancelButton type="button" onClick={() => navigate(`/mypage/dashboard`)}>
@@ -248,7 +247,7 @@ export default function WorkerFormPage() {
                             </CancelButton>
                         </ButtonGroup>
                     </Form>
-                </FormCard>
+                </TransparentFormCard>
             </ContentWrapper>
         </Container>
     );
@@ -261,15 +260,19 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 0 0 30px 0;
     align-self: flex-start;
 `;
 
+const TransparentFormCard = styled(FormCard)`
+    background: transparent;
+`;
+
 const ContentWrapper = styled.div`
-    width: 922px; /* 1152px * 0.8 = 921.6px */
+    width: 922px;
     max-width: 100%;
 `;
 
@@ -285,10 +288,10 @@ const Select = styled.select`
     width: 100%;
     height: 52px;
     padding: 0 16px;
-    font-size: 17px;
+    ${mypageContent}
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
-    background: #f9fbfc;
+    background: #ffffff;
     transition: all 0.2s ease;
     appearance: none;
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300a8a5%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
@@ -299,7 +302,7 @@ const Select = styled.select`
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
@@ -308,26 +311,26 @@ const Select = styled.select`
     }
 
     &:disabled {
-        background: #f0f4f4;
-        color: #555;
+        background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
     }
 `;
 
 const CancelButton = styled.button`
+    ${mypageSubtitle}
     width: 100%;
     height: 62px;
-    font-size: 22px;
     font-weight: bold;
     color: white;
-    background: #95a5a6;
+    background: #000;
     border: none;
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: #7f8c8d;
+        background: #000;
     }
 `;
 
@@ -338,11 +341,11 @@ const CheckboxRow = styled.div`
 `;
 
 const CheckboxOption = styled.button`
+    ${mypageContent}
     display: inline-flex;
     align-items: center;
     gap: 10px;
     padding: 0;
-    font-size: 16px;
     border: none;
     background: transparent;
     cursor: pointer;
@@ -359,7 +362,7 @@ const CheckboxCircle = styled.span<{ $checked: boolean }>`
     height: 18px;
     border-radius: 50%;
     flex-shrink: 0;
-    border: 1.5px solid #009a96;
+    border: 1.5px solid #00ccc7;
     background: ${({ $checked }) => ($checked ? "#00ccc7" : "transparent")};
     transition: background 0.2s ease;
 `;
@@ -375,7 +378,7 @@ const ColorSwatch = styled.button<{ $color: string; $selected: boolean }>`
     height: 36px;
     border-radius: 50%;
     background: ${({ $color }) => $color};
-    border: 3px solid ${({ $selected }) => ($selected ? "#1a1a1a" : "transparent")};
+    border: 3px solid ${({ $selected }) => ($selected ? "#000" : "transparent")};
     cursor: pointer;
     padding: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -387,11 +390,4 @@ const ColorSwatch = styled.button<{ $color: string; $selected: boolean }>`
         transform: scale(1.1);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
-`;
-
-const ColorValue = styled.span`
-    display: block;
-    margin-top: 8px;
-    font-size: 14px;
-    color: #666;
 `;

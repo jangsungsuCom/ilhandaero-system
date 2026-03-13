@@ -6,6 +6,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { getLoginMethod, removeAuthToken } from "../../utils/auth";
 import { media } from "../../styles/breakpoints";
+import NotificationBell from "../common/NotificationBell";
 
 interface NavLink {
     path: string;
@@ -15,13 +16,17 @@ interface NavLink {
 
 const PageLayout = () => {
     const navigate = useNavigate();
+    const loginMethod = getLoginMethod();
 
     return (
         <LayoutContainer>
             <Header>
                 <HeaderRow>
                     <Logo src={LogoImg} alt="logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }} />
-                    <NavBar />
+                    <RightSection>
+                        {loginMethod === "email" && <NotificationBell />}
+                        <NavBar />
+                    </RightSection>
                 </HeaderRow>
             </Header>
             <PageWrapper>
@@ -103,24 +108,24 @@ const Header = styled.div`
     width: 100%;
     height: 542px;
     margin: 0 auto;
-    padding: 54px 98px 0 84px;
+    padding: 4px 98px 0 84px;
     background-image: url(${HeaderBg});
     background-size: cover;
     background-position: center;
 
     ${media.desktop} {
         height: 420px;
-        padding: 40px 60px 0 60px;
+        padding: 0 60px 0 60px;
     }
 
     ${media.tablet} {
         height: 320px;
-        padding: 30px 30px 0 30px;
+        padding: 0 30px 0 30px;
     }
 
     ${media.mobile} {
         height: 240px;
-        padding: 20px 16px 0 16px;
+        padding: 0 16px 0 16px;
     }
 `;
 
@@ -132,19 +137,29 @@ const HeaderRow = styled.div`
 `;
 
 const Logo = styled.img`
-    width: 310px;
+    width: 372px;
     object-fit: contain;
 
     ${media.desktop} {
-        width: 240px;
+        width: 288px;
     }
 
     ${media.tablet} {
-        width: 180px;
+        width: 216px;
     }
 
     ${media.mobile} {
-        width: 140px;
+        width: 168px;
+    }
+`;
+
+const RightSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    ${media.mobile} {
+        gap: 8px;
     }
 `;
 
@@ -157,6 +172,7 @@ const BarContainer = styled.div`
     justify-content: space-between;
     gap: 16px;
     position: relative;
+    margin-right: 5px;
 
     ${media.desktop} {
         width: 720px;
@@ -215,7 +231,9 @@ const NavLinksContainer = styled.div<{ $isOpen: boolean }>`
         right: 0;
         height: 100vh;
         width: 280px;
-        background: rgba(0, 20, 41, 0.98);
+        background-image: url(${HeaderBg});
+        background-size: cover;
+        background-position: center;
         flex-direction: column;
         justify-content: flex-start;
         padding-top: 100px;
@@ -244,21 +262,22 @@ const NavMenu = styled.div<{ isActive?: boolean }>`
     }
 
     ${media.tablet} {
-        font-size: 18px;
-        padding: 12px 24px;
+        font-size: 22px;
+        padding: 14px 24px;
         width: 100%;
         text-align: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        color: ${({ isActive }) => (isActive ? "#00ccc7" : "#ffffff")};
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        color: ${({ isActive }) => (isActive ? "#ffffff" : "rgba(255, 255, 255, 0.85)")};
 
         &:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
         }
     }
 
     ${media.mobile} {
-        font-size: 16px;
-        padding: 10px 20px;
+        font-size: 19px;
+        padding: 12px 20px;
     }
 `;
 
@@ -302,6 +321,9 @@ const PageWrapper = styled.div`
     }
 
     ${media.mobile} {
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
         padding: 24px 16px;
         margin-top: -100px;
         border-radius: 16px 16px 0 0;

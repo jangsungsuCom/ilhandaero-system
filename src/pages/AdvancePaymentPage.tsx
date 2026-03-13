@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
-import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, ReadOnlyInput, InputWrapper, Unit } from "../components/common/FormCard";
+import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, InputWrapper, Unit } from "../components/common/FormCard";
+import { media } from "../styles/breakpoints";
 import { getWorkAmount, createAdvanceRequest, getWorkerInfo } from "../utils/workLog";
 import { getAccessCode } from "../utils/auth";
 
@@ -70,7 +71,7 @@ export default function AdvancePaymentPage() {
                 const response = await getWorkAmount(accessCode, from, to);
                 console.log("response", response);
                 setCumulativeReceived(response.data.grossAmount);
-                setCumulativeAdvance(response.data.totalAdvanced);
+                setCumulativeAdvance(response.data.totalAdvanced ?? response.data.totalAdvancedInPeriod ?? 0);
                 setMaxAdvanceAmount(response.data.maxAdvance);
             } catch (error) {
                 console.error("Failed to load work amount:", error);
@@ -118,93 +119,162 @@ export default function AdvancePaymentPage() {
     };
 
     return (
-        <PageContainer width="525px">
-            <FormCard>
-                <Title>선정산 요청</Title>
+        <PageWrap>
+            <PageContainer width="100%">
+                <FormCard>
+                    <Title>선정산 요청</Title>
 
-                <Form onSubmit={handleSubmit}>
-                    <RowFieldGroup>
-                        <RowLabel>누적 급여</RowLabel>
-                        <ControlArea>
-                            <ReadOnlyInput value={`${(cumulativeReceived || 0).toLocaleString()} 원`} readOnly />
-                        </ControlArea>
-                    </RowFieldGroup>
+                    <Form onSubmit={handleSubmit}>
+                        <SummarySection>
+                            <SummaryItem>
+                                <SummaryLabel>누적 급여</SummaryLabel>
+                                <SummaryValue>{(cumulativeReceived || 0).toLocaleString()} 원</SummaryValue>
+                            </SummaryItem>
+                            <SummaryItem>
+                                <SummaryLabel>지급된 선정산액</SummaryLabel>
+                                <SummaryValue>{(cumulativeAdvance || 0).toLocaleString()} 원</SummaryValue>
+                            </SummaryItem>
+                            <SummaryItem>
+                                <SummaryLabel>선정산 가능 금액</SummaryLabel>
+                                <SummaryValue>{(maxAdvanceAmount || 0).toLocaleString()} 원</SummaryValue>
+                            </SummaryItem>
+                        </SummarySection>
 
-                    <RowFieldGroup>
-                        <RowLabel>누적 선정산액</RowLabel>
-                        <ControlArea>
-                            <ReadOnlyInput value={`${(cumulativeAdvance || 0).toLocaleString()} 원`} readOnly />
-                        </ControlArea>
-                    </RowFieldGroup>
+                        <SectionDivider />
 
-                    <RowFieldGroup>
-                        <RowLabel>
-                            선정산 금액 <span style={{ fontSize: "12px", color: "#666", fontWeight: "normal" }}>(최대 {(maxAdvanceAmount || 0).toLocaleString()}원)</span>
-                        </RowLabel>
-                        <ControlArea>
-                            <InputWrapper>
-                                <Input type="number" value={advanceAmount} onChange={handleAdvanceAmountChange} placeholder="금액 입력" min={0} max={maxAdvanceAmount} />
-                                <Unit>원</Unit>
-                            </InputWrapper>
-                        </ControlArea>
-                    </RowFieldGroup>
+                        <RowFieldGroup>
+                            <RowLabel>선정산 요청 금액</RowLabel>
+                            <ControlArea>
+                                <InputWrapper>
+                                    <Input type="number" value={advanceAmount} onChange={handleAdvanceAmountChange} placeholder="금액 입력" min={0} max={maxAdvanceAmount} />
+                                    <Unit>원</Unit>
+                                </InputWrapper>
+                            </ControlArea>
+                        </RowFieldGroup>
 
-                    <RowFieldGroup>
-                        <RowLabel>사용이용료</RowLabel>
-                        <ControlArea>
-                            <InputWrapper>
-                                <Input type="number" value={fee} onChange={(e) => setFee(e.target.value ? Number(e.target.value) : "")} placeholder="0" disabled />
-                                <Unit>원</Unit>
-                            </InputWrapper>
-                        </ControlArea>
-                    </RowFieldGroup>
+                        <RowFieldGroup>
+                            <RowLabel>이용료</RowLabel>
+                            <ControlArea>
+                                <InputWrapper>
+                                    <Input type="number" value={fee} onChange={(e) => setFee(e.target.value ? Number(e.target.value) : "")} placeholder="0" disabled />
+                                    <Unit>원</Unit>
+                                </InputWrapper>
+                            </ControlArea>
+                        </RowFieldGroup>
 
-                    <SectionDivider />
+                        <SectionDivider />
 
-                    <RequestButton type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "요청 중..." : "요청하기"}
-                    </RequestButton>
-                </Form>
-            </FormCard>
-        </PageContainer>
+                        <RequestButton type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "요청 중..." : "요청하기"}
+                        </RequestButton>
+                    </Form>
+                </FormCard>
+            </PageContainer>
+        </PageWrap>
     );
 }
+
+const PageWrap = styled.div`
+    width: 525px;
+    max-width: 100%;
+
+    ${media.mobile} {
+        width: 100%;
+    }
+`;
+
+const SummarySection = styled.div`
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    ${media.mobile} {
+        flex-direction: column;
+        gap: 16px;
+    }
+`;
+
+const SummaryItem = styled.div`
+    flex: 1;
+    background: #f0faf9;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+const SummaryLabel = styled.span`
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const SummaryValue = styled.span`
+    font-size: 22px;
+    font-weight: 700;
+    color: #00ccc7;
+
+    ${media.mobile} {
+        font-size: 20px;
+    }
+`;
 
 const RowFieldGroup = styled(FieldGroup)`
     flex-direction: row;
     align-items: center;
     gap: 60px;
+
+    ${media.mobile} {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
 `;
 
 const RowLabel = styled(Label)`
     flex: 1;
     text-align: right;
+
+    ${media.mobile} {
+        text-align: left;
+        flex: none;
+    }
 `;
 
 const ControlArea = styled.div`
     width: 330px;
+
+    ${media.mobile} {
+        width: 100%;
+    }
 `;
 
 const SectionDivider = styled.div`
     border-top: 1px solid #bebebe;
-    margin: 8px 0 20px;
+    margin: 16px 0;
 `;
 
 const RequestButton = styled.button`
-    width: 212px;
+    width: 446px;
+    max-width: 100%;
     height: 63px;
     border-radius: 10px;
-    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    background: #00ccc7;
     border: 2px solid transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 21px;
+    font-size: 22px;
     letter-spacing: 2px;
     color: #ffffff;
     font-weight: 800;
     cursor: pointer;
-    margin: 20px auto 0;
+    margin: 16px auto 0;
 
     &:hover:not(:disabled) {
         border-color: #00ccc7;
@@ -213,5 +283,11 @@ const RequestButton = styled.button`
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        height: 52px;
+        font-size: 18px;
     }
 `;

@@ -150,7 +150,7 @@ const DialogTitle = styled.h2`
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #000;
 
     ${media.mobile} {
         font-size: 18px;
@@ -165,13 +165,13 @@ const CloseButton = styled.button`
     background: none;
     font-size: 24px;
     line-height: 1;
-    color: #666;
+    color: #000;
     cursor: pointer;
     border-radius: 8px;
 
     &:hover {
         background: #f0f0f0;
-        color: #1a1a1a;
+        color: #000;
     }
 `;
 
@@ -196,7 +196,7 @@ const SettingRow = styled.div`
 const Label = styled.label`
     font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: #000;
 
     ${media.mobile} {
         font-size: 13px;
@@ -209,12 +209,12 @@ const Select = styled.select`
     border: 1px solid #ddd;
     border-radius: 8px;
     background: #fff;
-    color: #1a1a1a;
+    color: #000;
     cursor: pointer;
 
     &:focus {
         outline: none;
-        border-color: #11d0c9;
+        border-color: #00ccc7;
     }
 
     ${media.mobile} {
@@ -234,7 +234,7 @@ const ApplyButton = styled.button`
     font-size: 15px;
     font-weight: 600;
     color: #fff;
-    background: #11d0c9;
+    background: #00ccc7;
     border: none;
     border-radius: 8px;
     cursor: pointer;

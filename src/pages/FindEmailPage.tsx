@@ -106,12 +106,12 @@ const FindEmailFormCard = styled(FormCard)`
 
 const ErrorText = styled.p`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin: -8px 0 0 4px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 
     ${media.mobile} {
         font-size: 13px;
@@ -128,14 +128,14 @@ const ResultContainer = styled.div`
 
 const ResultText = styled.p`
     font-size: 16px;
-    color: #333;
+    color: #000;
     margin: 0;
 `;
 
 const EmailText = styled.p`
     font-size: 24px;
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 8px 0;
 `;
 
@@ -152,9 +152,9 @@ const SecondaryButton = styled.button`
     height: 52px;
     font-size: 18px;
     font-weight: 600;
-    color: #00a8a5;
+    color: #00ccc7;
     background: white;
-    border: 1.5px solid #00a8a5;
+    border: 1.5px solid #00ccc7;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -177,13 +177,13 @@ const BackLink = styled.div`
 const BackButton = styled.button`
     background: none;
     border: none;
-    color: #666;
+    color: #000;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     padding: 0;
 
     &:hover {
-        color: #00a8a5;
+        color: #00ccc7;
     }
 `;

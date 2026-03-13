@@ -183,7 +183,7 @@ const ResetPasswordFormCard = styled(FormCard)`
 const StepIndicator = styled.div`
     font-size: 14px;
     font-weight: 600;
-    color: #00a8a5;
+    color: #00ccc7;
     margin-bottom: 20px;
     padding: 8px 12px;
     background: #f0f9f8;
@@ -193,12 +193,12 @@ const StepIndicator = styled.div`
 
 const ErrorText = styled.p`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin: -8px 0 0 4px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 
     ${media.mobile} {
         font-size: 13px;
@@ -216,13 +216,13 @@ const ResultContainer = styled.div`
 const ResultText = styled.p`
     font-size: 20px;
     font-weight: 700;
-    color: #333;
+    color: #000;
     margin: 0;
 `;
 
 const ResultSubText = styled.p`
     font-size: 14px;
-    color: #666;
+    color: #000;
     margin: 0 0 20px 0;
 `;
 
@@ -234,13 +234,13 @@ const BackLink = styled.div`
 const BackButton = styled.button`
     background: none;
     border: none;
-    color: #666;
+    color: #000;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     padding: 0;
 
     &:hover {
-        color: #00a8a5;
+        color: #00ccc7;
     }
 `;

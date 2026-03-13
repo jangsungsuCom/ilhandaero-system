@@ -1,0 +1,104 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getLoginMethod } from "../utils/auth";
+import { getAllNotifications, markActivityAsRead, markAllActivitiesAsRead } from "../utils/notificationApi";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchCompanies } from "../store/slices/companySlice";
+import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
+import type { NotificationItem } from "../types/notification";
+
+const POLL_INTERVAL = 60_000;
+
+export function useNotifications() {
+    const loginMethod = getLoginMethod();
+    const isOwner = loginMethod === "email";
+
+    const dispatch = useAppDispatch();
+    const companies = useAppSelector((s) => s.company.companies);
+    const salaryTargetsByCompany = useAppSelector((s) => s.salaryTarget.salaryTargetsByCompany);
+
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const hasFetchedTargets = useRef(false);
+
+    useEffect(() => {
+        if (!isOwner) return;
+        if (companies.length === 0) {
+            dispatch(fetchCompanies());
+        }
+    }, [isOwner, companies.length, dispatch]);
+
+    useEffect(() => {
+        if (!isOwner || companies.length === 0 || hasFetchedTargets.current) return;
+        hasFetchedTargets.current = true;
+        for (const c of companies) {
+            if (!salaryTargetsByCompany[c.companyId]) {
+                dispatch(fetchSalaryTargets(c.companyId));
+            }
+        }
+    }, [isOwner, companies, salaryTargetsByCompany, dispatch]);
+
+    const load = useCallback(async () => {
+        if (!isOwner || companies.length === 0) return;
+
+        const hasTargets = companies.some(
+            (c) => (salaryTargetsByCompany[c.companyId] ?? []).length > 0
+        );
+        if (!hasTargets) return;
+
+        setIsLoading(true);
+        try {
+            const items = await getAllNotifications(companies, salaryTargetsByCompany);
+            setNotifications(items);
+        } catch {
+            // silent
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isOwner, companies, salaryTargetsByCompany]);
+
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    useEffect(() => {
+        if (!isOwner) return;
+        timerRef.current = setInterval(load, POLL_INTERVAL);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isOwner, load]);
+
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+    const markAsRead = useCallback(
+        async (item: NotificationItem) => {
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
+            );
+            await markActivityAsRead(item.companyId, item.salaryTargetId, item.id);
+        },
+        []
+    );
+
+    const markAllAsRead = useCallback(async () => {
+        const unreadItems = notifications.filter((n) => !n.isRead);
+        if (unreadItems.length === 0) return;
+
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+
+        const grouped = new Map<string, number[]>();
+        for (const item of unreadItems) {
+            const key = `${item.companyId}:${item.salaryTargetId}`;
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key)!.push(item.id);
+        }
+
+        for (const [key] of grouped) {
+            const [cId, stId] = key.split(":").map(Number);
+            await markAllActivitiesAsRead(cId, stId);
+        }
+    }, [notifications]);
+
+    return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, refresh: load };
+}

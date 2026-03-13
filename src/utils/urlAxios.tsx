@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
-import { getAuthToken, getLoginMethod } from "./auth";
+import { getAuthToken, getLoginMethod, removeAuthToken } from "./auth";
 
 const urlAxios: AxiosInstance = axios.create({
     baseURL: "https://ilhandaero.com/api/v1",
@@ -31,9 +31,8 @@ urlAxios.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Handle unauthorized access
-            localStorage.removeItem("accessToken");
-            window.location.href = "/login";
+            removeAuthToken();
+            window.location.href = "/login?session_expired=1";
         }
         return Promise.reject(error);
     }

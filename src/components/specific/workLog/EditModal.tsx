@@ -285,14 +285,14 @@ const TimeDisplayRow = styled.div`
 const TimeDisplay = styled.span`
     font-size: 18px;
     font-weight: 600;
-    color: #2c3e50;
+    color: #000;
 `;
 
 const EditTimeButton = styled.button`
     padding: 6px 14px;
     font-size: 14px;
     font-weight: 600;
-    color: #00a8a5;
+    color: #00ccc7;
     background: #fff;
     border: 1.5px solid #00ccc7;
     border-radius: 8px;
@@ -317,12 +317,12 @@ const MinutePickerWrap = styled.div`
 
 const ErrorText = styled.div`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin-top: 12px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 `;
 
 const ModalFooter = styled.div`
@@ -338,7 +338,7 @@ const SaveButton = styled.button`
     width: 200px;
     height: 56px;
     border-radius: 10px;
-    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    background: #00ccc7;
     border: none;
     color: white;
     font-size: 20px;
@@ -356,7 +356,7 @@ const DeleteButton = styled.button`
     width: 200px;
     height: 56px;
     border-radius: 10px;
-    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    background: #00ccc7;
     border: none;
     color: white;
     font-size: 20px;

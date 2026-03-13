@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
 import { IosWheelPicker, type WheelOption } from "../../components/common/IosWheelPicker";
 import { media } from "../../styles/breakpoints";
+import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 
 const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
 
@@ -66,8 +67,15 @@ export default function WorkHistoryPage() {
             const [workLogsResponse, workAmountResponse] = await Promise.all([getWorkLogs(currentYear, currentMonth, accessCode), getWorkAmount(accessCode, from, to)]);
 
             setWorkLogs(workLogsResponse.data || []);
-            // GET /pud/{accessCode}/work-amount?from=...&to=... → { status, message, data: { grossAmount, totalAdvanced, available, maxAdvance, ... } }
-            setWorkAmount(workAmountResponse?.data ?? null);
+            const waData = workAmountResponse?.data;
+            if (waData) {
+                setWorkAmount({
+                    ...waData,
+                    totalAdvanced: waData.totalAdvanced ?? waData.totalAdvancedInPeriod,
+                });
+            } else {
+                setWorkAmount(null);
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -123,20 +131,20 @@ export default function WorkHistoryPage() {
                 <SummaryCard>
                     <SummaryMainItem>
                         <SummaryMainLabel>총 급여</SummaryMainLabel>
-                        <SummaryMainValue>{workAmount?.grossAmount?.toLocaleString() || 0}원</SummaryMainValue>
+                        <SummaryMainValue>{workAmount?.grossAmount != null ? `${workAmount.grossAmount.toLocaleString()}원` : "-"}</SummaryMainValue>
                     </SummaryMainItem>
                     <SummaryDivider />
                     <SummarySubItem>
                         <SummaryLabel>선정산액</SummaryLabel>
-                        <SummaryValue>{workAmount?.totalAdvanced?.toLocaleString() || 0}원</SummaryValue>
+                        <SummaryValue>{workAmount?.totalAdvanced != null ? `${workAmount.totalAdvanced.toLocaleString()}원` : "-"}</SummaryValue>
                     </SummarySubItem>
                     <SummarySubItem>
                         <SummaryLabel>미결제 임금</SummaryLabel>
-                        <SummaryValue>{workAmount?.available?.toLocaleString() || 0}원</SummaryValue>
+                        <SummaryValue>{workAmount?.available != null ? `${workAmount.available.toLocaleString()}원` : "-"}</SummaryValue>
                     </SummarySubItem>
                     <SummarySubItem>
                         <SummaryLabel>최대 선정산 가능액</SummaryLabel>
-                        <SummaryValue>{workAmount?.maxAdvance?.toLocaleString() || 0}원</SummaryValue>
+                        <SummaryValue>{workAmount?.maxAdvance != null ? `${workAmount.maxAdvance.toLocaleString()}원` : "-"}</SummaryValue>
                     </SummarySubItem>
                 </SummaryCard>
 
@@ -195,19 +203,17 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 0 0 30px 0;
     align-self: flex-start;
 
     ${media.tablet} {
-        font-size: 24px;
         margin-bottom: 20px;
     }
 
     ${media.mobile} {
-        font-size: 20px;
         margin-bottom: 16px;
     }
 `;
@@ -222,7 +228,7 @@ const ContentWrapper = styled.div`
 `;
 
 const SummaryCard = styled.div`
-    background: white;
+    background: transparent;
     border-radius: 12px;
     padding: 24px 30px;
     margin-bottom: 30px;
@@ -250,31 +256,15 @@ const SummaryMainItem = styled.div`
 `;
 
 const SummaryMainLabel = styled.div`
-    font-size: 20px;
+    ${mypageSubtitle}
     font-weight: 700;
-    color: #1a1a1a;
-
-    ${media.tablet} {
-        font-size: 18px;
-    }
-
-    ${media.mobile} {
-        font-size: 16px;
-    }
+    color: #000;
 `;
 
 const SummaryMainValue = styled.div`
-    font-size: 24px;
+    ${mypageSubtitle}
     font-weight: 700;
-    color: #00a8a5;
-
-    ${media.tablet} {
-        font-size: 22px;
-    }
-
-    ${media.mobile} {
-        font-size: 20px;
-    }
+    color: #00ccc7;
 `;
 
 const SummaryDivider = styled.div`
@@ -291,23 +281,15 @@ const SummarySubItem = styled.div`
 `;
 
 const SummaryLabel = styled.div`
-    font-size: 14px;
-    color: #666;
+    ${mypageContent}
+    color: #000;
     font-weight: 500;
-
-    ${media.mobile} {
-        font-size: 13px;
-    }
 `;
 
 const SummaryValue = styled.div`
-    font-size: 16px;
+    ${mypageContent}
     font-weight: 600;
-    color: #2c3e50;
-
-    ${media.mobile} {
-        font-size: 15px;
-    }
+    color: #000;
 `;
 
 const MonthSelector = styled.div`
@@ -318,12 +300,12 @@ const MonthSelector = styled.div`
 `;
 
 const MonthPickerButton = styled.button`
+    ${mypageContent}
     padding: 12px 24px;
-    background: #11d0c9;
+    background: #00ccc7;
     border: none;
     border-radius: 24px;
     color: #ffffff;
-    font-size: 18px;
     font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s;
@@ -334,12 +316,10 @@ const MonthPickerButton = styled.button`
 
     ${media.tablet} {
         padding: 10px 20px;
-        font-size: 16px;
     }
 
     ${media.mobile} {
         padding: 8px 16px;
-        font-size: 14px;
     }
 `;
 
@@ -364,12 +344,12 @@ const PickerConfirmRow = styled.div`
 `;
 
 const PickerConfirmButton = styled.button`
+    ${mypageContent}
     width: 80px;
     height: 32px;
-    font-size: 18px;
     font-weight: 600;
     color: #fff;
-    background: #11d0c9;
+    background: #00ccc7;
     border: none;
     border-radius: 24px;
     cursor: pointer;
@@ -380,7 +360,6 @@ const PickerConfirmButton = styled.button`
     }
 
     ${media.mobile} {
-        font-size: 16px;
         min-width: 90px;
     }
 `;
@@ -393,7 +372,7 @@ const WorkLogSection = styled.div`
 const WorkLogTable = styled.table`
     width: 100%;
     min-width: 400px;
-    background: white;
+    background: transparent;
     border-radius: 12px;
     overflow: hidden;
     border-collapse: collapse;
@@ -406,14 +385,14 @@ const WorkLogTable = styled.table`
 `;
 
 const TableHeader = styled.thead`
-    background-color: #f0f9f8;
+    background-color: #ffffff;
 `;
 
 const TableRow = styled.tr`
     border-bottom: 1px solid #e0e0e0;
 
     &:hover {
-        background-color: #f9fbfc;
+        background-color: #ffffff;
     }
 
     &:last-child {
@@ -422,59 +401,53 @@ const TableRow = styled.tr`
 `;
 
 const TableHeaderCell = styled.th`
+    ${mypageContent}
     padding: 16px;
     text-align: left;
     font-weight: 600;
-    color: #2c3e50;
-    font-size: 14px;
+    color: #000;
 
     ${media.tablet} {
         padding: 12px;
-        font-size: 13px;
     }
 
     ${media.mobile} {
         padding: 10px 8px;
-        font-size: 12px;
     }
 `;
 
 const TableCell = styled.td`
+    ${mypageContent}
     padding: 16px;
-    color: #555;
-    font-size: 14px;
+    color: #000;
 
     ${media.tablet} {
         padding: 12px;
-        font-size: 13px;
     }
 
     ${media.mobile} {
         padding: 10px 8px;
-        font-size: 12px;
     }
 `;
 
 const EmptyState = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;
 
 const LoadingText = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 
     ${media.mobile} {
         padding: 40px 16px;
-        font-size: 14px;
     }
 `;

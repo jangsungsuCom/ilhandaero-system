@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
-import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, SubmitButton, ToggleButton, EmailInput } from "../components/common/FormCard";
+import { PageContainer, FormCard, Form, FieldGroup, Label, Input, SubmitButton, ToggleButton, EmailInput } from "../components/common/FormCard";
 import { loginWithEmail, validateAccessCode } from "../utils/auth";
 import { useAppDispatch } from "../store/hooks";
 import { setAccessToken, setAccessCode } from "../store/slices/authSlice";
@@ -12,6 +12,7 @@ import { media } from "../styles/breakpoints";
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const dispatch = useAppDispatch();
     const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
     const [email, setEmail] = useState("");
@@ -25,10 +26,16 @@ export default function LoginPage() {
     useEffect(() => {
         if (location.state?.message) {
             setSuccessMessage(location.state.message);
-            // URL에서 state 제거
             window.history.replaceState({}, document.title);
         }
     }, [location]);
+
+    useEffect(() => {
+        if (searchParams.get("session_expired") === "1") {
+            setSuccessMessage("로그인이 만료되었습니다. 다시 로그인해주세요.");
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,8 +82,6 @@ export default function LoginPage() {
     return (
         <PageContainer>
             <LoginFormCard>
-                <Title>로그인</Title>
-
                 <MethodToggle>
                     <ToggleButton
                         type="button"
@@ -134,19 +139,19 @@ export default function LoginPage() {
                 </Form>
 
                 {loginMethod === "email" && (
-                    <div style={{ width: "100%", display: "flex", gap: "12px", justifyContent: "center", alignItems: "center", marginTop: "24px" }}>
+                    <div style={{ width: "100%", display: "flex", gap: "12px", justifyContent: "center", alignItems: "center", marginTop: "24px", marginRight: "5px" }}>
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/find-email")}>
                                 아이디 찾기
                             </RegisterButton>
                         </RegisterLink>
-                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00a8a5" }} />
+                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00ccc7" }} />
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/reset-password")}>
                                 비밀번호 찾기
                             </RegisterButton>
                         </RegisterLink>
-                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00a8a5" }} />
+                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00ccc7" }} />
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/register")}>
                                 회원가입
@@ -173,12 +178,12 @@ const MethodToggle = styled.div`
 
 const ErrorText = styled.p`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin: -8px 0 0 4px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 
     ${media.mobile} {
         font-size: 13px;
@@ -193,24 +198,23 @@ const RegisterLink = styled.div`
 const RegisterButton = styled.button`
     background: none;
     border: none;
-    color: #00a8a5;
+    color: #00ccc7;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
-    //text-decoration: underline;
 
     &:hover {
-        color: #00cbc7;
+        opacity: 0.8;
     }
 `;
 
 const SuccessText = styled.p`
     font-size: 14px;
-    color: #4caf50;
+    color: #00ccc7;
     margin: -8px 0 0 4px;
     padding: 8px;
-    background: #e8f5e9;
+    background: #fff;
     border-radius: 8px;
     border-left: 3px solid #4caf50;
 
@@ -225,6 +229,7 @@ const AutoLoginRow = styled.div`
     justify-content: center;
     gap: 8px;
     margin-top: 16px;
+    margin-right: 10px;
 `;
 
 const AutoLoginCheckbox = styled.input`

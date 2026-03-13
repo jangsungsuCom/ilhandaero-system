@@ -5,6 +5,7 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchCompanies } from "../../store/slices/companySlice";
 import { FormCard, Form, FieldGroup, Label, Input, SubmitButton } from "../../components/common/FormCard";
+import { mypageTitle, mypageSubtitle } from "../../styles/mypageTypography";
 
 export default function StoreFormPage() {
     const dispatch = useAppDispatch();
@@ -53,7 +54,7 @@ export default function StoreFormPage() {
         <Container>
             <PageTitle>{isEdit ? "업장 수정" : "업장 등록"}</PageTitle>
             <ContentWrapper>
-                <FormCard>
+                <TransparentFormCard>
                     <Form onSubmit={handleSubmit}>
                     <FieldGroup>
                         <Label>업장 이름</Label>
@@ -74,7 +75,7 @@ export default function StoreFormPage() {
                         </CancelButton>
                     </ButtonGroup>
                     </Form>
-                </FormCard>
+                </TransparentFormCard>
             </ContentWrapper>
         </Container>
     );
@@ -87,15 +88,19 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 0 0 30px 0;
     align-self: flex-start;
 `;
 
+const TransparentFormCard = styled(FormCard)`
+    background: transparent;
+`;
+
 const ContentWrapper = styled.div`
-    width: 922px; /* 1152px * 0.8 = 921.6px */
+    width: 922px;
     max-width: 100%;
 `;
 
@@ -108,18 +113,18 @@ const ButtonGroup = styled.div`
 `;
 
 const CancelButton = styled.button`
+    ${mypageSubtitle}
     width: 100%;
     height: 62px;
-    font-size: 22px;
     font-weight: bold;
     color: white;
-    background: #95a5a6;
+    background: #000;
     border: none;
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: #7f8c8d;
+        background: #000;
     }
 `;

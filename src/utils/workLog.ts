@@ -50,6 +50,31 @@ export const createAdvanceRequest = async (amount: number, accessCodeParam?: str
     await urlAxios.post(`/pud/${accessCode}/advance-requests`, { amount });
 };
 
+export interface AdvanceRequestItem {
+    requestId: number;
+    amount: number;
+    status: string;
+    requestDate?: string;
+    createdAt?: string;
+    requestedAt?: string;
+    date?: string;
+}
+
+export const getAdvanceRequests = async (accessCodeParam?: string): Promise<AdvanceRequestItem[]> => {
+    const accessCode = accessCodeParam || getAccessCode();
+    if (!accessCode) {
+        throw new Error("Access code not found");
+    }
+
+    const response = await urlAxios.get(`/pud/${accessCode}/advance-requests`);
+    console.log("getAdvanceRequests raw response:", response.data);
+    const raw = response.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw?.data && Array.isArray(raw.data)) return raw.data;
+    if (raw?.data?.content && Array.isArray(raw.data.content)) return raw.data.content;
+    return [];
+};
+
 export const getWorkerInfo = async (accessCodeParam?: string): Promise<WorkerInfoResponse> => {
     const accessCode = accessCodeParam || getAccessCode();
     if (!accessCode) {

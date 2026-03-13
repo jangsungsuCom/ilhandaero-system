@@ -3,12 +3,15 @@ import React, { useState, type JSX } from "react";
 import styled from "styled-components";
 import AddModal from "./AddModal";
 import EditModal from "./EditModal";
-import SummaryModal, { type SummaryRow, type SummaryMode } from "./SummaryModal";
+import BulkEditModal from "./BulkEditModal";
+import SummaryModal, { type SummaryRow, type SummaryMode, type AdvanceDetailRow } from "./SummaryModal";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { format } from "date-fns";
 import type { LoginMethod } from "../../../types/auth";
 import type { CalendarStartDay, WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
+import { deleteWorkLogByAccessCode } from "../../../utils/workLog";
+import { getAccessCode } from "../../../utils/auth";
 import { media } from "../../../styles/breakpoints";
 
 export interface CompanyOption {
@@ -38,8 +41,16 @@ interface CalendarProps {
     calendarStartDay?: CalendarStartDay;
     /** 근무시간 표시: "hours" = nn h, "range" = hh:mm~hh:mm */
     workTimeDisplayFormat?: WorkTimeDisplayFormat;
+    /** accessCode 로그인 시 선정산 요청 상세 (날짜+금액+상태) */
+    advanceDetails?: AdvanceDetailRow[];
     /** accessCode 로그인 시 근무자 색상 (배지 색상용) */
     workerColorHex?: string;
+    /** TopBar 좌측에 렌더링할 요소 (년월 선택 등) */
+    headerLeft?: React.ReactNode;
+    /** TopBar 우측에 렌더링할 요소 (아이콘 등) */
+    headerRight?: React.ReactNode;
+    /** 날짜 선택과 총급여 사이에 렌더링할 피커 */
+    pickerSlot?: React.ReactNode;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -58,7 +69,11 @@ const Calendar: React.FC<CalendarProps> = ({
     workAmountRows,
     calendarStartDay = 0,
     workTimeDisplayFormat = "hours",
+    advanceDetails,
     workerColorHex,
+    headerLeft,
+    headerRight,
+    pickerSlot,
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -66,6 +81,73 @@ const Calendar: React.FC<CalendarProps> = ({
     const [editingWorkLog, setEditingWorkLog] = useState<WorkLog | null>(null);
     const [editingSalaryTarget, setEditingSalaryTarget] = useState<SalaryTarget | undefined>(undefined);
     const [summaryModalMode, setSummaryModalMode] = useState<SummaryMode | null>(null);
+    const [bulkEditMode, setBulkEditMode] = useState(false);
+    const [selectedWorkLogIds, setSelectedWorkLogIds] = useState<Set<number>>(new Set());
+    const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+    const [bulkEditTargets, setBulkEditTargets] = useState<{ workLog: WorkLog; salaryTarget?: SalaryTarget }[]>([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    const toggleBulkEditMode = () => {
+        if (bulkEditMode) {
+            setSelectedWorkLogIds(new Set());
+        }
+        setBulkEditMode(!bulkEditMode);
+    };
+
+    const toggleWorkLogSelection = (workLogId: number) => {
+        setSelectedWorkLogIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(workLogId)) {
+                next.delete(workLogId);
+            } else {
+                next.add(workLogId);
+            }
+            return next;
+        });
+    };
+
+    const handleBulkEdit = () => {
+        if (selectedWorkLogIds.size === 0) return;
+        const targets: { workLog: WorkLog; salaryTarget?: SalaryTarget }[] = [];
+        for (const [ac, logs] of Object.entries(workLogsByAccessCode)) {
+            const target = salaryTargets.find((t) => t.accessCode === ac);
+            for (const log of logs) {
+                if (selectedWorkLogIds.has(log.workLogId)) {
+                    targets.push({ workLog: log, salaryTarget: target });
+                }
+            }
+        }
+        if (targets.length === 0) return;
+        setBulkEditTargets(targets);
+        setBulkEditModalOpen(true);
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedWorkLogIds.size === 0) return;
+        if (!window.confirm(`선택한 ${selectedWorkLogIds.size}개의 근무 기록을 삭제하시겠습니까?`)) return;
+
+        setIsBulkDeleting(true);
+        try {
+            const promises: Promise<void>[] = [];
+            for (const [ac, logs] of Object.entries(workLogsByAccessCode)) {
+                const target = salaryTargets.find((t) => t.accessCode === ac);
+                for (const log of logs) {
+                    if (selectedWorkLogIds.has(log.workLogId)) {
+                        const code = target?.accessCode || (loginMethod === "accessCode" ? getAccessCode() : undefined);
+                        promises.push(deleteWorkLogByAccessCode(log.workLogId, code || undefined));
+                    }
+                }
+            }
+            await Promise.all(promises);
+            setSelectedWorkLogIds(new Set());
+            setBulkEditMode(false);
+            onWorkLogCreated?.();
+        } catch {
+            alert("일부 삭제에 실패했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
 
     const DAYS_ORDER = ["일", "월", "화", "수", "목", "금", "토"];
     const daysOfWeek = DAYS_ORDER.slice(calendarStartDay).concat(DAYS_ORDER.slice(0, calendarStartDay));
@@ -128,25 +210,27 @@ const Calendar: React.FC<CalendarProps> = ({
 
     /** 근무자별 해당 월 임금 집계 (SummaryModal용) */
     const getSummaryRows = (): SummaryRow[] => {
-        if (loginMethod === "email" && workAmountRows && workAmountRows.length > 0) {
-            return workAmountRows.map((r) => ({ workerName: r.workerName, totalAmount: r.grossAmount, totalAdvanced: r.totalAdvanced }));
-        }
         const yearStr = String(currentYear);
         const monthStr = String(currentMonth + 1).padStart(2, "0");
         const prefix = `${yearStr}-${monthStr}`;
+
+        const advancedMap = new Map<string, number>();
+        if (workAmountRows) {
+            workAmountRows.forEach((r) => advancedMap.set(r.workerName, r.totalAdvanced));
+        }
 
         if (loginMethod === "email") {
             return salaryTargets.map((target) => {
                 const logs = workLogsByAccessCode[target.accessCode] || [];
                 const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
-                return { workerName: target.workerName, totalAmount };
+                return { workerName: target.workerName, totalAmount, totalAdvanced: advancedMap.get(target.workerName) ?? 0 };
             });
         }
         if (loginMethod === "accessCode" && accessCode) {
             const logs = workLogsByAccessCode[accessCode] || [];
             const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
             const workerName = pageTitle != null && pageTitle !== "" ? pageTitle.replace(/님의 근무 기록$/, "").trim() || "근무자" : "근무자";
-            return [{ workerName, totalAmount }];
+            return [{ workerName, totalAmount, totalAdvanced: workAmountData?.totalAdvanced ?? 0 }];
         }
         return [];
     };
@@ -155,11 +239,11 @@ const Calendar: React.FC<CalendarProps> = ({
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         if (hours > 0 && mins > 0) {
-            return `${hours}시간 ${mins}분`;
+            return `${hours}h${mins}m`;
         } else if (hours > 0) {
-            return `${hours}시간`;
+            return `${hours}h`;
         } else {
-            return `${mins}분`;
+            return `${mins}m`;
         }
     };
 
@@ -198,32 +282,36 @@ const Calendar: React.FC<CalendarProps> = ({
                     key={`curr-${day}`}
                     className={isSelected ? "selected" : ""}
                     onClick={() => {
-                        setSelectedDate(date);
-                        setIsAddModalOpen(true);
+                        if (!bulkEditMode) {
+                            setSelectedDate(date);
+                            setIsAddModalOpen(true);
+                        }
                     }}
                 >
-                    {/* {isSelected && (
-                        <AddButton onClick={() => setIsAddModalOpen(true)}>
-                            <img src={AddBtnImg} alt="add" />
-                        </AddButton>
-                    )} */}
-                    <DateNumber dayOfWeek={dayOfWeek}>{day}</DateNumber>
+                    <DateNumber $dayOfWeek={dayOfWeek}>{day}</DateNumber>
                     {workLogsForDate.map(({ workLog, salaryTarget }) => {
-                        // email 로그인: salaryTarget.colorHex 사용, accessCode 로그인: workerColorHex 사용
                         const colorHex = salaryTarget?.colorHex || workerColorHex;
                         const badgeColor = colorHex && /^#[0-9A-Fa-f]{6}$/.test(colorHex) ? colorHex : "#00ccc7";
+                        const isChecked = selectedWorkLogIds.has(workLog.workLogId);
                         return (
                             <WorkTimeBadge
                                 key={workLog.workLogId}
                                 $color={badgeColor}
+                                $bulkMode={bulkEditMode}
+                                $checked={isChecked}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setEditingWorkLog(workLog);
-                                    setEditingSalaryTarget(salaryTarget);
-                                    setIsEditModalOpen(true);
+                                    if (bulkEditMode) {
+                                        toggleWorkLogSelection(workLog.workLogId);
+                                    } else {
+                                        setEditingWorkLog(workLog);
+                                        setEditingSalaryTarget(salaryTarget);
+                                        setIsEditModalOpen(true);
+                                    }
                                 }}
                             >
-                                {loginMethod === "email" && salaryTarget ? `${salaryTarget.workerName}, ${formatWorkTimeDisplay(workLog)}` : formatWorkTimeDisplay(workLog)}
+                                {bulkEditMode && <BulkCheckbox $checked={isChecked} />}
+                                {loginMethod === "email" && salaryTarget ? `${salaryTarget.workerName} ${formatWorkTimeDisplay(workLog)}` : formatWorkTimeDisplay(workLog)}
                             </WorkTimeBadge>
                         );
                     })}
@@ -241,19 +329,39 @@ const Calendar: React.FC<CalendarProps> = ({
     };
 
     const monthlyTotalAmount = getMonthlyTotalAmount();
-    const monthlyLabel = "총 급여";
-    const displayGross = workAmountData != null ? workAmountData.grossAmount : monthlyTotalAmount;
+    const monthlyLabel = "누적급여";
+    const displayGross = monthlyTotalAmount;
     const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced : 0;
 
     return (
         <>
             <Container>
-                <TopBar>
-                    <TopBarTitleBlock>
-                        {loginMethod === "accessCode" && pageTitle != null && pageTitle !== "" ? (
-                            <TitleText>{pageTitle}</TitleText>
-                        ) : loginMethod === "email" && companies.length > 0 && onCompanyChange ? (
+                <Row1>
+                    <HeaderRightArea>
+                        {bulkEditMode ? (
+                            <BulkEditActions>
+                                <BulkEditInfo>{selectedWorkLogIds.size}개 선택됨</BulkEditInfo>
+                                <BulkEditButton onClick={handleBulkEdit} disabled={selectedWorkLogIds.size === 0}>
+                                    수정
+                                </BulkEditButton>
+                                <BulkDeleteButton onClick={handleBulkDelete} disabled={selectedWorkLogIds.size === 0 || isBulkDeleting}>
+                                    {isBulkDeleting ? "삭제 중..." : "삭제"}
+                                </BulkDeleteButton>
+                                <BulkCancelButton onClick={toggleBulkEditMode}>취소</BulkCancelButton>
+                            </BulkEditActions>
+                        ) : (
                             <>
+                                <BulkEditToggle onClick={toggleBulkEditMode}>선택 수정</BulkEditToggle>
+                                {headerRight}
+                            </>
+                        )}
+                    </HeaderRightArea>
+                </Row1>
+                <CardsGrid>
+                    <CardsGridCell>{headerLeft}</CardsGridCell>
+                    <CardsGridCell>
+                        {loginMethod === "email" && companies.length > 0 && onCompanyChange ? (
+                            <CompanySelectWrapper>
                                 <CompanySelect value={selectedCompanyId ?? ""} onChange={(e) => onCompanyChange(e.target.value ? Number(e.target.value) : null)}>
                                     <option value="">업장을 선택하세요</option>
                                     {companies.map((c) => (
@@ -262,29 +370,32 @@ const Calendar: React.FC<CalendarProps> = ({
                                         </option>
                                     ))}
                                 </CompanySelect>
-                                <TitleSuffix>근무</TitleSuffix>
-                            </>
+                                <SelectArrow>˅</SelectArrow>
+                            </CompanySelectWrapper>
+                        ) : loginMethod === "accessCode" && pageTitle != null && pageTitle !== "" ? (
+                            <TitleTextWrap>
+                                <TitleText>{pageTitle}</TitleText>
+                            </TitleTextWrap>
                         ) : null}
-                    </TopBarTitleBlock>
-                    <SummaryCardsWrapper>
-                        <SummaryCard onClick={() => setSummaryModalMode("gross")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("gross")}>
-                            <SummaryLabel>{monthlyLabel}</SummaryLabel>
-                            <SummaryValue>{displayGross.toLocaleString()} 원</SummaryValue>
-                            <div>˅</div>
-                        </SummaryCard>
-                        <SummaryCard onClick={() => setSummaryModalMode("advanced")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("advanced")}>
-                            <SummaryLabel>선정산금</SummaryLabel>
-                            <SummaryValue>{(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummaryValue>
-                            <div>˅</div>
-                        </SummaryCard>
-                    </SummaryCardsWrapper>
-                </TopBar>
+                    </CardsGridCell>
+                    {pickerSlot ? <CardsGridFullWidth>{pickerSlot}</CardsGridFullWidth> : null}
+                    <SummaryLabelText>{monthlyLabel}</SummaryLabelText>
+                    <SummaryLabelText>지급된 선정산액</SummaryLabelText>
+                    <SummaryCard onClick={() => setSummaryModalMode("gross")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("gross")}>
+                        <SummaryValue>{displayGross.toLocaleString()} 원</SummaryValue>
+                        <div>˅</div>
+                    </SummaryCard>
+                    <SummaryCard onClick={() => setSummaryModalMode("advanced")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSummaryModalMode("advanced")}>
+                        <SummaryValue>{(displayTotalAdvanced ?? 0).toLocaleString()} 원</SummaryValue>
+                        <div>˅</div>
+                    </SummaryCard>
+                </CardsGrid>
 
                 <WeekDays>
                     {daysOfWeek.map((d, index) => {
                         const dayOfWeek = (calendarStartDay + index) % 7;
                         return (
-                            <DayHeader key={d} isSunday={dayOfWeek === 0} isSaturday={dayOfWeek === 6}>
+                            <DayHeader key={d} $isSunday={dayOfWeek === 0} $isSaturday={dayOfWeek === 6}>
                                 {d}
                             </DayHeader>
                         );
@@ -320,6 +431,18 @@ const Calendar: React.FC<CalendarProps> = ({
                     }}
                 />
             )}
+            <BulkEditModal
+                open={bulkEditModalOpen}
+                onClose={() => setBulkEditModalOpen(false)}
+                workLogs={bulkEditTargets}
+                onComplete={() => {
+                    setBulkEditModalOpen(false);
+                    setBulkEditTargets([]);
+                    setSelectedWorkLogIds(new Set());
+                    setBulkEditMode(false);
+                    onWorkLogCreated?.();
+                }}
+            />
             <SummaryModal
                 open={summaryModalMode !== null}
                 onClose={() => setSummaryModalMode(null)}
@@ -327,6 +450,7 @@ const Calendar: React.FC<CalendarProps> = ({
                 month={currentMonth + 1}
                 rows={getSummaryRows()}
                 mode={summaryModalMode ?? "gross"}
+                advanceDetails={advanceDetails}
             />
         </>
     );
@@ -345,45 +469,72 @@ const Container = styled.div`
     }
 `;
 
-const TopBar = styled.div`
+const Row1 = styled.div`
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-
-    ${media.tablet} {
-        flex-wrap: wrap;
-        gap: 12px;
-    }
+    margin-bottom: 8px;
 
     ${media.mobile} {
-        gap: 8px;
+        margin-bottom: 6px;
     }
 `;
 
-const TopBarTitleBlock = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    min-width: 0;
-    font-size: 31px;
-    font-weight: bold;
-
-    ${media.desktop} {
-        font-size: 24px;
-    }
+const CardsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
 
     ${media.tablet} {
-        font-size: 18px;
-        gap: 8px;
-        order: 3;
-        flex-basis: 100%;
+        gap: 12px;
+        margin-bottom: 12px;
     }
 
     ${media.mobile} {
-        font-size: 14px;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+`;
+
+const CardsGridCell = styled.div`
+    min-width: 0;
+`;
+
+const CardsGridFullWidth = styled.div`
+    grid-column: 1 / -1;
+`;
+
+const TitleTextWrap = styled.div`
+    width: 100%;
+    height: 72px;
+    border-radius: 36px;
+    background: #00ccc7;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 24px;
+    font-weight: 700;
+
+    ${media.desktop} {
+        height: 60px;
+        font-size: 22px;
+        padding: 0 20px;
+    }
+
+    ${media.tablet} {
+        height: 48px;
+        font-size: 17px;
+        padding: 0 16px;
+        border-radius: 24px;
+    }
+
+    ${media.mobile} {
+        height: 40px;
+        font-size: 13px;
+        padding: 0 12px;
+        border-radius: 20px;
     }
 `;
 
@@ -393,79 +544,124 @@ const TitleText = styled.span`
     text-overflow: ellipsis;
 `;
 
-const TitleSuffix = styled.span`
-    white-space: nowrap;
-`;
-
-const CompanySelect = styled.select`
-    padding: 8px 36px 8px 12px;
-    font-size: 31px;
-    font-weight: bold;
-    border: 1.5px solid #00ccc7;
-    border-radius: 12px;
-    background: white;
+const CompanySelectWrapper = styled.div`
+    position: relative;
+    width: 100%;
+    height: 72px;
+    border-radius: 36px;
+    background: #00ccc7;
     cursor: pointer;
-    min-width: 180px;
-    max-width: 100%;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300a8a5%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
+    display: flex;
+    align-items: center;
 
-    &:focus {
-        outline: none;
-        border-color: #00a8a5;
-    }
-
-    option[value=""] {
-        display: none;
+    &:hover {
+        opacity: 0.95;
     }
 
     ${media.desktop} {
-        font-size: 24px;
-        min-width: 150px;
+        height: 60px;
     }
 
     ${media.tablet} {
-        font-size: 18px;
-        min-width: 120px;
-        padding: 6px 28px 6px 10px;
+        height: 48px;
+        border-radius: 24px;
     }
 
     ${media.mobile} {
-        font-size: 14px;
-        min-width: 100px;
-        padding: 4px 24px 4px 8px;
+        height: 40px;
+        border-radius: 20px;
     }
 `;
 
-const SummaryCardsWrapper = styled.div`
-    display: flex;
-    flex: 1;
-    gap: 16px;
+const CompanySelect = styled.select`
+    height: 100%;
+    width: 100%;
+    padding: 0 40px 0 24px;
+    font-size: 24px;
+    font-weight: 700;
+    border: none;
+    border-radius: inherit;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    appearance: none;
+
+    &:focus {
+        outline: none;
+    }
+
+    option {
+        background: white;
+        color: #000;
+    }
+
+    ${media.desktop} {
+        font-size: 22px;
+        padding: 0 36px 0 20px;
+    }
 
     ${media.tablet} {
-        gap: 12px;
+        font-size: 17px;
+        padding: 0 32px 0 16px;
     }
 
     ${media.mobile} {
-        gap: 8px;
+        font-size: 13px;
+        padding: 0 28px 0 12px;
+    }
+`;
+
+const SelectArrow = styled.span`
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ffffff;
+    font-size: 18px;
+    pointer-events: none;
+
+    ${media.tablet} {
+        right: 12px;
+        font-size: 14px;
+    }
+
+    ${media.mobile} {
+        right: 10px;
+        font-size: 12px;
+    }
+`;
+
+const SummaryLabelText = styled.div`
+    font-size: 19px;
+    font-weight: 700;
+    color: #00ccc7;
+    padding-left: 4px;
+    min-width: 0;
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
     }
 `;
 
 const SummaryCard = styled.div`
-    flex: 1;
-    min-width: 200px;
+    min-width: 0;
     height: 72px;
-    background: #11d0c9;
+    background: #00ccc7;
     border-radius: 36px;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     user-select: none;
     gap: 12px;
@@ -475,42 +671,34 @@ const SummaryCard = styled.div`
     }
 
     ${media.desktop} {
-        min-width: 180px;
         height: 60px;
-        font-size: 18px;
+        font-size: 22px;
         padding: 0 20px;
     }
 
     ${media.tablet} {
-        min-width: 140px;
         height: 48px;
-        font-size: 14px;
+        font-size: 17px;
         padding: 0 16px;
         border-radius: 24px;
         gap: 8px;
     }
 
     ${media.mobile} {
-        min-width: 110px;
         height: 40px;
-        font-size: 11px;
+        font-size: 13px;
         padding: 0 12px;
         border-radius: 20px;
         gap: 6px;
     }
 `;
 
-const SummaryLabel = styled.div`
-    font-weight: 700;
-    color: #ffffff;
-`;
 
 const SummaryValue = styled.div`
     flex: 1;
-    padding-right: 12px;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: center;
     gap: 2px;
     font-weight: 700;
@@ -525,20 +713,33 @@ const WeekDays = styled.div`
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
-    border-bottom: 1px solid #bbb;
+    border-bottom: 1px solid #000;
     font-weight: 700;
 `;
 
-const DayHeader = styled.div<{ isSunday?: boolean; isSaturday?: boolean }>`
+const DayHeader = styled.div<{ $isSunday?: boolean; $isSaturday?: boolean }>`
     padding: 10px 0;
-    color: ${({ isSunday, isSaturday }) => (isSunday ? "#35d63b" : isSaturday ? "#11d0c9" : "#000")};
+    font-size: 20px;
+    color: ${({ $isSunday, $isSaturday }) => ($isSunday || $isSaturday ? "#00ccc7" : "#000")};
+
+    ${media.desktop} {
+        font-size: 16px;
+    }
+
+    ${media.tablet} {
+        font-size: 14px;
+    }
+
+    ${media.mobile} {
+        font-size: 12px;
+    }
 `;
 
 const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 1px;
-    background: #e1e1e1;
+    background: rgba(0,0,0,0.1);
 `;
 
 const DayCell = styled.div`
@@ -549,11 +750,11 @@ const DayCell = styled.div`
     cursor: pointer;
 
     &.other-month {
-        background: #fafafa;
+        background: #fff;
     }
 
     &.selected {
-        background: #e5f4ff;
+        background: rgba(0,204,199,0.1);
     }
 
     ${media.desktop} {
@@ -572,10 +773,10 @@ const DayCell = styled.div`
     }
 `;
 
-const DateNumber = styled.div<{ dayOfWeek?: number }>`
+const DateNumber = styled.div<{ $dayOfWeek?: number }>`
     font-size: 20px;
     font-weight: 700;
-    color: ${({ dayOfWeek }) => (dayOfWeek === 0 ? "#35d63b" : dayOfWeek === 6 ? "#11d0c9" : "#000")};
+    color: ${({ $dayOfWeek }) => ($dayOfWeek === 0 || $dayOfWeek === 6 ? "#00ccc7" : "#000")};
 
     ${media.desktop} {
         font-size: 16px;
@@ -590,7 +791,7 @@ const DateNumber = styled.div<{ dayOfWeek?: number }>`
     }
 `;
 
-const WorkTimeBadge = styled.div<{ $color?: string }>`
+const WorkTimeBadge = styled.div<{ $color?: string; $bulkMode?: boolean; $checked?: boolean }>`
     width: 144px;
     height: 36px;
     border-radius: 18px;
@@ -598,12 +799,14 @@ const WorkTimeBadge = styled.div<{ $color?: string }>`
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 4px;
     font-size: 14px;
     font-weight: 600;
     margin-top: 8px;
-    color: #333;
+    color: #000;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s, filter 0.2s;
+    transition: background-color 0.2s, transform 0.1s, filter 0.2s, opacity 0.2s;
+    opacity: ${({ $bulkMode, $checked }) => ($bulkMode && !$checked ? 0.6 : 1)};
 
     &:hover {
         filter: brightness(0.9);
@@ -633,6 +836,200 @@ const WorkTimeBadge = styled.div<{ $color?: string }>`
         font-size: 8px;
         margin-top: 2px;
         border-radius: 10px;
+    }
+`;
+
+const BulkCheckbox = styled.span<{ $checked: boolean }>`
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 2px solid #fff;
+    background: ${({ $checked }) => ($checked ? "#fff" : "transparent")};
+    flex-shrink: 0;
+    position: relative;
+
+    &::after {
+        content: "${({ $checked }) => ($checked ? "✓" : "")}";
+        position: absolute;
+        top: -2px;
+        left: 1px;
+        font-size: 12px;
+        color: #00ccc7;
+        font-weight: bold;
+    }
+
+    ${media.tablet} {
+        width: 10px;
+        height: 10px;
+        &::after { font-size: 8px; top: -2px; left: 0; }
+    }
+
+    ${media.mobile} {
+        width: 8px;
+        height: 8px;
+        border-width: 1px;
+        &::after { font-size: 6px; top: -2px; left: 0; }
+    }
+`;
+
+const HeaderRightArea = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    ${media.mobile} {
+        gap: 6px;
+    }
+`;
+
+const BulkEditToggle = styled.button`
+    padding: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #00ccc7;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+        opacity: 0.7;
+    }
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const BulkEditInfo = styled.span`
+    font-size: 19px;
+    font-weight: 700;
+    color: #00ccc7;
+    white-space: nowrap;
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const BulkEditActions = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    ${media.mobile} {
+        gap: 5px;
+    }
+`;
+
+const BulkEditButton = styled.button`
+    padding: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #00ccc7;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+        opacity: 0.7;
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const BulkDeleteButton = styled.button`
+    padding: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #000;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+        opacity: 0.7;
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
+    }
+`;
+
+const BulkCancelButton = styled.button`
+    padding: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #000;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+        color: #000;
+    }
+
+    ${media.desktop} {
+        font-size: 18px;
+    }
+
+    ${media.tablet} {
+        font-size: 16px;
+    }
+
+    ${media.mobile} {
+        font-size: 13px;
     }
 `;
 

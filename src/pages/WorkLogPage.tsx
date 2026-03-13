@@ -30,6 +30,7 @@ const WorkLogPage = () => {
     const [workerColorHex, setWorkerColorHex] = useState<string | undefined>(undefined);
     const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; totalAdvanced: number } | null>(null);
     const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
+    const [advanceDetails, setAdvanceDetails] = useState<{ date: string; amount: number; status: string }[]>([]);
     const [isCalendarSettingModalOpen, setIsCalendarSettingModalOpen] = useState(false);
     const [calendarSettings, setCalendarSettings] = useState(getCalendarSettings);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -37,7 +38,7 @@ const WorkLogPage = () => {
     const [pendingMonth, setPendingMonth] = useState(currentMonth);
 
     const loginMethod = getLoginMethod();
-    const { companies, selectedCompanyId, isLoading: companiesLoading } = useAppSelector((state: RootState) => state.company);
+    const { companies, selectedCompanyId, isLoading: companiesLoading, error: companiesError, hasFetched } = useAppSelector((state: RootState) => state.company);
     const salaryTargets = useAppSelector((state: RootState) => state.salaryTarget.salaryTargetsByCompany);
     const workLogsByAccessCode = useAppSelector((state: RootState) => state.workLog.workLogsByAccessCode);
 
@@ -100,46 +101,46 @@ const WorkLogPage = () => {
         }
     }, [loginMethod, selectedCompanyId, salaryTargets, currentYear, currentMonth, dispatch]);
 
-    // accessCode 로그인 시 근무기록 로드
+    // accessCode 로그인 시 근무기록 + work-amount 로드
     useEffect(() => {
         if (loginMethod === "accessCode") {
-            const accessCode = getAccessCode();
-            if (accessCode && !workLogsByAccessCode[accessCode]) {
-                dispatch(fetchWorkLogsByAccessCode({ accessCode, year: currentYear, month: currentMonth }));
+            const ac = getAccessCode();
+            if (ac) {
+                if (!workLogsByAccessCode[ac]) {
+                    dispatch(fetchWorkLogsByAccessCode({ accessCode: ac, year: currentYear, month: currentMonth }));
+                }
+                const startDate = new Date(currentYear, currentMonth, 1);
+                const endDate = new Date(currentYear, currentMonth + 1, 0);
+                const from = format(startDate, "yyyy-MM-dd");
+                const to = format(endDate, "yyyy-MM-dd");
+                getWorkAmount(ac, from, to)
+                    .then((res) => {
+                        const data = res?.data;
+                        console.log("work-amount full response:", res);
+                        console.log("work-amount data:", data);
+                        if (data) {
+                            setWorkAmountData({ grossAmount: data.grossAmount ?? 0, totalAdvanced: data.totalAdvanced ?? data.totalAdvancedInPeriod ?? 0 });
+                            const rawAny = data as any;
+                            const details = rawAny.advanceRequests || rawAny.advances || rawAny.advanceDetails || rawAny.advancedDetails || [];
+                            console.log("advance details from work-amount:", details);
+                            if (Array.isArray(details) && details.length > 0) {
+                                setAdvanceDetails(details.map((d: any) => ({
+                                    date: d.requestDate || d.createdAt || d.date || d.requestedAt || "",
+                                    amount: d.amount ?? 0,
+                                    status: d.status ?? "",
+                                })));
+                            } else {
+                                setAdvanceDetails([]);
+                            }
+                        }
+                    })
+                    .catch(() => {});
             }
         }
     }, [loginMethod, currentYear, currentMonth, dispatch, workLogsByAccessCode]);
 
     // workAmount 데이터를 로드하는 함수
     const loadWorkAmountData = (year: number, month: number) => {
-        if (loginMethod === "accessCode") {
-            const accessCode = getAccessCode();
-            if (!accessCode) {
-                setWorkAmountData(null);
-                setWorkAmountRows([]);
-                return;
-            }
-            const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0);
-            const from = format(startDate, "yyyy-MM-dd");
-            const to = format(endDate, "yyyy-MM-dd");
-            getWorkAmount(accessCode, from, to)
-                .then((res) => {
-                    const data = res?.data;
-                    if (data && typeof data.grossAmount === "number" && typeof data.totalAdvanced === "number") {
-                        setWorkAmountData({ grossAmount: data.grossAmount, totalAdvanced: data.totalAdvanced });
-                        setWorkAmountRows([]);
-                    } else {
-                        setWorkAmountData(null);
-                        setWorkAmountRows([]);
-                    }
-                })
-                .catch(() => {
-                    setWorkAmountData(null);
-                    setWorkAmountRows([]);
-                });
-            return;
-        }
         if (loginMethod === "email" && selectedCompanyId && salaryTargets[selectedCompanyId]) {
             const targets = salaryTargets[selectedCompanyId].filter((t: { codeStatus: string }) => t.codeStatus === "ACTIVE");
             if (targets.length === 0) {
@@ -158,7 +159,7 @@ const WorkLogPage = () => {
                     const rows: { workerName: string; grossAmount: number; totalAdvanced: number }[] = [];
                     results.forEach((r, i) => {
                         const g = typeof r.data?.grossAmount === "number" ? r.data.grossAmount : 0;
-                        const a = typeof r.data?.totalAdvanced === "number" ? r.data.totalAdvanced : 0;
+                        const a = typeof (r.data?.totalAdvanced ?? r.data?.totalAdvancedInPeriod) === "number" ? (r.data?.totalAdvanced ?? r.data?.totalAdvancedInPeriod ?? 0) : 0;
                         sumGross += g;
                         sumAdvanced += a;
                         rows.push({ workerName: targets[i].workerName, grossAmount: g, totalAdvanced: a });
@@ -176,9 +177,11 @@ const WorkLogPage = () => {
         setWorkAmountRows([]);
     };
 
-    // accessCode 로그인 시 해당 월 work-amount(grossAmount, totalAdvanced) 로드
+    // email 로그인 시 work-amount 로드
     useEffect(() => {
-        loadWorkAmountData(currentYear, currentMonth);
+        if (loginMethod === "email") {
+            loadWorkAmountData(currentYear, currentMonth);
+        }
     }, [loginMethod, currentYear, currentMonth, selectedCompanyId, salaryTargets]);
 
     // accessCode 로그인 시 worker 정보 로드
@@ -188,6 +191,8 @@ const WorkLogPage = () => {
             if (accessCode) {
                 getWorkerInfo(accessCode)
                     .then((response) => {
+                        console.log("workerInfo full response:", response);
+                        console.log("workerInfo data:", response.data);
                         setWorkerName(response.data?.workerName || "");
                         setWorkerColorHex(response.data?.colorHex);
                     })
@@ -228,9 +233,37 @@ const WorkLogPage = () => {
     const accessCode = loginMethod === "accessCode" ? getAccessCode() : null;
     const accessCodeWorkLogs = accessCode ? workLogsByAccessCode[accessCode] || [] : [];
     const companyName = accessCodeWorkLogs.length > 0 ? accessCodeWorkLogs[0].companyName : null;
+    if (accessCodeWorkLogs.length > 0) {
+        console.log("sample workLog full object:", accessCodeWorkLogs[0]);
+    }
 
-    // email 로그인이고 업장이 없는 경우
-    if (loginMethod === "email" && !companiesLoading && companies.length === 0) {
+    // email 로그인 시 업장 로딩 중 (또는 아직 fetch 전)
+    if (loginMethod === "email" && (companiesLoading || (!hasFetched && companies.length === 0))) {
+        return (
+            <PageWrapper>
+                <EmptyStateContainer>
+                    <EmptyStateText>업장 목록을 불러오는 중...</EmptyStateText>
+                </EmptyStateContainer>
+            </PageWrapper>
+        );
+    }
+
+    // email 로그인 시 업장 목록 로드 실패 (재시도 가능)
+    if (loginMethod === "email" && companiesError) {
+        return (
+            <PageWrapper>
+                <EmptyStateContainer>
+                    <EmptyStateText>{companiesError}</EmptyStateText>
+                    <RegisterButton onClick={() => dispatch(fetchCompanies())}>
+                        다시 시도
+                    </RegisterButton>
+                </EmptyStateContainer>
+            </PageWrapper>
+        );
+    }
+
+    // email 로그인이고 업장이 없는 경우 (fetch 완료 후 빈 결과)
+    if (loginMethod === "email" && hasFetched && companies.length === 0) {
         return (
             <PageWrapper>
                 <EmptyStateContainer>
@@ -247,30 +280,6 @@ const WorkLogPage = () => {
 
     return (
         <PageWrapper>
-            <Header>
-                <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
-                    {currentYear}년 {currentMonth + 1}월 ˅
-                </PickerButton>
-                <div className="buttons">
-                    <img src={DownloadImg} alt="download" />
-                    <SettingButton type="button" onClick={() => setIsCalendarSettingModalOpen(true)} aria-label="달력 설정">
-                        <img src={SettingImg} alt="setting" />
-                    </SettingButton>
-                </div>
-            </Header>
-            {pickerOpen && (
-                <PickerBox>
-                    <WheelPickerRow>
-                        <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
-                        <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
-                    </WheelPickerRow>
-                    <PickerConfirmRow>
-                        <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
-                            적용
-                        </PickerConfirmButton>
-                    </PickerConfirmRow>
-                </PickerBox>
-            )}
             <CalendarSettingModal open={isCalendarSettingModalOpen} onClose={() => setIsCalendarSettingModalOpen(false)} onSettingsChange={() => setCalendarSettings(getCalendarSettings())} />
             <Calendar
                 workLogsByAccessCode={workLogsByAccessCode}
@@ -288,7 +297,34 @@ const WorkLogPage = () => {
                 workAmountRows={loginMethod === "email" ? workAmountRows : undefined}
                 calendarStartDay={calendarSettings.startDay}
                 workTimeDisplayFormat={calendarSettings.workTimeFormat}
+                advanceDetails={loginMethod === "accessCode" ? advanceDetails : undefined}
                 workerColorHex={loginMethod === "accessCode" ? workerColorHex : undefined}
+                headerLeft={
+                    <PickerButton onClick={() => setPickerOpen(!pickerOpen)}>
+                        {currentYear}년 {currentMonth + 1}월 ˅
+                    </PickerButton>
+                }
+                headerRight={
+                    <IconGroup>
+                        <GrayIcon src={DownloadImg} alt="download" />
+                        <SettingButton type="button" onClick={() => setIsCalendarSettingModalOpen(true)} aria-label="달력 설정">
+                            <img src={SettingImg} alt="setting" />
+                        </SettingButton>
+                    </IconGroup>
+                }
+                pickerSlot={pickerOpen ? (
+                    <PickerBox>
+                        <WheelPickerRow>
+                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
+                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
+                        </WheelPickerRow>
+                        <PickerConfirmRow>
+                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
+                                적용
+                            </PickerConfirmButton>
+                        </PickerConfirmRow>
+                    </PickerBox>
+                ) : null}
             />
         </PageWrapper>
     );
@@ -305,72 +341,64 @@ const PageWrapper = styled.div`
     }
 `;
 
-const Header = styled.div`
-    width: 100%;
+const IconGroup = styled.div`
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    gap: 10px;
 
-    .buttons {
-        display: flex;
-        align-items: center;
-        gap: 40px;
-        > img {
-            width: 38px;
-            height: 38px;
-            object-fit: contain;
-            cursor: pointer;
-        }
+    ${media.mobile} {
+        gap: 6px;
+    }
+`;
 
-        ${media.tablet} {
-            gap: 24px;
-            > img {
-                width: 32px;
-                height: 32px;
-            }
-        }
+const GrayIcon = styled.img`
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    cursor: pointer;
+    filter: grayscale(100%) brightness(0.6);
 
-        ${media.mobile} {
-            gap: 16px;
-            > img {
-                width: 28px;
-                height: 28px;
-            }
-        }
+    ${media.mobile} {
+        width: 18px;
+        height: 18px;
     }
 `;
 
 const PickerButton = styled.div`
-    width: 240px;
+    width: 100%;
     height: 72px;
-    background: #11d0c9;
+    background: #00ccc7;
     border-radius: 36px;
     color: #ffffff;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 26px;
+    justify-content: flex-start;
+    padding: 0 24px;
+    font-size: 24px;
     font-weight: 700;
     cursor: pointer;
 
+    &:hover {
+        opacity: 0.95;
+    }
+
     ${media.desktop} {
-        width: 200px;
         height: 60px;
         font-size: 22px;
+        padding: 0 20px;
     }
 
     ${media.tablet} {
-        width: 160px;
         height: 48px;
-        font-size: 18px;
+        font-size: 17px;
+        padding: 0 16px;
         border-radius: 24px;
     }
 
     ${media.mobile} {
-        width: 140px;
         height: 40px;
-        font-size: 14px;
+        font-size: 13px;
+        padding: 0 12px;
         border-radius: 20px;
     }
 `;
@@ -401,7 +429,7 @@ const PickerConfirmButton = styled.button`
     font-size: 18px;
     font-weight: 600;
     color: #fff;
-    background: #11d0c9;
+    background: #00ccc7;
     border: none;
     border-radius: 24px;
     cursor: pointer;
@@ -422,22 +450,16 @@ const SettingButton = styled.button`
     justify-content: center;
 
     > img {
-        width: 38px;
-        height: 38px;
+        width: 22px;
+        height: 22px;
         object-fit: contain;
-    }
-
-    ${media.tablet} {
-        > img {
-            width: 32px;
-            height: 32px;
-        }
+        filter: grayscale(100%) brightness(0.6);
     }
 
     ${media.mobile} {
         > img {
-            width: 28px;
-            height: 28px;
+            width: 18px;
+            height: 18px;
         }
     }
 `;
@@ -459,7 +481,7 @@ const EmptyStateContainer = styled.div`
 const EmptyStateText = styled.div`
     font-size: 32px;
     font-weight: 600;
-    color: #666;
+    color: #000;
 
     ${media.tablet} {
         font-size: 24px;
@@ -477,17 +499,17 @@ const RegisterButton = styled.button`
     padding: 12px 24px;
     font-size: 18px;
     font-weight: 600;
-    color: #00a8a5;
+    color: #00ccc7;
     background: none;
-    border: 1.5px solid #00a8a5;
+    border: 1.5px solid #00ccc7;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: #f0f9f8;
-        color: #00cbc7;
-        border-color: #00cbc7;
+        background: #fff;
+        color: #00ccc7;
+        border-color: #00ccc7;
     }
 
     ${media.mobile} {

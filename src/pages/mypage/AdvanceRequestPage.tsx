@@ -1,11 +1,49 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import styled from "styled-components";
 import { useMypageAdvanceRequests } from "../../hooks/useMypageAdvanceRequests";
 import { getStatusLabel } from "../../types/mypage";
+import { media } from "../../styles/breakpoints";
+import { mypageTitle, mypageContent } from "../../styles/mypageTypography";
 
 export default function AdvanceRequestPage() {
     const { requests, loading, approveRequest, rejectRequest } = useMypageAdvanceRequests();
     const [processingId, setProcessingId] = useState<number | null>(null);
+    const [selectedCompany, setSelectedCompany] = useState<string>("");
+    const [selectedWorker, setSelectedWorker] = useState<string>("");
+    const [selectedMonth, setSelectedMonth] = useState<string>("");
+    const [selectedStatus, setSelectedStatus] = useState<string>("");
+
+    const companyNames = useMemo(() => {
+        const names = new Set(requests.map((r) => r.companyName).filter(Boolean));
+        return Array.from(names);
+    }, [requests]);
+
+    const workerNames = useMemo(() => {
+        if (!selectedCompany) return [];
+        const names = new Set(
+            requests.filter((r) => r.companyName === selectedCompany).map((r) => r.workerName).filter(Boolean)
+        );
+        return Array.from(names);
+    }, [requests, selectedCompany]);
+
+    const availableMonths = useMemo(() => {
+        const months = new Set(
+            requests
+                .map((r) => r.requestDate?.slice(0, 7))
+                .filter(Boolean) as string[]
+        );
+        return Array.from(months).sort().reverse();
+    }, [requests]);
+
+    const filteredRequests = useMemo(() => {
+        return requests.filter((r) => {
+            if (selectedCompany && r.companyName !== selectedCompany) return false;
+            if (selectedWorker && r.workerName !== selectedWorker) return false;
+            if (selectedMonth && (!r.requestDate || !r.requestDate.startsWith(selectedMonth))) return false;
+            if (selectedStatus && (r.status || "PENDING") !== selectedStatus) return false;
+            return true;
+        });
+    }, [requests, selectedCompany, selectedWorker, selectedMonth, selectedStatus]);
 
     const handleApprove = async (request: any) => {
         if (window.confirm("선정산 요청을 승인하시겠습니까?")) {
@@ -58,7 +96,40 @@ export default function AdvanceRequestPage() {
         <Container>
             <PageTitle>선정산 요청 목록</PageTitle>
             <ContentWrapper>
-                {requests.length === 0 ? (
+                <FilterRow>
+                    {companyNames.length > 0 && (
+                        <FilterSelect value={selectedCompany} onChange={(e) => { setSelectedCompany(e.target.value); setSelectedWorker(""); }}>
+                            <option value="">전체 업장</option>
+                            {companyNames.map((name) => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </FilterSelect>
+                    )}
+                    {workerNames.length > 0 && (
+                        <FilterSelect value={selectedWorker} onChange={(e) => setSelectedWorker(e.target.value)}>
+                            <option value="">전체 직원</option>
+                            {workerNames.map((name) => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </FilterSelect>
+                    )}
+                    {availableMonths.length > 0 && (
+                        <FilterSelect value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                            <option value="">전체 월</option>
+                            {availableMonths.map((month) => (
+                                <option key={month} value={month}>{month}</option>
+                            ))}
+                        </FilterSelect>
+                    )}
+                    <FilterSelect value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
+                        <option value="">전체 상태</option>
+                        <option value="PENDING">대기중</option>
+                        <option value="APPROVED">승인</option>
+                        <option value="REJECTED">거절</option>
+                        <option value="PAID">결제완료</option>
+                    </FilterSelect>
+                </FilterRow>
+                {filteredRequests.length === 0 ? (
                     <EmptyState>선정산 요청이 없습니다.</EmptyState>
                 ) : (
                     <Table>
@@ -73,11 +144,11 @@ export default function AdvanceRequestPage() {
                             </TableRow>
                         </TableHeader>
                         <tbody>
-                            {requests.map((request) => (
+                            {filteredRequests.map((request) => (
                                 <TableRow key={`${request.companyId}-${request.salaryTargetId}-${request.requestId}`}>
                                     <TableCell>{request.companyName || "-"}</TableCell>
                                     <TableCell>{request.workerName || "-"}</TableCell>
-                                    <TableCell>{request.requestDate || "-"}</TableCell>
+                                    <TableCell>{request.requestDate ? request.requestDate.slice(0, 10) : "-"}</TableCell>
                                     <TableCell>{request.amount ? `${request.amount.toLocaleString()}원` : "-"}</TableCell>
                                     <TableCell>
                                         <StatusBadge $status={request.status || "PENDING"}>{getStatusLabel(request.status)}</StatusBadge>
@@ -111,9 +182,9 @@ const Container = styled.div`
 `;
 
 const PageTitle = styled.h1`
-    font-size: 32px;
+    ${mypageTitle}
     font-weight: 700;
-    color: #00a8a5;
+    color: #00ccc7;
     margin: 0 0 30px 0;
     align-self: flex-start;
 `;
@@ -123,9 +194,50 @@ const ContentWrapper = styled.div`
     max-width: 100%;
 `;
 
+const FilterRow = styled.div`
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+
+    ${media.mobile} {
+        margin-bottom: 14px;
+        gap: 8px;
+    }
+`;
+
+const FilterSelect = styled.select`
+    ${mypageContent}
+    padding: 10px 16px;
+    padding-right: 32px;
+    font-weight: 600;
+    border: 1.5px solid #00ccc7;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #000;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300ccc7%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px;
+    padding-right: 32px;
+
+    &:focus {
+        outline: none;
+        border-color: #00ccc7;
+        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+    }
+
+    ${media.mobile} {
+        padding: 8px 12px;
+        padding-right: 28px;
+    }
+`;
+
 const Table = styled.table`
     width: 100%;
-    background: white;
+    background: transparent;
     border-radius: 12px;
     overflow: hidden;
     border-collapse: collapse;
@@ -133,14 +245,14 @@ const Table = styled.table`
 `;
 
 const TableHeader = styled.thead`
-    background-color: #f0f9f8;
+    background-color: #ffffff;
 `;
 
 const TableRow = styled.tr`
     border-bottom: 1px solid #e0e0e0;
 
     &:hover {
-        background-color: #f9fbfc;
+        background-color: #ffffff;
     }
 
     &:last-child {
@@ -149,36 +261,26 @@ const TableRow = styled.tr`
 `;
 
 const TableHeaderCell = styled.th`
+    ${mypageContent}
     padding: 16px;
     text-align: left;
     font-weight: 600;
-    color: #2c3e50;
-    font-size: 14px;
+    color: #000;
 `;
 
 const TableCell = styled.td`
+    ${mypageContent}
     padding: 16px;
-    color: #555;
-    font-size: 14px;
+    color: #000;
 `;
 
 const StatusBadge = styled.span<{ $status: string }>`
+    ${mypageContent}
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 13px;
     font-weight: 500;
-    background-color: ${(props) => {
-        if (props.$status === "APPROVED") return "#d4edda";
-        if (props.$status === "REJECTED") return "#f8d7da";
-        if (props.$status === "PAID") return "#cfe2ff";
-        return "#fff3cd";
-    }};
-    color: ${(props) => {
-        if (props.$status === "APPROVED") return "#155724";
-        if (props.$status === "REJECTED") return "#721c24";
-        if (props.$status === "PAID") return "#084298";
-        return "#856404";
-    }};
+    background-color: ${(props) => (props.$status === "APPROVED" || props.$status === "PAID" ? "#00ccc7" : "#000")};
+    color: #fff;
 `;
 
 const ActionButtons = styled.div`
@@ -187,18 +289,18 @@ const ActionButtons = styled.div`
 `;
 
 const ApproveButton = styled.button`
+    ${mypageContent}
     padding: 6px 16px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
-    background-color: #28a745;
+    background-color: #00ccc7;
     color: white;
     font-weight: 600;
 
     &:hover:not(:disabled) {
-        background-color: #218838;
+        background-color: #00ccc7;
     }
 
     &:disabled {
@@ -208,10 +310,10 @@ const ApproveButton = styled.button`
 `;
 
 const RejectButton = styled.button`
+    ${mypageContent}
     padding: 6px 16px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: #dc3545;
@@ -229,15 +331,15 @@ const RejectButton = styled.button`
 `;
 
 const EmptyState = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 `;
 
 const LoadingText = styled.div`
+    ${mypageContent}
     text-align: center;
     padding: 60px 20px;
-    color: #95a5a6;
-    font-size: 16px;
+    color: #000;
 `;

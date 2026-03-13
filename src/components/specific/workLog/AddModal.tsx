@@ -29,7 +29,6 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
     const [startMinute, setStartMinute] = useState(0);
     const [endHour, setEndHour] = useState(18);
     const [endMinute, setEndMinute] = useState(0);
-    const [editingTime, setEditingTime] = useState<"start" | "end" | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [additionalDates, setAdditionalDates] = useState<Date[]>([]);
@@ -41,7 +40,6 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             setStartMinute(0);
             setEndHour(18);
             setEndMinute(0);
-            setEditingTime(null);
             setSelectedTargetId("");
             setError("");
             setAdditionalDates([]);
@@ -70,8 +68,6 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
             }
         });
     };
-
-    const formatTimeDisplay = (hour: number, minute: number) => `${hour}시 ${minute}분`;
 
     if (!isModalOpen) return null;
 
@@ -182,37 +178,21 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
 
                     <TimeRow>
                         <SectionTitle>시작 시간</SectionTitle>
-                        <TimeDisplayRow>
-                            <TimeDisplay>{formatTimeDisplay(startHour, startMinute)}</TimeDisplay>
-                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "start" ? null : "start")}>
-                                {editingTime === "start" ? "완료" : "수정"}
-                            </EditTimeButton>
-                        </TimeDisplayRow>
-                        {editingTime === "start" && (
-                            <TimePickerRow>
-                                <IosWheelPicker options={HOUR_OPTIONS} value={startHour} onChange={setStartHour} allowDirectInput={false} />
-                                <MinutePickerWrap>
-                                    <IosWheelPicker options={MINUTE_OPTIONS} value={startMinute} onChange={setStartMinute} allowDirectInput={false} />
-                                </MinutePickerWrap>
-                            </TimePickerRow>
-                        )}
+                        <TimePickerRow>
+                            <IosWheelPicker options={HOUR_OPTIONS} value={startHour} onChange={setStartHour} allowDirectInput />
+                            <MinutePickerWrap>
+                                <IosWheelPicker options={MINUTE_OPTIONS} value={startMinute} onChange={setStartMinute} allowDirectInput />
+                            </MinutePickerWrap>
+                        </TimePickerRow>
                     </TimeRow>
                     <TimeRow>
                         <SectionTitle>종료 시간</SectionTitle>
-                        <TimeDisplayRow>
-                            <TimeDisplay>{formatTimeDisplay(endHour, endMinute)}</TimeDisplay>
-                            <EditTimeButton type="button" onClick={() => setEditingTime(editingTime === "end" ? null : "end")}>
-                                {editingTime === "end" ? "완료" : "수정"}
-                            </EditTimeButton>
-                        </TimeDisplayRow>
-                        {editingTime === "end" && (
-                            <TimePickerRow>
-                                <IosWheelPicker options={HOUR_OPTIONS} value={endHour} onChange={setEndHour} allowDirectInput={false} />
-                                <MinutePickerWrap>
-                                    <IosWheelPicker options={MINUTE_OPTIONS} value={endMinute} onChange={setEndMinute} allowDirectInput={false} />
-                                </MinutePickerWrap>
-                            </TimePickerRow>
-                        )}
+                        <TimePickerRow>
+                            <IosWheelPicker options={HOUR_OPTIONS} value={endHour} onChange={setEndHour} allowDirectInput />
+                            <MinutePickerWrap>
+                                <IosWheelPicker options={MINUTE_OPTIONS} value={endMinute} onChange={setEndMinute} allowDirectInput />
+                            </MinutePickerWrap>
+                        </TimePickerRow>
                     </TimeRow>
 
                     {error && <ErrorText>{error}</ErrorText>}
@@ -243,9 +223,9 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
     background: white;
     width: 520px;
-    min-height: 600px;
+    max-height: 90vh;
     border-radius: 40px;
-    overflow: hidden;
+    overflow-y: auto;
     filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.2));
 `;
 
@@ -294,14 +274,14 @@ const TimeDisplayRow = styled.div`
 const TimeDisplay = styled.span`
     font-size: 18px;
     font-weight: 600;
-    color: #2c3e50;
+    color: #000;
 `;
 
 const EditTimeButton = styled.button`
     padding: 6px 14px;
     font-size: 14px;
     font-weight: 600;
-    color: #00a8a5;
+    color: #00ccc7;
     background: #fff;
     border: 1.5px solid #00ccc7;
     border-radius: 8px;
@@ -327,8 +307,15 @@ const DatePickerWrapper = styled.div`
     margin-bottom: 12px;
 
     .rdp {
-        --rdp-accent-color: #11d0c9;
-        --rdp-accent-background-color: #11d0c9;
+        --rdp-accent-color: #00ccc7;
+        --rdp-accent-background-color: #00ccc7;
+    }
+
+    .rdp-nav_button,
+    .rdp-nav_button svg,
+    .rdp-chevron {
+        color: #00ccc7;
+        fill: #00ccc7;
     }
 
     .rdp-day_button {
@@ -336,7 +323,7 @@ const DatePickerWrapper = styled.div`
     }
 
     .rdp-selected .rdp-day_button {
-        background-color: #11d0c9;
+        background-color: #00ccc7;
         color: white;
         border: none;
         outline: none;
@@ -344,7 +331,7 @@ const DatePickerWrapper = styled.div`
     }
 
     .primary-date .rdp-day_button {
-        background-color: #11d0c9;
+        background-color: #00ccc7;
         color: white;
         border: none;
         outline: none;
@@ -368,7 +355,7 @@ const Select = styled.select`
 
     &:focus {
         outline: none;
-        border-color: #00cbc7;
+        border-color: #00ccc7;
     }
 
     option[value=""] {
@@ -378,19 +365,19 @@ const Select = styled.select`
 
 const ErrorText = styled.div`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin-top: 12px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 `;
 
 const SaveButton = styled.button`
     width: 200px;
     height: 56px;
     border-radius: 10px;
-    background-image: linear-gradient(-60deg, #00cbc7 0%, #75ec9d 100%);
+    background: #00ccc7;
     border: none;
     color: white;
     font-size: 20px;

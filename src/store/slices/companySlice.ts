@@ -8,6 +8,7 @@ interface CompanyState {
     selectedCompanyId: number | null;
     isLoading: boolean;
     error: string | null;
+    hasFetched: boolean;
 }
 
 const initialState: CompanyState = {
@@ -15,6 +16,7 @@ const initialState: CompanyState = {
     selectedCompanyId: null,
     isLoading: false,
     error: null,
+    hasFetched: false,
 };
 
 export const fetchCompanies = createAsyncThunk("company/fetchCompanies", async (_, { rejectWithValue }) => {
@@ -36,6 +38,8 @@ const companySlice = createSlice({
         clearCompanies: (state) => {
             state.companies = [];
             state.selectedCompanyId = null;
+            state.hasFetched = false;
+            state.error = null;
         },
     },
     extraReducers: (builder) => {
@@ -46,6 +50,8 @@ const companySlice = createSlice({
             })
             .addCase(fetchCompanies.fulfilled, (state, action) => {
                 state.isLoading = false;
+                state.hasFetched = true;
+                state.error = null;
                 state.companies = action.payload;
                 // 첫 번째 업장을 자동 선택
                 if (action.payload.length > 0 && !state.selectedCompanyId) {
@@ -54,6 +60,7 @@ const companySlice = createSlice({
             })
             .addCase(fetchCompanies.rejected, (state, action) => {
                 state.isLoading = false;
+                state.hasFetched = true;
                 state.error = action.payload as string;
             });
     },

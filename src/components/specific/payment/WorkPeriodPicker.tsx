@@ -6,6 +6,7 @@ import { DayPicker, type DateRange } from "react-day-picker";
 import { format, addMonths } from "date-fns";
 import { ko } from "date-fns/locale";
 import "react-day-picker/style.css";
+import { media } from "../../../styles/breakpoints";
 
 interface WorkPeriodPickerProps {
     isOpen: boolean;
@@ -95,10 +96,14 @@ const ModalOverlay = styled.div`
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
     background: rgba(0, 0, 0, 0.5);
     z-index: 9999;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
     cursor: pointer;
 `;
 
@@ -106,10 +111,15 @@ const CalendarModal = styled.div`
     position: fixed;
     top: 50%;
     left: 50%;
+    -webkit-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
     z-index: 10000;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     width: 1062px;
+    max-width: calc(100vw - 24px);
     height: 600px;
+    max-height: 90vh;
     border-radius: 69px;
     filter: drop-shadow(2.121px 2.121px 14.5px rgba(0, 0, 0, 0.3));
     background-color: #ffffff;
@@ -117,6 +127,24 @@ const CalendarModal = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    box-sizing: border-box;
+    overflow: hidden;
+
+    ${media.tablet} {
+        width: calc(100vw - 32px);
+        max-height: 85vh;
+        border-radius: 24px;
+        padding: 24px;
+    }
+
+    ${media.mobile} {
+        width: calc(100vw - 24px);
+        height: auto;
+        max-height: 88vh;
+        border-radius: 16px;
+        padding: 16px;
+        overflow-y: auto;
+    }
 `;
 
 const TopRow = styled.div`
@@ -126,6 +154,12 @@ const TopRow = styled.div`
     justify-content: center;
     gap: 16px;
     padding-bottom: 16px;
+    flex-shrink: 0;
+
+    ${media.mobile} {
+        gap: 8px;
+        padding-bottom: 12px;
+    }
 `;
 
 const NavButton = styled.button`
@@ -135,18 +169,23 @@ const NavButton = styled.button`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #2c3e50;
+    color: #00ccc7;
     background: transparent;
     border: none;
     cursor: pointer;
     flex-shrink: 0;
 
     &:hover {
-        color: #00a8a5;
+        opacity: 0.85;
     }
 
     &:focus {
         outline: none;
+    }
+
+    ${media.mobile} {
+        width: 32px;
+        height: 32px;
     }
 `;
 
@@ -161,8 +200,12 @@ const MonthLabelCell = styled.div`
 const MonthLabel = styled.span`
     font-size: 18px;
     font-weight: 600;
-    color: #2c3e50;
+    color: #000;
     text-align: center;
+
+    ${media.mobile} {
+        font-size: 14px;
+    }
 `;
 
 const CalendarContainer = styled.div`
@@ -170,9 +213,17 @@ const CalendarContainer = styled.div`
     flex-direction: row;
     gap: 24px;
     flex: 1;
+    min-height: 0;
     align-items: flex-start;
     justify-content: center;
     padding: 0;
+
+    ${media.mobile} {
+        flex-direction: column;
+        gap: 16px;
+        flex: 1 1 auto;
+        overflow-y: auto;
+    }
 `;
 
 const MonthBlock = styled.div`
@@ -181,6 +232,11 @@ const MonthBlock = styled.div`
     align-items: center;
     flex: 1;
     min-width: 0;
+
+    ${media.mobile} {
+        flex: 0 0 auto;
+        width: 100%;
+    }
 `;
 
 const MonthWrapper = styled.div`
@@ -189,14 +245,29 @@ const MonthWrapper = styled.div`
     .rdp-nav {
         display: none !important;
     }
+
+    .rdp-month {
+        width: 100%;
+    }
+
+    .rdp-weekday {
+        font-size: 12px;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        .rdp-weekday {
+            font-size: 11px;
+        }
+    }
 `;
 
 const CustomDayPicker = styled(DayPicker)`
-    --rdp-accent-color: #ffffff; /* 메인 색상 */
+    --rdp-accent-color: #ffffff;
     --rdp-range_middle-background-color: rgba(0, 203, 199, 0.35);
     --rdp-range_start-color: #000000;
-    --rdp-selected-border: 9px solid #00cbc7;
-    --rdp-range_middle-color: #333; /* 중간 글자색 */
+    --rdp-selected-border: 9px solid #00ccc7;
+    --rdp-range_middle-color: #000;
 
     .rdp-day {
         width: 54px;
@@ -209,6 +280,31 @@ const CustomDayPicker = styled(DayPicker)`
         border-radius: 50%;
         font-size: 16px;
     }
+
+    ${media.tablet} {
+        .rdp-day {
+            width: 44px;
+            height: 44px;
+        }
+        .rdp-day_button {
+            width: 44px;
+            height: 44px;
+            font-size: 14px;
+        }
+    }
+
+    ${media.mobile} {
+        .rdp-day {
+            width: 36px;
+            height: 36px;
+        }
+        .rdp-day_button {
+            width: 36px;
+            height: 36px;
+            font-size: 13px;
+        }
+        --rdp-selected-border: 6px solid #00ccc7;
+    }
 `;
 
 const CalendarActions = styled.div`
@@ -218,22 +314,34 @@ const CalendarActions = styled.div`
     padding-top: 20px;
     margin-top: 20px;
     border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
+
+    ${media.mobile} {
+        padding-top: 16px;
+        margin-top: 16px;
+        gap: 8px;
+    }
 `;
 
 const CancelButton = styled.button`
     padding: 10px 24px;
     font-size: 16px;
     font-weight: 600;
-    color: #666;
+    color: #000;
     background: white;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #000;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
         background: #f5f5f5;
-        border-color: #bbb;
+        border-color: #000;
+    }
+
+    ${media.mobile} {
+        padding: 10px 20px;
+        font-size: 15px;
     }
 `;
 
@@ -242,7 +350,7 @@ const ConfirmButton = styled.button`
     font-size: 16px;
     font-weight: 600;
     color: white;
-    background: linear-gradient(135deg, #00cbc7 0%, #4dd0ae 100%);
+    background: #00ccc7;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -256,5 +364,10 @@ const ConfirmButton = styled.button`
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        padding: 10px 20px;
+        font-size: 15px;
     }
 `;

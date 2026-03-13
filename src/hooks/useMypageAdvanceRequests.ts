@@ -29,6 +29,7 @@ export function useMypageAdvanceRequests() {
                                 salaryTargetId: worker.id,
                                 workerName: worker.workerName,
                                 companyName: company.name,
+                                requestDate: req.requestDate || req.createdAt || req.requestedAt || req.date || undefined,
                             }));
 
                             allRequests.push(...requestsWithInfo);

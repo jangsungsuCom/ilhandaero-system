@@ -310,23 +310,23 @@ const CenterInput = styled.input`
     border: 1.5px solid #00ccc7;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.95);
-    color: #1a1a1a;
+    color: #000;
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 2px rgba(0, 204, 199, 0.2);
     }
 
     &::placeholder {
-        color: #bbb;
+        color: #000;
     }
 `;
 
 const CenterInputSuffix = styled.span`
     font-size: 20px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #000;
     margin-left: 4px;
 `;
 
@@ -360,7 +360,7 @@ const WheelItem = styled.div<{ height: number; $selected: boolean; $hidden?: boo
     scroll-snap-stop: always;
     font-size: ${(p) => (p.$selected ? 20 : 16)}px;
     font-weight: ${(p) => (p.$selected ? 600 : 400)};
-    color: ${(p) => (p.$selected ? "#1a1a1a" : "#999")};
+    color: ${(p) => (p.$selected ? "#000" : "#000")};
     cursor: pointer;
     transition: font-size 0.15s ease, color 0.15s ease;
     user-select: none;

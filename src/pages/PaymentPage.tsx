@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { type DateRange } from "react-day-picker";
-import { format, subDays } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { PageContainer, FormCard, Title, Form, FieldGroup, Label, Input, ReadOnlyInput, InputWrapper, Unit } from "../components/common/FormCard";
 import WorkPeriodPicker from "../components/specific/payment/WorkPeriodPicker";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -12,8 +12,9 @@ import { getWorkAmount } from "../utils/workLog";
 //import { postSalaryPay } from "../utils/paymentApi";
 import { getLoginMethod } from "../utils/auth";
 import { RiShareBoxLine } from "react-icons/ri";
-import type { DeductionType } from "../types/salaryTarget";
-import { calculateDeduction } from "../utils/calculateDeduction";
+import type { DeductionDetail } from "../types/payment";
+import { media } from "../styles/breakpoints";
+import { isInAppBrowser } from "../utils/inAppBrowser";
 
 export default function PaymentPage() {
     const dispatch = useAppDispatch();
@@ -24,7 +25,7 @@ export default function PaymentPage() {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | "">("");
     const [workPeriod, setWorkPeriod] = useState<DateRange | undefined>(() => {
         const now = new Date();
-        return { from: subDays(now, 30), to: now };
+        return { from: startOfMonth(now), to: endOfMonth(now) };
     });
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [hourlyWage, setHourlyWage] = useState<number | "">("");
@@ -34,16 +35,16 @@ export default function PaymentPage() {
     const [weeklyAllowance, setWeeklyAllowance] = useState<number>(0);
     //const [grossAmount, setGrossAmount] = useState<number>(0);
     const [advancePayment, setAdvancePayment] = useState<number>(0);
-    const [available, setAvailable] = useState<number>(0);
     const [additionalPayment, setAdditionalPayment] = useState<number>(0);
     const [additionalPaymentDescription, setAdditionalPaymentDescription] = useState<string>("");
-    const [deductionType, setDeductionType] = useState<DeductionType | undefined>(undefined);
+    const [deductionTotal, setDeductionTotal] = useState<number>(0);
+    const [deductionDetail, setDeductionDetail] = useState<DeductionDetail>({});
     //const [isCardPaying, setIsCardPaying] = useState(false);
 
-    // 3.3% 공제액 계산 (1의 자리 버림)
-    const totalBeforeDeduction = available + additionalPayment;
-    const calculatedDeduction = calculateDeduction(basicSalary + weeklyAllowance, deductionType || "NONE");
-    const netPayment = totalBeforeDeduction - calculatedDeduction.total;
+    // 잔여금액 = 기본+주휴 - 선정산금 (공제 뺀 값 아님). 최종 정산금 = (잔여금액+추가지급) - 공제액
+    const remainingAmount = (basicSalary || 0) + (weeklyAllowance || 0) - (advancePayment || 0);
+    const totalBeforeDeduction = remainingAmount + additionalPayment;
+    const netPayment = totalBeforeDeduction - (deductionTotal || 0);
 
     // 이메일 로그인 시 업장 목록 로드
     useEffect(() => {
@@ -70,8 +71,8 @@ export default function PaymentPage() {
             setWeeklyAllowance(0);
             //setGrossAmount(0);
             setAdvancePayment(0);
-            setAvailable(0);
-            setDeductionType(undefined);
+            setDeductionTotal(0);
+            setDeductionDetail({});
             return;
         }
         const targets = salaryTargets[selectedCompanyId] || [];
@@ -80,7 +81,6 @@ export default function PaymentPage() {
             setHourlyWage(emp.hourlyWage);
             setBank(emp.bankName);
             setAccountNumber(emp.accountNumber);
-            setDeductionType(emp.deductionType);
         }
     }, [loginMethod, selectedCompanyId, selectedEmployeeId, salaryTargets]);
 
@@ -100,9 +100,20 @@ export default function PaymentPage() {
                 const d = res.data;
                 setBasicSalary(d.basePay);
                 setWeeklyAllowance(d.weeklyAllowance);
-                //setGrossAmount(d.grossAmount);
-                setAdvancePayment(d.totalAdvanced);
-                setAvailable(d.available);
+                setAdvancePayment(d.totalAdvanced ?? d.totalAdvancedInPeriod ?? 0);
+                setDeductionTotal(d.deduction ?? 0);
+                const detail: DeductionDetail = {};
+                if (d.threePointThree) {
+                    if (d.threePointThree.businessIncomeTax != null) detail["사업소득세(3.0%)"] = d.threePointThree.businessIncomeTax;
+                    if (d.threePointThree.localIncomeTax != null) detail["지방소득세(0.3%)"] = d.threePointThree.localIncomeTax;
+                }
+                if (d.fourInsurance) {
+                    if (d.fourInsurance.pension != null) detail["국민연금(4.75%)"] = d.fourInsurance.pension;
+                    if (d.fourInsurance.health != null) detail["건강보험(3.595%)"] = d.fourInsurance.health;
+                    if (d.fourInsurance.longTermCare != null) detail["장기요양보험(0.4724%)"] = d.fourInsurance.longTermCare;
+                    if (d.fourInsurance.employment != null) detail["고용보험(0.9%)"] = d.fourInsurance.employment;
+                }
+                setDeductionDetail(detail);
             } catch (e) {
                 console.error("Failed to load work amount:", e);
             }
@@ -163,13 +174,16 @@ export default function PaymentPage() {
         alert("급여 결제가 완료되었습니다!");
     };
 
+    const inAppBrowser = isInAppBrowser();
+
     return (
         <>
-            <PageContainer width="525px">
-                <FormCard>
+            <PaymentPageWrap $inAppBrowser={inAppBrowser}>
+                <PageContainer width="100%">
+                    <FormCard>
                     <Title>정산금액 지급</Title>
 
-                    <Form onSubmit={handleSubmit}>
+                    <PaymentForm onSubmit={handleSubmit}>
                         <RowFieldGroup>
                             <RowLabel>업장 선택</RowLabel>
                             <ControlArea>
@@ -206,7 +220,7 @@ export default function PaymentPage() {
                         </RowFieldGroup>
 
                         <RowFieldGroup>
-                            <RowLabel>근무기간</RowLabel>
+                            <RowLabel>근무 기간</RowLabel>
                             <ControlArea>
                                 <DateInputWrapper>
                                     <DateDisplayButton type="button" onClick={handleOpenCalendar} disabled={!selectedEmployeeId}>
@@ -261,16 +275,16 @@ export default function PaymentPage() {
                         </RowFieldGroup>
 
                         <RowFieldGroup>
-                            <RowLabel>잔여금액</RowLabel>
+                            <RowLabel>잔여 금액</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${(available || 0).toLocaleString()} 원`} readOnly />
+                                <ReadOnlyInput value={`${Math.max(0, remainingAmount).toLocaleString()} 원`} readOnly />
                             </ControlArea>
                         </RowFieldGroup>
 
                         <SectionDivider />
 
                         <RowFieldGroup>
-                            <RowLabel>추가지급액</RowLabel>
+                            <RowLabel>추가 지급액</RowLabel>
                             <ControlArea>
                                 <InlineInputsRow>
                                     <InlineInputBlock>
@@ -282,7 +296,7 @@ export default function PaymentPage() {
                                         <InputWrapper>
                                             <Input
                                                 type="number"
-                                                value={additionalPayment}
+                                                value={additionalPayment || ""}
                                                 onChange={(e) => setAdditionalPayment(e.target.value ? Number(e.target.value) : 0)}
                                                 placeholder="0"
                                                 min={0}
@@ -297,15 +311,12 @@ export default function PaymentPage() {
                         <RowFieldGroup>
                             <RowLabel>전체 공제액</RowLabel>
                             <ControlArea>
-                                <ReadOnlyInput value={`${calculatedDeduction.total.toLocaleString()} 원`} readOnly />
-                                {Object.entries(calculatedDeduction).map(([key, value], i) => {
-                                    if (i === 0) return null;
-                                    return (
-                                        <div style={{ fontSize: "14px", color: "#666" }}>
-                                            {key}: {value.toLocaleString()} 원
-                                        </div>
-                                    );
-                                })}
+                                <ReadOnlyInput value={`${(deductionTotal || 0).toLocaleString()} 원`} readOnly />
+                                {Object.entries(deductionDetail).map(([key, value]) => (
+                                    <div key={key} style={{ fontSize: "14px", color: "#00ccc7" }}>
+                                        {key}: {(value ?? 0).toLocaleString()} 원
+                                    </div>
+                                ))}
                             </ControlArea>
                         </RowFieldGroup>
                         <SectionDivider />
@@ -335,54 +346,99 @@ export default function PaymentPage() {
                             </PaymentButton>
                             <PaymentButton type="button">송금하기</PaymentButton>
                         </PaymentButtonsRow> */}
-                    </Form>
+                    </PaymentForm>
                 </FormCard>
             </PageContainer>
+            </PaymentPageWrap>
             <WorkPeriodPicker isOpen={isCalendarOpen} selectedRange={workPeriod} onClose={handleCloseCalendar} onConfirm={handleConfirmDate} />
         </>
     );
 }
 
+const PaymentPageWrap = styled.div<{ $inAppBrowser?: boolean }>`
+    width: 525px;
+    max-width: 100%;
+    /* 인앱 브라우저: GPU 렌더링 강제, 레이아웃 안정화 */
+    ${({ $inAppBrowser }) =>
+        $inAppBrowser &&
+        `
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    `}
+
+    ${media.mobile} {
+        width: 100%;
+    }
+`;
+
+const PaymentForm = styled(Form)`
+    gap: 16px;
+
+    ${media.mobile} {
+        gap: 16px;
+    }
+`;
+
 const RowFieldGroup = styled(FieldGroup)`
     flex-direction: row;
     align-items: center;
     gap: 60px;
+
+    ${media.mobile} {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
 `;
 
 const RowLabel = styled(Label)`
     flex: 1;
     text-align: right;
+
+    ${media.mobile} {
+        text-align: left;
+        flex: none;
+    }
 `;
 
 const ControlArea = styled.div`
     width: 330px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    ${media.mobile} {
+        width: 100%;
+    }
 `;
 
 const SectionDivider = styled.div`
-    border-top: 1px solid #bebebe;
-    margin: 8px 0 20px;
+    border-top: 1px solid #000;
+    margin: 16px 0;
 `;
 
 const PrimaryActionButton = styled.button`
     width: 446px;
+    max-width: 100%;
     height: 63px;
-    margin: 20px auto 0;
+    margin: 16px auto 0;
     font-size: 22px;
     line-height: 22px;
     font-weight: bold;
     color: white;
-    background-color: #00ccc7;
+    background: #00ccc7;
     border: 2px solid transparent;
     border-radius: 10px;
     cursor: pointer;
-    //box-shadow: 0 6px 12px rgba(0, 204, 199, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
 
     &:hover:not(:disabled) {
-        //transform: translateY(-2px);
-        //box-shadow: 0 10px 20px rgba(0, 204, 199, 0.4);
         border-color: rgb(0, 161, 159);
     }
 
@@ -393,6 +449,12 @@ const PrimaryActionButton = styled.button`
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    ${media.mobile} {
+        width: 100%;
+        height: 52px;
+        font-size: 18px;
     }
 `;
 
@@ -426,7 +488,7 @@ const AgreementRow = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 16px;
     margin-bottom: 16px;
 `;
 
@@ -442,57 +504,78 @@ const AgreementCheckbox = styled.input.attrs({ type: "checkbox" })`
     -moz-appearance: none;
 
     &:checked {
-        background-color: #00ccc7;
+        background: #00ccc7;
     }
 `;
 
 const AgreementText = styled.span`
     font-size: 14px;
     line-height: 14px;
-    color: #333;
+    color: #00ccc7;
     text-align: center;
 `;
 
 const InlineInputsRow = styled.div`
     display: flex;
-    gap: 12px;
+    gap: 16px;
+
+    ${media.mobile} {
+        flex-direction: column;
+    }
 `;
 
 const InlineInputBlock = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 `;
 
 const InlineInputLabel = styled.span`
     font-size: 12px;
-    color: #999;
+    color: #00ccc7;
 `;
 
 const Select = styled.select`
     width: 100%;
-    padding: 12px;
+    height: 52px;
+    padding: 0 16px;
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
     font-size: 17px;
-    background: white;
+    background: #ffffff;
+    color: #000;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300ccc7' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     &:disabled {
-        background: #f5f5f5;
+        background-color: #f5f5f5;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        color: #000;
         cursor: not-allowed;
-        opacity: 0.6;
     }
 
     option[value=""] {
         display: none;
+    }
+
+    ${media.mobile} {
+        height: 46px;
+        font-size: 16px;
+        padding: 0 14px;
+        padding-right: 40px;
     }
 `;
 
@@ -507,25 +590,32 @@ const DateDisplayButton = styled.button`
     font-size: 17px;
     border: 1.5px solid #00ccc7;
     border-radius: 12px;
-    background: #f9fbfc;
+    background: #ffffff;
+    color: #000;
     text-align: left;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-sizing: border-box;
 
     &:hover:not(:disabled) {
-        border-color: #00a8a5;
-        background: #f0f9f8;
+        border-color: #00ccc7;
     }
 
     &:focus {
         outline: none;
-        border-color: #00a8a5;
+        border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     &:disabled {
         background: #f5f5f5;
+        color: #000;
         cursor: not-allowed;
-        opacity: 0.6;
+    }
+
+    ${media.mobile} {
+        height: 46px;
+        font-size: 16px;
+        padding: 0 14px;
     }
 `;

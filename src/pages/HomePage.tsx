@@ -7,6 +7,7 @@ import LogoImg from "../assets/images/layout/logo1.svg";
 import PaymentButton from "../assets/images/home/PaymentLink.png";
 import DownloadButton from "../assets/images/home/download.png";
 import Kakao from "../assets/images/home/kakao_logo.png";
+import HeaderBg from "../assets/images/layout/header.png";
 import { getLoginMethod, removeAuthToken } from "../utils/auth";
 import Footer from "../components/specific/home/Footer";
 import { media } from "../styles/breakpoints";
@@ -22,15 +23,16 @@ const HomePage = () => {
                     <LeftTopTriangle />
                     <TopNavBar />
                     <PaymentBtnContainer src={PaymentButton} alt="payment" onClick={() => navigate("/work-log")} style={{ cursor: "pointer" }} />
-                    <Introduction>
+                    <IntroTop>
                         <div className="subTitle">사장님은 계산할 필요 없이</div>
-                        <div className="title">간편송금</div>
-                        <div style={{ height: "72px" }} />
+                        <div className="title">간편 송금</div>
+                    </IntroTop>
+                    <IntroBottom>
                         <div className="subTitle">알바생은 기다릴 필요 없이</div>
                         <div className="title">선정산 요청</div>
                         <div style={{ height: "48px" }} />
                         <div className="more">{`더 알아보기 >`}</div>
-                    </Introduction>
+                    </IntroBottom>
                     <KakaoButtonContainer>
                         <img src={Kakao} style={{ cursor: "pointer" }} />
                     </KakaoButtonContainer>
@@ -144,22 +146,22 @@ const LeftTopTriangle = styled.div`
     left: 0;
     width: 0;
     height: 0;
-    border-top: 235px solid white;
-    border-right: 971px solid transparent;
+    border-top: 285px solid white;
+    border-right: 1071px solid transparent;
 
     ${media.desktop} {
-        border-top: 180px solid white;
-        border-right: 750px solid transparent;
+        border-top: 230px solid white;
+        border-right: 850px solid transparent;
     }
 
     ${media.tablet} {
-        border-top: 120px solid white;
-        border-right: 500px solid transparent;
+        border-top: 170px solid white;
+        border-right: 600px solid transparent;
     }
 
     ${media.mobile} {
-        border-top: 80px solid white;
-        border-right: 300px solid transparent;
+        border-top: 130px solid white;
+        border-right: 400px solid transparent;
     }
 `;
 
@@ -169,7 +171,7 @@ const RightBotTriangle = styled.div`
     right: 0;
     width: 971px;
     height: 235px;
-    background: linear-gradient(to right, #92f972, #00ccc7);
+    background: #00ccc7;
     clip-path: polygon(100% 100%, 0 100%, 100% 0);
     display: flex;
     flex-direction: column;
@@ -249,7 +251,7 @@ const Logo = styled.img`
     }
 
     ${media.mobile} {
-        width: 163px;
+        width: 196px;
         margin-right: 0;
         left: -16px;
         top: -8px;
@@ -276,13 +278,16 @@ const PaymentBtnContainer = styled.img`
     }
 
     ${media.mobile} {
-        display: none;
+        top: 77%;
+        right: 50%;
+        transform: translate(calc(50% - 110px), -50%);
+        max-width: 154px;
     }
 `;
 
 const NavContainer = styled.div`
     position: absolute;
-    top: 0px;
+    top: 50px;
     left: 0px;
     width: 100%;
     height: 235px;
@@ -302,6 +307,7 @@ const NavContainer = styled.div`
     }
 
     ${media.tablet} {
+        top: 40px;
         height: 120px;
         padding: 0 30px;
         font-size: 14px;
@@ -309,6 +315,7 @@ const NavContainer = styled.div`
     }
 
     ${media.mobile} {
+        top: 30px;
         height: 80px;
         padding: 0 16px;
         font-size: 14px;
@@ -355,7 +362,9 @@ const NavLinksContainer = styled.div<{ $isOpen: boolean }>`
         right: 0;
         height: 100vh;
         width: 280px;
-        background: rgba(0, 20, 41, 0.98);
+        background-image: url(${HeaderBg});
+        background-size: cover;
+        background-position: center;
         flex-direction: column;
         justify-content: flex-start;
         padding-top: 100px;
@@ -383,20 +392,20 @@ const NavLink = styled.div`
     }
 
     ${media.tablet} {
-        font-size: 18px;
-        padding: 12px 24px;
+        font-size: 22px;
+        padding: 14px 24px;
         width: 100%;
         text-align: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
         &:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
         }
     }
 
     ${media.mobile} {
-        font-size: 16px;
-        padding: 10px 20px;
+        font-size: 19px;
+        padding: 12px 20px;
     }
 `;
 
@@ -431,9 +440,8 @@ const KakaoButtonContainer = styled.div`
     }
 `;
 
-const Introduction = styled.div`
+const introBase = `
     position: absolute;
-    top: 366px;
     left: 94px;
     color: white;
 
@@ -450,77 +458,69 @@ const Introduction = styled.div`
         margin-bottom: 20px;
     }
 
-    .line {
-        width: 48px;
-        height: 5px;
-        background-color: white;
-        margin-bottom: 26px;
-    }
-
     .more {
         font-size: 25px;
         line-height: 25px;
         letter-spacing: 1px;
-        color: #14cec5;
+        color: #00ccc7;
         font-weight: 500;
         cursor: pointer;
         position: relative;
         left: 8px;
     }
+`;
+
+const IntroTop = styled.div`
+    ${introBase}
+    top: 33%;
 
     ${media.desktop} {
-        top: 272px;
+        top: 33%;
         left: 50px;
-
-        .title {
-            font-size: 56px;
-            line-height: 56px;
-        }
-        .subTitle {
-            font-size: 36px;
-            line-height: 36px;
-            margin-bottom: 16px;
-        }
-        .more {
-            font-size: 20px;
-        }
+        .title { font-size: 56px; line-height: 56px; }
+        .subTitle { font-size: 36px; line-height: 36px; margin-bottom: 16px; }
     }
 
     ${media.tablet} {
-        top: 189px;
+        top: 33%;
         left: 30px;
-
-        .title {
-            font-size: 40px;
-            line-height: 40px;
-            letter-spacing: 2px;
-        }
-        .subTitle {
-            font-size: 26px;
-            line-height: 26px;
-            margin-bottom: 12px;
-        }
-        .more {
-            font-size: 16px;
-        }
+        .title { font-size: 40px; line-height: 40px; letter-spacing: 2px; }
+        .subTitle { font-size: 26px; line-height: 26px; margin-bottom: 12px; }
     }
 
     ${media.mobile} {
-        top: 121px;
+        top: 33%;
         left: 16px;
+        .title { font-size: 28px; line-height: 28px; letter-spacing: 1px; }
+        .subTitle { font-size: 18px; line-height: 18px; margin-bottom: 10px; }
+    }
+`;
 
-        .title {
-            font-size: 28px;
-            line-height: 28px;
-            letter-spacing: 1px;
-        }
-        .subTitle {
-            font-size: 18px;
-            line-height: 18px;
-            margin-bottom: 10px;
-        }
-        .more {
-            font-size: 14px;
-        }
+const IntroBottom = styled.div`
+    ${introBase}
+    top: 50%;
+
+    ${media.desktop} {
+        top: 50%;
+        left: 50px;
+        .title { font-size: 56px; line-height: 56px; }
+        .subTitle { font-size: 36px; line-height: 36px; margin-bottom: 16px; }
+        .more { font-size: 20px; }
+    }
+
+    ${media.tablet} {
+        top: 50%;
+        left: 30px;
+        .title { font-size: 40px; line-height: 40px; letter-spacing: 2px; }
+        .subTitle { font-size: 26px; line-height: 26px; margin-bottom: 12px; }
+        .more { font-size: 16px; }
+    }
+
+    ${media.mobile} {
+        top: 50%;
+        left: 16px;
+        .title { font-size: 28px; line-height: 28px; letter-spacing: 1px; }
+        .subTitle { font-size: 18px; line-height: 18px; margin-bottom: 10px; }
+        .more { display: none; }
     }
 `;

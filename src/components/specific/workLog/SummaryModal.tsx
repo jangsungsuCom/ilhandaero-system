@@ -11,6 +11,12 @@ export interface SummaryRow {
 
 export type SummaryMode = "gross" | "advanced";
 
+export interface AdvanceDetailRow {
+    date: string;
+    amount: number;
+    status: string;
+}
+
 type Props = {
     open: boolean;
     onClose: () => void;
@@ -20,10 +26,22 @@ type Props = {
     rows: SummaryRow[];
     /** 'gross' = 총 급여만, 'advanced' = 선정산금만 */
     mode?: SummaryMode;
+    /** 선정산 요청 상세 (날짜+금액). 있으면 advanced 모드에서 이걸 표시 */
+    advanceDetails?: AdvanceDetailRow[];
 };
 
-const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows, mode = "gross" }) => {
-    const defaultTitle = mode === "gross" ? "총 급여 확인" : "선정산금 확인";
+const getAdvanceStatusLabel = (status: string): string => {
+    switch (status) {
+        case "PENDING": return "대기중";
+        case "APPROVED": return "승인";
+        case "REJECTED": return "거절";
+        case "PAID": return "결제완료";
+        default: return "대기중";
+    }
+};
+
+const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows, mode = "gross", advanceDetails }) => {
+    const defaultTitle = mode === "gross" ? "누적급여 확인" : "지급된 선정산액 확인";
     const dialogRef = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
@@ -67,7 +85,7 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows
                                 <thead>
                                     <tr>
                                         <Th>근무자</Th>
-                                        <Th alignRight>임금 (원)</Th>
+                                        <Th $alignRight>임금 (원)</Th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -79,7 +97,7 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows
                                         rows.map((row, idx) => (
                                             <tr key={idx}>
                                                 <Td>{row.workerName}</Td>
-                                                <Td alignRight>{row.totalAmount.toLocaleString()}</Td>
+                                                <Td $alignRight>{row.totalAmount.toLocaleString()}</Td>
                                             </tr>
                                         ))
                                     )}
@@ -88,13 +106,40 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows
                         </TableWrap>
                     )}
 
-                    {mode === "advanced" && (
+                    {mode === "advanced" && advanceDetails ? (
+                        <TableWrap>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>요청일</Th>
+                                        <Th $alignRight>금액 (원)</Th>
+                                        <Th $alignRight>상태</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {advanceDetails.length === 0 ? (
+                                        <tr>
+                                            <Td colSpan={3}>선정산 요청 내역이 없습니다.</Td>
+                                        </tr>
+                                    ) : (
+                                        advanceDetails.map((detail, idx) => (
+                                            <tr key={idx}>
+                                                <Td>{detail.date ? detail.date.slice(0, 10) : "-"}</Td>
+                                                <Td $alignRight>{detail.amount.toLocaleString()}</Td>
+                                                <Td $alignRight>{getAdvanceStatusLabel(detail.status)}</Td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </Table>
+                        </TableWrap>
+                    ) : mode === "advanced" ? (
                         <TableWrap>
                             <Table>
                                 <thead>
                                     <tr>
                                         <Th>근무자</Th>
-                                        <Th alignRight>선정산 (원)</Th>
+                                        <Th $alignRight>선정산 (원)</Th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -106,14 +151,14 @@ const SummaryModal: React.FC<Props> = ({ open, onClose, title, year, month, rows
                                         rows.map((row, idx) => (
                                             <tr key={idx}>
                                                 <Td>{row.workerName}</Td>
-                                                <Td alignRight>{(row.totalAdvanced ?? 0).toLocaleString()}</Td>
+                                                <Td $alignRight>{(row.totalAdvanced ?? 0).toLocaleString()}</Td>
                                             </tr>
                                         ))
                                     )}
                                 </tbody>
                             </Table>
                         </TableWrap>
-                    )}
+                    ) : null}
                 </DialogBody>
             </DialogInner>
         </StyledDialog>
@@ -163,7 +208,7 @@ const DialogTitle = styled.h2`
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #000;
 
     ${media.mobile} {
         font-size: 18px;
@@ -178,13 +223,13 @@ const CloseButton = styled.button`
     background: none;
     font-size: 24px;
     line-height: 1;
-    color: #666;
+    color: #000;
     cursor: pointer;
     border-radius: 8px;
 
     &:hover {
         background: #f0f0f0;
-        color: #1a1a1a;
+        color: #000;
     }
 `;
 
@@ -199,7 +244,7 @@ const DialogBody = styled.div`
 const PeriodText = styled.p`
     margin: 0 0 16px;
     font-size: 14px;
-    color: #666;
+    color: #000;
 
     ${media.mobile} {
         margin-bottom: 12px;
@@ -217,12 +262,12 @@ const Table = styled.table`
     min-width: 280px;
 `;
 
-const Th = styled.th<{ alignRight?: boolean }>`
+const Th = styled.th<{ $alignRight?: boolean }>`
     padding: 10px 12px;
-    text-align: ${(p) => (p.alignRight ? "right" : "left")};
+    text-align: ${(p) => (p.$alignRight ? "right" : "left")};
     font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: #000;
     border-bottom: 2px solid #e0e0e0;
     white-space: nowrap;
 
@@ -232,11 +277,11 @@ const Th = styled.th<{ alignRight?: boolean }>`
     }
 `;
 
-const Td = styled.td<{ alignRight?: boolean }>`
+const Td = styled.td<{ $alignRight?: boolean }>`
     padding: 12px;
-    text-align: ${(p) => (p.alignRight ? "right" : "left")};
+    text-align: ${(p) => (p.$alignRight ? "right" : "left")};
     font-size: 15px;
-    color: #1a1a1a;
+    color: #000;
     border-bottom: 1px solid #eee;
     white-space: nowrap;
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { media } from "../../../styles/breakpoints";
+import HeaderBg from "../../../assets/images/layout/header.png";
 import { PRIVACY_WITH_BR, TERMS_WITH_BR } from "../../../constant/Policy";
 
 type PolicyType = "terms" | "privacy" | null;
@@ -40,8 +41,11 @@ const Footer: React.FC = () => {
             <FooterContainer>
                 <FooterLeft>
                     <FooterCompanyName>(주)피우다컴퍼니</FooterCompanyName>
-                    <FooterText>전라남도 광양시 광장로 112-20, 109동(상가동), 303호 | 대표자: 강미선</FooterText>
-                    <FooterText>사업자등록번호: 818-86-03417 | 통신판매업번호: 제 2026-전남광양-0043 호 | 전화번호: 1555-6890</FooterText>
+                    <FooterText>전라남도 광양시 광장로 112-20 109동(상가동)303호</FooterText>
+                    <FooterText>대표자: 강미선</FooterText>
+                    <FooterText>사업자등록번호: 818-86-03417</FooterText>
+                    <FooterText>통신판매업번호: 제 2026-전남광양-0043 호</FooterText>
+                    <FooterText>전화번호: 1555-6890</FooterText>
                     <CopyrightText>Copyright © 2026 피우다컴퍼니. All rights reserved.</CopyrightText>
                 </FooterLeft>
                 <FooterRight>
@@ -77,7 +81,9 @@ export default Footer;
 const FooterContainer = styled.footer`
     width: 100%;
     height: 270px;
-    background-color: #001129;
+    background-image: url(${HeaderBg});
+    background-size: cover;
+    background-position: center;
     padding: 40px 90px;
 
     display: flex;
@@ -85,7 +91,7 @@ const FooterContainer = styled.footer`
     justify-content: space-between;
 
     font-size: 16px;
-    letter-spacing: 1px;
+    letter-spacing: 0.7px;
     line-height: 1.6;
     color: #ffffff;
 
@@ -113,7 +119,7 @@ const FooterText = styled.div``;
 
 const CopyrightText = styled.div`
     margin-top: 12px;
-    font-size: 14px;
+    font-size: 12px;
     opacity: 0.7;
 `;
 
@@ -184,7 +190,7 @@ const DialogTitle = styled.h2`
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #000;
 `;
 
 const CloseButton = styled.button`
@@ -195,13 +201,13 @@ const CloseButton = styled.button`
     background: none;
     font-size: 24px;
     line-height: 1;
-    color: #666;
+    color: #000;
     cursor: pointer;
     border-radius: 8px;
 
     &:hover {
         background: #f0f0f0;
-        color: #1a1a1a;
+        color: #000;
     }
 `;
 
@@ -216,7 +222,7 @@ const ScrollableText = styled.div`
     overflow-y: auto;
     font-size: 14px;
     line-height: 1.6;
-    color: #333;
+    color: #000;
 
     /* 아래 3줄 추가 또는 교체 */
     white-space: pre-line; /* ← pre-wrap 대신 추천 */

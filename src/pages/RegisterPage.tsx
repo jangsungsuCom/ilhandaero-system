@@ -166,25 +166,25 @@ export default function RegisterPage() {
 
 const ErrorText = styled.p`
     font-size: 14px;
-    color: #e57373;
+    color: #000;
     margin: -8px 0 0 4px;
     padding: 8px;
-    background: #ffebee;
+    background: #fff;
     border-radius: 8px;
-    border-left: 3px solid #e57373;
+    border-left: 3px solid #000;
 `;
 
 const LinkText = styled.div`
     text-align: center;
     margin-top: 24px;
     font-size: 14px;
-    color: #666;
+    color: #000;
 `;
 
 const LinkButton = styled.button`
     background: none;
     border: none;
-    color: #00a8a5;
+    color: #00ccc7;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -192,7 +192,7 @@ const LinkButton = styled.button`
     text-decoration: underline;
 
     &:hover {
-        color: #00cbc7;
+        color: #00ccc7;
     }
 `;
 
