@@ -27,13 +27,13 @@ export interface WorkAmountData {
     /** 전체 공제액 (서버) */
     deduction?: number;
     /** 공제 방식 */
-    deductionType?: "FOUR_INSURANCE" | "THREE_POINT_THREE";
+    deductionType?: "FOUR_INSURANCE" | "THREE_POINT_THREE" | "NONE";
     /** 3.3% 공제 세부 (서버) */
     threePointThree?: ThreePointThreeDetail;
     /** 4대보험 공제 세부 (서버) */
     fourInsurance?: FourInsuranceDetail;
     /** 공제 후 금액 (서버) = gross - deduction */
-    netAfterDeduction?: number;
+    netAfterDeduction: number;
     /** 기간 내 선지급액 (서버) */
     totalAdvancedInPeriod?: number;
     /** 선정산 누적 (서버에서 totalAdvanced 또는 totalAdvancedInPeriod로 올 수 있음) */
