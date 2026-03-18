@@ -3,7 +3,7 @@ export interface MyPageCompany {
     name: string;
 }
 
-export type DeductionType = "FOUR_INSURANCE" | "THREE_POINT_THREE";
+export type DeductionType = "NONE" | "FOUR_INSURANCE" | "THREE_POINT_THREE";
 
 export interface MyPageWorker {
     id: number;

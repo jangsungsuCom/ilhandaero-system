@@ -13,7 +13,7 @@ function getDeductionLabel(type?: DeductionType): string {
         case "THREE_POINT_THREE":
             return "3.3%";
         default:
-            return "-";
+            return "미적용";
     }
 }
 
