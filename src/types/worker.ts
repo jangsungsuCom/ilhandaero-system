@@ -4,6 +4,8 @@ export interface WorkerInfo {
     payDay: number;
     paidTotal?: number;
     colorHex?: string;
+    bankName?: string;
+    maskedAccountNumber?: string;
 }
 
 export interface WorkerInfoResponse {

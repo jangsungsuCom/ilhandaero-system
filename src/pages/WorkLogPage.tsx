@@ -28,8 +28,8 @@ const WorkLogPage = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [workerName, setWorkerName] = useState<string>("");
     const [workerColorHex, setWorkerColorHex] = useState<string | undefined>(undefined);
-    const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; totalAdvanced: number } | null>(null);
-    const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; totalAdvanced: number }[]>([]);
+    const [workAmountData, setWorkAmountData] = useState<{ grossAmount: number; netAfterDeduction: number; totalAdvanced: number } | null>(null);
+    const [workAmountRows, setWorkAmountRows] = useState<{ workerName: string; grossAmount: number; netAfterDeduction: number; totalAdvanced: number }[]>([]);
     const [advanceDetails, setAdvanceDetails] = useState<{ date: string; amount: number; status: string }[]>([]);
     const [isCalendarSettingModalOpen, setIsCalendarSettingModalOpen] = useState(false);
     const [calendarSettings, setCalendarSettings] = useState(getCalendarSettings);
@@ -119,7 +119,11 @@ const WorkLogPage = () => {
                         console.log("work-amount full response:", res);
                         console.log("work-amount data:", data);
                         if (data) {
-                            setWorkAmountData({ grossAmount: data.grossAmount ?? 0, totalAdvanced: data.totalAdvanced ?? data.totalAdvancedInPeriod ?? 0 });
+                            setWorkAmountData({
+                                grossAmount: data.grossAmount ?? 0,
+                                netAfterDeduction: data.netAfterDeduction ?? 0,
+                                totalAdvanced: data.totalAdvanced ?? data.totalAdvancedInPeriod ?? 0,
+                            });
                             const rawAny = data as any;
                             const details = rawAny.advanceRequests || rawAny.advances || rawAny.advanceDetails || rawAny.advancedDetails || [];
                             console.log("advance details from work-amount:", details);
@@ -155,16 +159,19 @@ const WorkLogPage = () => {
             Promise.all(targets.map((t: { accessCode: string; workerName: string }) => getWorkAmount(t.accessCode, from, to).then((res) => ({ workerName: t.workerName, data: res?.data }))))
                 .then((results) => {
                     let sumGross = 0;
+                    let sumNet = 0;
                     let sumAdvanced = 0;
-                    const rows: { workerName: string; grossAmount: number; totalAdvanced: number }[] = [];
+                    const rows: { workerName: string; grossAmount: number; netAfterDeduction: number; totalAdvanced: number }[] = [];
                     results.forEach((r, i) => {
                         const g = typeof r.data?.grossAmount === "number" ? r.data.grossAmount : 0;
+                        const n = typeof r.data?.netAfterDeduction === "number" ? r.data.netAfterDeduction : g;
                         const a = typeof (r.data?.totalAdvanced ?? r.data?.totalAdvancedInPeriod) === "number" ? (r.data?.totalAdvanced ?? r.data?.totalAdvancedInPeriod ?? 0) : 0;
                         sumGross += g;
+                        sumNet += n;
                         sumAdvanced += a;
-                        rows.push({ workerName: targets[i].workerName, grossAmount: g, totalAdvanced: a });
+                        rows.push({ workerName: targets[i].workerName, grossAmount: g, netAfterDeduction: n, totalAdvanced: a });
                     });
-                    setWorkAmountData({ grossAmount: sumGross, totalAdvanced: sumAdvanced });
+                    setWorkAmountData({ grossAmount: sumGross, netAfterDeduction: sumNet, totalAdvanced: sumAdvanced });
                     setWorkAmountRows(rows);
                 })
                 .catch(() => {

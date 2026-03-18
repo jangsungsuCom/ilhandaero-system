@@ -85,6 +85,22 @@ export const getWorkerInfo = async (accessCodeParam?: string): Promise<WorkerInf
     return response.data;
 };
 
+export const updateWorkerBankAccount = async (
+    bankName: string,
+    accountNumber: string,
+    accessCodeParam?: string
+): Promise<void> => {
+    const accessCode = accessCodeParam || getAccessCode();
+    if (!accessCode) {
+        throw new Error("Access code not found");
+    }
+
+    await urlAxios.patch(`/pud/${accessCode}/bank-account`, {
+        bankName,
+        accountNumber,
+    });
+};
+
 export const updateWorkLog = async (workLogId: number, workDate: string, startTime: string, endTime: string, accessCodeParam?: string): Promise<void> => {
     const accessCode = accessCodeParam || getAccessCode();
     if (!accessCode) {

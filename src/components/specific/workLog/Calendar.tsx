@@ -33,10 +33,10 @@ interface CalendarProps {
     onCompanyChange?: (companyId: number | null) => void;
     /** 페이지 제목 (WorkLogPage에서 계산해 전달) */
     pageTitle?: string;
-    /** accessCode 로그인 시 해당 월 work-amount (총 급여/선정산액 표시용) */
-    workAmountData?: { grossAmount: number; totalAdvanced: number } | null;
+    /** accessCode 로그인 시 해당 월 work-amount (누적급여/선정산액 표시용) */
+    workAmountData?: { grossAmount: number; netAfterDeduction?: number; totalAdvanced: number } | null;
     /** 이메일 로그인 시 근무자별 work-amount (SummaryModal용) */
-    workAmountRows?: { workerName: string; grossAmount: number; totalAdvanced: number }[];
+    workAmountRows?: { workerName: string; grossAmount: number; netAfterDeduction?: number; totalAdvanced: number }[];
     /** 달력 시작 요일: 0=일, 1=월, 2=화 (localStorage 연동) */
     calendarStartDay?: CalendarStartDay;
     /** 근무시간 표시: "hours" = nn h, "range" = hh:mm~hh:mm */
@@ -215,20 +215,30 @@ const Calendar: React.FC<CalendarProps> = ({
         const prefix = `${yearStr}-${monthStr}`;
 
         const advancedMap = new Map<string, number>();
+        const netMap = new Map<string, number>();
         if (workAmountRows) {
             workAmountRows.forEach((r) => advancedMap.set(r.workerName, r.totalAdvanced));
+            workAmountRows.forEach((r) => {
+                if (typeof r.netAfterDeduction === "number") netMap.set(r.workerName, r.netAfterDeduction);
+            });
         }
 
         if (loginMethod === "email") {
             return salaryTargets.map((target) => {
                 const logs = workLogsByAccessCode[target.accessCode] || [];
-                const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
+                const totalAmount =
+                    netMap.has(target.workerName)
+                        ? (netMap.get(target.workerName) ?? 0)
+                        : logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
                 return { workerName: target.workerName, totalAmount, totalAdvanced: advancedMap.get(target.workerName) ?? 0 };
             });
         }
         if (loginMethod === "accessCode" && accessCode) {
             const logs = workLogsByAccessCode[accessCode] || [];
-            const totalAmount = logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
+            const totalAmount =
+                workAmountData && typeof workAmountData.netAfterDeduction === "number"
+                    ? workAmountData.netAfterDeduction
+                    : logs.filter((log) => log.workDate.startsWith(prefix)).reduce((sum, log) => sum + log.earnedAmount, 0);
             const workerName = pageTitle != null && pageTitle !== "" ? pageTitle.replace(/님의 근무 기록$/, "").trim() || "근무자" : "근무자";
             return [{ workerName, totalAmount, totalAdvanced: workAmountData?.totalAdvanced ?? 0 }];
         }
@@ -330,7 +340,10 @@ const Calendar: React.FC<CalendarProps> = ({
 
     const monthlyTotalAmount = getMonthlyTotalAmount();
     const monthlyLabel = "누적급여";
-    const displayGross = monthlyTotalAmount;
+    const displayGross =
+        workAmountData && typeof workAmountData.netAfterDeduction === "number"
+            ? workAmountData.netAfterDeduction
+            : monthlyTotalAmount;
     const displayTotalAdvanced = workAmountData ? workAmountData.totalAdvanced : 0;
 
     return (
