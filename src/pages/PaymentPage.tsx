@@ -15,6 +15,7 @@ import { RiShareBoxLine } from "react-icons/ri";
 import type { DeductionDetail } from "../types/payment";
 import { media } from "../styles/breakpoints";
 import { isInAppBrowser } from "../utils/inAppBrowser";
+import { postSalaryPay } from "../utils/paymentApi";
 
 export default function PaymentPage() {
     const dispatch = useAppDispatch();
@@ -39,6 +40,7 @@ export default function PaymentPage() {
     const [additionalPaymentDescription, setAdditionalPaymentDescription] = useState<string>("");
     const [deductionTotal, setDeductionTotal] = useState<number>(0);
     const [deductionDetail, setDeductionDetail] = useState<DeductionDetail>({});
+    const [agreed, setAgreed] = useState(false);
     //const [isCardPaying, setIsCardPaying] = useState(false);
 
     // 잔여금액 = 기본+주휴 - 선정산금 (공제 뺀 값 아님). 최종 정산금 = (잔여금액+추가지급) - 공제액
@@ -73,6 +75,8 @@ export default function PaymentPage() {
             setAdvancePayment(0);
             setDeductionTotal(0);
             setDeductionDetail({});
+            const now = new Date();
+            setWorkPeriod({ from: startOfMonth(now), to: endOfMonth(now) });
             return;
         }
         const targets = salaryTargets[selectedCompanyId] || [];
@@ -81,6 +85,40 @@ export default function PaymentPage() {
             setHourlyWage(emp.hourlyWage);
             setBank(emp.bankName);
             setAccountNumber(emp.accountNumber);
+
+            // 직원 payDay 기반으로 정산 기간 자동 설정
+            // 최근 급여일(이번 달 payDay가 지났으면 이번 달, 아니면 지난달)을 period 종료일로 사용
+            // 시작일은 그 직전 급여일 다음날
+            const now = new Date();
+            const payDayRaw = typeof emp.payDay === "number" ? emp.payDay : 1;
+            const payDay = Math.min(31, Math.max(1, Math.floor(payDayRaw)));
+
+            const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+            const clampDay = (y: number, m: number, d: number) => Math.min(d, daysInMonth(y, m));
+
+            const y = now.getFullYear();
+            const m = now.getMonth();
+            const today = now.getDate();
+
+            // period end 기준 월 결정
+            const endMonthOffset = today >= payDay ? 0 : -1;
+            const endBase = new Date(y, m + endMonthOffset, 1);
+            const endY = endBase.getFullYear();
+            const endM = endBase.getMonth();
+            const endD = clampDay(endY, endM, payDay);
+            const periodEnd = new Date(endY, endM, endD);
+
+            // period start = 직전 급여일 + 1일
+            const prevBase = new Date(endY, endM - 1, 1);
+            const prevY = prevBase.getFullYear();
+            const prevM = prevBase.getMonth();
+            const prevD = clampDay(prevY, prevM, payDay);
+            const prevPayday = new Date(prevY, prevM, prevD);
+            const periodStart = new Date(prevPayday);
+            periodStart.setDate(periodStart.getDate() + 1);
+
+            setWorkPeriod({ from: periodStart, to: periodEnd });
+            setIsCalendarOpen(false);
         }
     }, [loginMethod, selectedCompanyId, selectedEmployeeId, salaryTargets]);
 
@@ -158,7 +196,7 @@ export default function PaymentPage() {
     //     }
     // };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!selectedCompanyId) {
@@ -169,9 +207,26 @@ export default function PaymentPage() {
             alert("직원을 선택해주세요.");
             return;
         }
+        if (!agreed) {
+            alert("결제 내역에 동의해주세요.");
+            return;
+        }
 
-        // TODO: 실제 API 호출 또는 데이터 저장 로직
-        alert("급여 결제가 완료되었습니다!");
+        try {
+            if (!fromStr || !toStr) {
+                alert("근무기간을 선택해주세요.");
+                return;
+            }
+            const res = await postSalaryPay(selectedCompanyId, selectedEmployeeId, fromStr, toStr, {
+                extraPay: additionalPayment,
+                extraMemo: additionalPaymentDescription || "",
+            });
+            console.log(res.data);
+            alert("급여 결제가 완료되었습니다!");
+        } catch (error) {
+            console.error("Failed to pay salary:", error);
+            alert("급여 결제에 실패했습니다.");
+        }
     };
 
     const inAppBrowser = isInAppBrowser();
@@ -181,174 +236,174 @@ export default function PaymentPage() {
             <PaymentPageWrap $inAppBrowser={inAppBrowser}>
                 <PageContainer width="100%">
                     <FormCard>
-                    <Title>정산금액 지급</Title>
+                        <Title>정산금액 지급</Title>
 
-                    <PaymentForm onSubmit={handleSubmit}>
-                        <RowFieldGroup>
-                            <RowLabel>업장 선택</RowLabel>
-                            <ControlArea>
-                                <Select
-                                    value={selectedCompanyId || ""}
-                                    onChange={(e) => {
-                                        dispatch(setSelectedCompany(Number(e.target.value) || null));
-                                        setSelectedEmployeeId("");
-                                    }}
-                                >
-                                    <option value="">업장을 선택하세요</option>
-                                    {companies.map((company) => (
-                                        <option key={company.companyId} value={company.companyId}>
-                                            {company.name}
-                                        </option>
-                                    ))}
-                                </Select>
-                            </ControlArea>
-                        </RowFieldGroup>
-
-                        <RowFieldGroup>
-                            <RowLabel>직원 선택</RowLabel>
-                            <ControlArea>
-                                <Select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value ? Number(e.target.value) : "")} disabled={!selectedCompanyId}>
-                                    <option value="">직원을 선택하세요</option>
-                                    {selectedCompanyId &&
-                                        (salaryTargets[selectedCompanyId] || []).map((target) => (
-                                            <option key={target.id} value={target.id}>
-                                                {target.workerName}
+                        <PaymentForm onSubmit={handleSubmit}>
+                            <RowFieldGroup>
+                                <RowLabel>업장 선택</RowLabel>
+                                <ControlArea>
+                                    <Select
+                                        value={selectedCompanyId || ""}
+                                        onChange={(e) => {
+                                            dispatch(setSelectedCompany(Number(e.target.value) || null));
+                                            setSelectedEmployeeId("");
+                                        }}
+                                    >
+                                        <option value="">업장을 선택하세요</option>
+                                        {companies.map((company) => (
+                                            <option key={company.companyId} value={company.companyId}>
+                                                {company.name}
                                             </option>
                                         ))}
-                                </Select>
-                            </ControlArea>
-                        </RowFieldGroup>
+                                    </Select>
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>근무 기간</RowLabel>
-                            <ControlArea>
-                                <DateInputWrapper>
-                                    <DateDisplayButton type="button" onClick={handleOpenCalendar} disabled={!selectedEmployeeId}>
-                                        {dateRangeDisplay}
-                                    </DateDisplayButton>
-                                </DateInputWrapper>
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>직원 선택</RowLabel>
+                                <ControlArea>
+                                    <Select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value ? Number(e.target.value) : "")} disabled={!selectedCompanyId}>
+                                        <option value="">직원을 선택하세요</option>
+                                        {selectedCompanyId &&
+                                            (salaryTargets[selectedCompanyId] || []).map((target) => (
+                                                <option key={target.id} value={target.id}>
+                                                    {target.workerName}
+                                                </option>
+                                            ))}
+                                    </Select>
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>시급</RowLabel>
-                            <ControlArea>
-                                <InputWrapper>
-                                    <ReadOnlyInput value={`${(hourlyWage || 0).toLocaleString()} 원`} readOnly />
-                                </InputWrapper>
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>근무 기간</RowLabel>
+                                <ControlArea>
+                                    <DateInputWrapper>
+                                        <DateDisplayButton type="button" onClick={handleOpenCalendar} disabled={!selectedEmployeeId}>
+                                            {dateRangeDisplay}
+                                        </DateDisplayButton>
+                                    </DateInputWrapper>
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>은행</RowLabel>
-                            <ControlArea>
-                                <Input type="text" value={bank} onChange={(e) => setBank(e.target.value)} placeholder="은행명 입력" disabled />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>시급</RowLabel>
+                                <ControlArea>
+                                    <InputWrapper>
+                                        <ReadOnlyInput value={`${(hourlyWage || 0).toLocaleString()} 원`} readOnly />
+                                    </InputWrapper>
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>계좌번호</RowLabel>
-                            <ControlArea>
-                                <Input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="계좌번호 입력 (숫자만)" disabled />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>은행</RowLabel>
+                                <ControlArea>
+                                    <Input type="text" value={bank} onChange={(e) => setBank(e.target.value)} placeholder="은행명 입력" disabled />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>기본 정산금</RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${(basicSalary || 0).toLocaleString()} 원`} readOnly />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>계좌번호</RowLabel>
+                                <ControlArea>
+                                    <Input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="계좌번호 입력 (숫자만)" disabled />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>주휴수당</RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${(weeklyAllowance || 0).toLocaleString()} 원`} readOnly />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>기본 정산금</RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${(basicSalary || 0).toLocaleString()} 원`} readOnly />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>선정산금</RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${(advancePayment || 0).toLocaleString()} 원`} readOnly />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>주휴수당</RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${(weeklyAllowance || 0).toLocaleString()} 원`} readOnly />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>잔여 금액</RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${Math.max(0, remainingAmount).toLocaleString()} 원`} readOnly />
-                            </ControlArea>
-                        </RowFieldGroup>
+                            <RowFieldGroup>
+                                <RowLabel>선정산금</RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${(advancePayment || 0).toLocaleString()} 원`} readOnly />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <SectionDivider />
+                            <RowFieldGroup>
+                                <RowLabel>잔여 금액</RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${Math.max(0, remainingAmount).toLocaleString()} 원`} readOnly />
+                                </ControlArea>
+                            </RowFieldGroup>
 
-                        <RowFieldGroup>
-                            <RowLabel>추가 지급액</RowLabel>
-                            <ControlArea>
-                                <InlineInputsRow>
-                                    <InlineInputBlock>
-                                        <InlineInputLabel>내용</InlineInputLabel>
-                                        <Input type="text" value={additionalPaymentDescription} onChange={(e) => setAdditionalPaymentDescription(e.target.value)} placeholder="예: 교통비" />
-                                    </InlineInputBlock>
-                                    <InlineInputBlock>
-                                        <InlineInputLabel>금액</InlineInputLabel>
-                                        <InputWrapper>
-                                            <Input
-                                                type="number"
-                                                value={additionalPayment || ""}
-                                                onChange={(e) => setAdditionalPayment(e.target.value ? Number(e.target.value) : 0)}
-                                                placeholder="0"
-                                                min={0}
-                                            />
-                                            <Unit>원</Unit>
-                                        </InputWrapper>
-                                    </InlineInputBlock>
-                                </InlineInputsRow>
-                            </ControlArea>
-                        </RowFieldGroup>
-                        <SectionDivider />
-                        <RowFieldGroup>
-                            <RowLabel>전체 공제액</RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${(deductionTotal || 0).toLocaleString()} 원`} readOnly />
-                                {Object.entries(deductionDetail).map(([key, value]) => (
-                                    <div key={key} style={{ fontSize: "14px", color: "#00ccc7" }}>
-                                        {key}: {(value ?? 0).toLocaleString()} 원
-                                    </div>
-                                ))}
-                            </ControlArea>
-                        </RowFieldGroup>
-                        <SectionDivider />
-                        <RowFieldGroup>
-                            <RowLabel>
-                                <div style={{ fontSize: "16px", fontWeight: "bold", color: "#00ccc7" }}>최종 정산금</div>
-                            </RowLabel>
-                            <ControlArea>
-                                <ReadOnlyInput value={`${netPayment.toLocaleString()} 원`} readOnly />
-                            </ControlArea>
-                        </RowFieldGroup>
-                        <SectionDivider />
+                            <SectionDivider />
 
-                        <AgreementRow>
-                            <AgreementCheckbox />
-                            <AgreementText>위 결제 내역에 동의</AgreementText>
-                        </AgreementRow>
+                            <RowFieldGroup>
+                                <RowLabel>추가 지급액</RowLabel>
+                                <ControlArea>
+                                    <InlineInputsRow>
+                                        <InlineInputBlock>
+                                            <InlineInputLabel>내용</InlineInputLabel>
+                                            <Input type="text" value={additionalPaymentDescription} onChange={(e) => setAdditionalPaymentDescription(e.target.value)} placeholder="예: 교통비" />
+                                        </InlineInputBlock>
+                                        <InlineInputBlock>
+                                            <InlineInputLabel>금액</InlineInputLabel>
+                                            <InputWrapper>
+                                                <Input
+                                                    type="number"
+                                                    value={additionalPayment || ""}
+                                                    onChange={(e) => setAdditionalPayment(e.target.value ? Number(e.target.value) : 0)}
+                                                    placeholder="0"
+                                                    min={0}
+                                                />
+                                                <Unit>원</Unit>
+                                            </InputWrapper>
+                                        </InlineInputBlock>
+                                    </InlineInputsRow>
+                                </ControlArea>
+                            </RowFieldGroup>
+                            <SectionDivider />
+                            <RowFieldGroup>
+                                <RowLabel>전체 공제액</RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${(deductionTotal || 0).toLocaleString()} 원`} readOnly />
+                                    {Object.entries(deductionDetail).map(([key, value]) => (
+                                        <div key={key} style={{ fontSize: "14px", color: "#00ccc7" }}>
+                                            {key}: {(value ?? 0).toLocaleString()} 원
+                                        </div>
+                                    ))}
+                                </ControlArea>
+                            </RowFieldGroup>
+                            <SectionDivider />
+                            <RowFieldGroup>
+                                <RowLabel>
+                                    <div style={{ fontSize: "16px", fontWeight: "bold", color: "#00ccc7" }}>최종 정산금</div>
+                                </RowLabel>
+                                <ControlArea>
+                                    <ReadOnlyInput value={`${netPayment.toLocaleString()} 원`} readOnly />
+                                </ControlArea>
+                            </RowFieldGroup>
+                            <SectionDivider />
 
-                        <PrimaryActionButton type="submit">
-                            정산내역서 결제 후 전송하기
-                            <RiShareBoxLine style={{ fontSize: "24px", color: "white", marginLeft: "10px" }} />
-                        </PrimaryActionButton>
+                            <AgreementRow>
+                                <AgreementCheckbox checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+                                <AgreementText>위 결제 내역에 동의</AgreementText>
+                            </AgreementRow>
 
-                        {/* <PaymentButtonsRow>
+                            <PrimaryActionButton type="submit">
+                                정산내역서 결제 후 전송하기
+                                <RiShareBoxLine style={{ fontSize: "24px", color: "white", marginLeft: "10px" }} />
+                            </PrimaryActionButton>
+
+                            {/* <PaymentButtonsRow>
                             <PaymentButton type="button" onClick={handleCardPay} disabled={isCardPaying}>
                                 {isCardPaying ? "처리 중..." : "카드결제"}
                             </PaymentButton>
                             <PaymentButton type="button">송금하기</PaymentButton>
                         </PaymentButtonsRow> */}
-                    </PaymentForm>
-                </FormCard>
-            </PageContainer>
+                        </PaymentForm>
+                    </FormCard>
+                </PageContainer>
             </PaymentPageWrap>
             <WorkPeriodPicker isOpen={isCalendarOpen} selectedRange={workPeriod} onClose={handleCloseCalendar} onConfirm={handleConfirmDate} />
         </>

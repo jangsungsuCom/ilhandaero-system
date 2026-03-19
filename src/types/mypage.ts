@@ -23,15 +23,38 @@ export interface MyPageWorker {
 }
 
 export interface MyPageAdvanceRequest {
-    requestId: number;
+    id: number;
     companyId: number;
     salaryTargetId: number;
     workerName: string;
     companyName: string;
-    amount?: number;
-    requestDate?: string;
+    amount: number;
+    feeAmount: number;
+    requestedAt: string;
+    appliedDeductionType?: DeductionType;
+    deductionBaseAmount?: number;
+    deductionAmount?: number;
+    deductionDetail?: {
+        configuredType?: DeductionType;
+        appliedType?: DeductionType;
+        baseAmount?: number;
+        totalDeduction?: number;
+        overridden?: boolean;
+        overrideReason?: string;
+        threePointThreeDetail?: {
+            businessIncomeTax?: number;
+            localIncomeTax?: number;
+        };
+        fourInsuranceDetail?: {
+            pensionBase?: number;
+            pension?: number;
+            healthBase?: number;
+            health?: number;
+            longTermCare?: number;
+            employment?: number;
+        };
+    };
     status?: "PENDING" | "APPROVED" | "REJECTED" | "PAID";
-    [key: string]: any;
 }
 
 export interface CreateWorkerRequest {
