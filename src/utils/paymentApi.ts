@@ -48,6 +48,19 @@ export interface SalaryPayout {
     paidAt: string; // ISO
 }
 
+export interface AccessCodePayment {
+    paymentId: number;
+    type: string;
+    periodFrom: string | null;
+    periodTo: string | null;
+    amount: number;
+    basePay: number;
+    weeklyAllowance: number;
+    extraPay: number;
+    deduction: number;
+    paidAt: string;
+}
+
 /**
  * POST /owner/companies/{companyId}/salary-targets/{salaryTargetId}/payouts/salary/pay
  * Query: from, to (yyyy-MM-dd)
@@ -90,5 +103,33 @@ export const getPayslip = async (companyId: number, salaryTargetId: number, paym
         { headers }
     );
 
+    return response.data.data;
+};
+
+/**
+ * GET /access-codes/{accessCode}/payments?startDate={yyyy-MM-dd}&endDate={yyyy-MM-dd}
+ */
+export const getAccessCodePayments = async (accessCode: string, startDate: string, endDate: string): Promise<AccessCodePayment[]> => {
+    if (!accessCode) {
+        throw new Error("접근 코드가 없습니다.");
+    }
+
+    const response = await urlAxios.get<ApiSuccessResponse<AccessCodePayment[]>>(
+        `/access-codes/${encodeURIComponent(accessCode)}/payments?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
+    );
+    return response.data.data || [];
+};
+
+/**
+ * GET /access-codes/{accessCode}/payments/{paymentId}/payslip
+ */
+export const getAccessCodePayslip = async (accessCode: string, paymentId: number): Promise<SalaryPayout> => {
+    if (!accessCode) {
+        throw new Error("접근 코드가 없습니다.");
+    }
+
+    const response = await urlAxios.get<ApiSuccessResponse<SalaryPayout>>(
+        `/access-codes/${encodeURIComponent(accessCode)}/payments/${paymentId}/payslip`
+    );
     return response.data.data;
 };

@@ -24,7 +24,7 @@ const PageLayout = () => {
                 <HeaderRow>
                     <Logo src={LogoImg} alt="logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }} />
                     <RightSection>
-                        {loginMethod === "email" && <NotificationBell />}
+                        {(loginMethod === "email" || loginMethod === "accessCode") && <NotificationBell />}
                         <NavBar />
                     </RightSection>
                 </HeaderRow>

@@ -15,6 +15,10 @@ interface SalaryRow {
     salary: SalaryPayout;
     advances: SalaryPayout[];
     totalAdvance: number;
+    companyId: number;
+    companyName: string;
+    salaryTargetId: number;
+    workerName: string;
 }
 
 export default function PaymentLogPage() {
@@ -28,105 +32,115 @@ export default function PaymentLogPage() {
     const [days, setDays] = useState<number>(365);
 
     const [loading, setLoading] = useState(false);
-    const [payouts, setPayouts] = useState<SalaryPayout[]>([]);
+    const [salaryRows, setSalaryRows] = useState<SalaryRow[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const salaryTargets = useMemo(() => {
-        if (selectedCompanyId === "") return [];
+        if (selectedCompanyId === "") {
+            return stores.flatMap((s) => salaryTargetsByCompany[s.companyId] || []);
+        }
         return salaryTargetsByCompany[selectedCompanyId] || [];
-    }, [salaryTargetsByCompany, selectedCompanyId]);
-
-    const selectedCompany = useMemo(() => {
-        if (selectedCompanyId === "") return undefined;
-        return stores.find((s) => s.companyId === selectedCompanyId);
-    }, [stores, selectedCompanyId]);
-
-    const selectedWorker = useMemo(() => {
-        if (selectedSalaryTargetId === "") return undefined;
-        return salaryTargets.find((t) => t.id === selectedSalaryTargetId);
-    }, [salaryTargets, selectedSalaryTargetId]);
+    }, [salaryTargetsByCompany, selectedCompanyId, stores]);
 
     useEffect(() => {
-        if (selectedCompanyId === "") {
-            setSelectedSalaryTargetId("");
-            setPayouts([]);
-            return;
-        }
-
         setSelectedSalaryTargetId("");
-        setPayouts([]);
-        dispatch(fetchSalaryTargets(selectedCompanyId));
+        setSalaryRows([]);
+        if (selectedCompanyId !== "") {
+            dispatch(fetchSalaryTargets(selectedCompanyId));
+        }
     }, [selectedCompanyId, dispatch]);
 
-    // 업장/직원 자동 선택: "가장 첫 업체의 첫 직원"을 기본으로 둠
+    // 전체 업장 선택 시에도 직원 목록 구성을 위해 salaryTargets를 미리 로드
     useEffect(() => {
         if (storesLoading) return;
         if (selectedCompanyId !== "") return;
-        if (stores.length === 0) return;
-
-        setSelectedCompanyId(stores[0].companyId);
-    }, [storesLoading, stores, selectedCompanyId]);
-
-    useEffect(() => {
-        if (selectedCompanyId === "") return;
-        if (selectedSalaryTargetId !== "") return;
-        if (salaryTargets.length === 0) return;
-
-        setSelectedSalaryTargetId(salaryTargets[0].id);
-    }, [selectedCompanyId, selectedSalaryTargetId, salaryTargets]);
+        stores.forEach((s) => {
+            if (!salaryTargetsByCompany[s.companyId]) {
+                dispatch(fetchSalaryTargets(s.companyId));
+            }
+        });
+    }, [storesLoading, selectedCompanyId, stores, salaryTargetsByCompany, dispatch]);
 
     useEffect(() => {
-        const companyId = typeof selectedCompanyId === "number" ? selectedCompanyId : null;
-        const salaryTargetId = typeof selectedSalaryTargetId === "number" ? selectedSalaryTargetId : null;
+        const companyCandidates = selectedCompanyId === "" ? stores : stores.filter((s) => s.companyId === selectedCompanyId);
+        const requestTargets = companyCandidates.flatMap((company) => {
+            const targets = salaryTargetsByCompany[company.companyId] || [];
+            return targets
+                .filter((t) => selectedSalaryTargetId === "" || t.id === selectedSalaryTargetId)
+                .map((t) => ({
+                    companyId: company.companyId,
+                    companyName: company.name,
+                    salaryTargetId: t.id,
+                    workerName: t.workerName,
+                }));
+        });
 
-        if (!companyId || !salaryTargetId) {
-            setPayouts([]);
+        if (requestTargets.length === 0) {
+            setSalaryRows([]);
             setError(null);
             return;
         }
 
         setLoading(true);
         setError(null);
-        getSalaryPayouts(companyId, salaryTargetId, days)
-            .then((res) => {
-                setPayouts(res || []);
+
+        Promise.all(
+            requestTargets.map((target) =>
+                getSalaryPayouts(target.companyId, target.salaryTargetId, days).then((res) => ({
+                    target,
+                    payouts: res || [],
+                }))
+            )
+        )
+            .then((results) => {
+                const mergedRows: SalaryRow[] = [];
+
+                results.forEach(({ target, payouts }) => {
+                    const sorted = [...payouts].sort((a, b) => a.paymentId - b.paymentId);
+                    const salaries = sorted.filter((p) => p.type === "SALARY");
+                    const advances = sorted.filter((p) => p.type === "ADVANCE");
+
+                    const advanceMap = new Map<number, SalaryPayout[]>();
+                    for (const adv of advances) {
+                        const parent = salaries.find((s) => s.paymentId > adv.paymentId);
+                        if (parent) {
+                            const list = advanceMap.get(parent.paymentId) || [];
+                            list.push(adv);
+                            advanceMap.set(parent.paymentId, list);
+                        }
+                    }
+
+                    salaries.forEach((salary) => {
+                        const childAdvances = advanceMap.get(salary.paymentId) || [];
+                        mergedRows.push({
+                            salary,
+                            advances: childAdvances,
+                            totalAdvance: childAdvances.reduce((sum, a) => sum + (a.amount || 0), 0),
+                            companyId: target.companyId,
+                            companyName: target.companyName,
+                            salaryTargetId: target.salaryTargetId,
+                            workerName: target.workerName,
+                        });
+                    });
+                });
+
+                mergedRows.sort((a, b) => {
+                    const aTime = a.salary.paidAt ? new Date(a.salary.paidAt).getTime() : 0;
+                    const bTime = b.salary.paidAt ? new Date(b.salary.paidAt).getTime() : 0;
+                    if (aTime !== bTime) return bTime - aTime;
+                    return b.salary.paymentId - a.salary.paymentId;
+                });
+                setSalaryRows(mergedRows);
             })
             .catch((e) => {
                 console.error(e);
                 setError("결제 내역을 불러오지 못했습니다.");
+                setSalaryRows([]);
             })
             .finally(() => {
                 setLoading(false);
             });
-    }, [selectedCompanyId, selectedSalaryTargetId, days]);
-
-    // ADVANCE를 자기보다 paymentId가 큰 최초의 SALARY에 종속시켜 그룹핑
-    const salaryRows = useMemo((): SalaryRow[] => {
-        if (payouts.length === 0) return [];
-
-        const sorted = [...payouts].sort((a, b) => a.paymentId - b.paymentId);
-        const salaries = sorted.filter((p) => p.type === "SALARY");
-        const advances = sorted.filter((p) => p.type === "ADVANCE");
-
-        const advanceMap = new Map<number, SalaryPayout[]>();
-        for (const adv of advances) {
-            const parent = salaries.find((s) => s.paymentId > adv.paymentId);
-            if (parent) {
-                const list = advanceMap.get(parent.paymentId) || [];
-                list.push(adv);
-                advanceMap.set(parent.paymentId, list);
-            }
-        }
-
-        return salaries.map((s) => {
-            const childAdvances = advanceMap.get(s.paymentId) || [];
-            return {
-                salary: s,
-                advances: childAdvances,
-                totalAdvance: childAdvances.reduce((sum, a) => sum + (a.amount || 0), 0),
-            };
-        });
-    }, [payouts]);
+    }, [selectedCompanyId, selectedSalaryTargetId, days, stores, salaryTargetsByCompany]);
 
     if (storesLoading) {
         return (
@@ -153,7 +167,7 @@ export default function PaymentLogPage() {
                         ))}
                     </FilterSelect>
 
-                    <FilterSelect value={selectedSalaryTargetId} onChange={(e) => setSelectedSalaryTargetId(Number(e.target.value) || "")} disabled={selectedCompanyId === ""}>
+                    <FilterSelect value={selectedSalaryTargetId} onChange={(e) => setSelectedSalaryTargetId(Number(e.target.value) || "")}>
                         <option value="">전체 직원</option>
                         {salaryTargets.map((t) => (
                             <option key={t.id} value={t.id}>
@@ -176,7 +190,7 @@ export default function PaymentLogPage() {
                 {loading ? (
                     <LoadingText>결제 내역 불러오는 중...</LoadingText>
                 ) : salaryRows.length === 0 ? (
-                    <EmptyState>업장과 직원을 선택하면 결제 내역이 표시됩니다.</EmptyState>
+                    <EmptyState>조회된 결제 내역이 없습니다.</EmptyState>
                 ) : (
                     <Table>
                         <TableHeader>
@@ -192,9 +206,9 @@ export default function PaymentLogPage() {
                         </TableHeader>
                         <tbody>
                             {salaryRows.map((row) => (
-                                <TableRow key={row.salary.paymentId}>
-                                    <TableCell>{selectedCompany?.name || "-"}</TableCell>
-                                    <TableCell>{selectedWorker?.workerName || "-"}</TableCell>
+                                <TableRow key={`${row.companyId}-${row.salaryTargetId}-${row.salary.paymentId}`}>
+                                    <TableCell>{row.companyName || "-"}</TableCell>
+                                    <TableCell>{row.workerName || "-"}</TableCell>
                                     <TableCell>{row.salary.paidAt ? format(new Date(row.salary.paidAt), "yyyy.MM.dd") : "-"}</TableCell>
                                     <TableCell>
                                         {row.salary.periodFrom && row.salary.periodTo
@@ -208,9 +222,9 @@ export default function PaymentLogPage() {
                                             type="button"
                                             onClick={() => {
                                                 const params = new URLSearchParams({
-                                                    companyId: String(selectedCompanyId),
-                                                    companyName: selectedCompany?.name || "",
-                                                    salaryTargetId: String(selectedSalaryTargetId),
+                                                    companyId: String(row.companyId),
+                                                    companyName: row.companyName || "",
+                                                    salaryTargetId: String(row.salaryTargetId),
                                                     paymentId: String(row.salary.paymentId),
                                                     advanceAmount: String(row.totalAdvance),
                                                 });

@@ -12,6 +12,7 @@ import type { LoginMethod } from "../../../types/auth";
 import type { CalendarStartDay, WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
 import { deleteWorkLogByAccessCode } from "../../../utils/workLog";
 import { getAccessCode } from "../../../utils/auth";
+import { deleteWorkLog as deleteWorkLogEmail } from "../../../utils/mypageApi";
 import { media } from "../../../styles/breakpoints";
 
 export interface CompanyOption {
@@ -132,7 +133,11 @@ const Calendar: React.FC<CalendarProps> = ({
             for (const [ac, logs] of Object.entries(workLogsByAccessCode)) {
                 const target = salaryTargets.find((t) => t.accessCode === ac);
                 for (const log of logs) {
-                    if (selectedWorkLogIds.has(log.workLogId)) {
+                    if (!selectedWorkLogIds.has(log.workLogId)) continue;
+
+                    if (loginMethod === "email" && selectedCompanyId && target) {
+                        promises.push(deleteWorkLogEmail(selectedCompanyId, target.id, log.workLogId));
+                    } else {
                         const code = target?.accessCode || (loginMethod === "accessCode" ? getAccessCode() : undefined);
                         promises.push(deleteWorkLogByAccessCode(log.workLogId, code || undefined));
                     }
@@ -428,6 +433,7 @@ const Calendar: React.FC<CalendarProps> = ({
                         onWorkLogCreated?.();
                     }}
                     salaryTargets={loginMethod === "email" ? salaryTargets : undefined}
+                    companyIdForEmail={loginMethod === "email" ? selectedCompanyId ?? null : undefined}
                 />
             )}
             {isEditModalOpen && editingWorkLog && (
@@ -436,6 +442,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     setIsModalOpen={setIsEditModalOpen}
                     editingWorkLog={editingWorkLog}
                     salaryTarget={editingSalaryTarget}
+                    companyIdForEmail={loginMethod === "email" ? selectedCompanyId ?? null : undefined}
                     onWorkLogUpdated={() => {
                         setIsEditModalOpen(false);
                         setEditingWorkLog(null);
@@ -448,6 +455,7 @@ const Calendar: React.FC<CalendarProps> = ({
                 open={bulkEditModalOpen}
                 onClose={() => setBulkEditModalOpen(false)}
                 workLogs={bulkEditTargets}
+                companyIdForEmail={loginMethod === "email" ? selectedCompanyId ?? null : undefined}
                 onComplete={() => {
                     setBulkEditModalOpen(false);
                     setBulkEditTargets([]);

@@ -21,7 +21,10 @@ export default function MypageLayout() {
 
     const menuItems: MenuItem[] =
         loginMethod === "accessCode"
-            ? [{ path: "/mypage/work-history", name: "근무내역" }]
+            ? [
+                  { path: "/mypage/work-history", name: "근무내역" },
+                  { path: "/mypage/payment-history", name: "지급내역" },
+              ]
             : [
                   { path: "/mypage/dashboard", name: "업장 관리" },
                   { path: "/mypage/payment", name: "결제 내역" },
@@ -33,7 +36,8 @@ export default function MypageLayout() {
         const currentPath = location.pathname;
 
         if (loginMethod === "accessCode") {
-            if (currentPath !== "/mypage/work-history" && currentPath.startsWith("/mypage/")) {
+            const accessCodeAllowed = ["/mypage/work-history", "/mypage/payment-history"];
+            if (!accessCodeAllowed.includes(currentPath) && currentPath.startsWith("/mypage/")) {
                 navigate("/mypage/work-history", { replace: true });
             }
         } else if (loginMethod === "email") {

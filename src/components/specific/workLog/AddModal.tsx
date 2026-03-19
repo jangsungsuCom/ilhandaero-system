@@ -6,6 +6,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { createWorkLog } from "../../../utils/workLog";
 import { getLoginMethod } from "../../../utils/auth";
+import { createWorkLogForEmail } from "../../../utils/mypageApi";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
 
@@ -18,11 +19,13 @@ type Props = {
     selectedDate: Date;
     onWorkLogCreated?: () => void;
     salaryTargets?: SalaryTarget[];
+    /** email 로그인 시 선택된 companyId (mypage API용) */
+    companyIdForEmail?: number | null;
 };
 
 const toTimeString = (hour: number, minute: number) => `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, onWorkLogCreated, salaryTargets = [] }: Props) {
+export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, onWorkLogCreated, salaryTargets = [], companyIdForEmail }: Props) {
     const loginMethod = getLoginMethod();
     const [selectedTargetId, setSelectedTargetId] = useState<number | "">("");
     const [startHour, setStartHour] = useState(9);
@@ -83,30 +86,42 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
         setError("");
 
         try {
-            let accessCode: string | undefined;
+            // 모든 선택된 날짜에 대해 API 호출
+            const startTime = toTimeString(startHour, startMinute);
+            const endTime = toTimeString(endHour, endMinute);
+
             if (loginMethod === "email") {
+                if (!companyIdForEmail || !selectedTargetId) {
+                    setError("업장 또는 직원을 선택해주세요.");
+                    setIsLoading(false);
+                    return;
+                }
                 const selectedTarget = salaryTargets.find((target) => target.id === selectedTargetId);
                 if (!selectedTarget) {
                     setError("선택한 직원을 찾을 수 없습니다.");
                     setIsLoading(false);
                     return;
                 }
-                accessCode = selectedTarget.accessCode;
-            }
 
-            // 모든 선택된 날짜에 대해 API 호출
-            const startTime = toTimeString(startHour, startMinute);
-            const endTime = toTimeString(endHour, endMinute);
-
-            for (const date of allSelectedDates) {
-                await createWorkLog(
-                    {
+                for (const date of allSelectedDates) {
+                    await createWorkLogForEmail(companyIdForEmail, selectedTarget.id, {
                         workDate: format(date, "yyyy-MM-dd"),
                         startTime,
                         endTime,
-                    },
-                    accessCode
-                );
+                    });
+                }
+            } else {
+                // accessCode 로그인: 기존 /pud/{accessCode} API 사용
+                for (const date of allSelectedDates) {
+                    await createWorkLog(
+                        {
+                            workDate: format(date, "yyyy-MM-dd"),
+                            startTime,
+                            endTime,
+                        },
+                        undefined
+                    );
+                }
             }
 
             onWorkLogCreated?.();
