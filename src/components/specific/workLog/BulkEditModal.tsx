@@ -2,6 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import { updateWorkLog } from "../../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../../utils/auth";
+import { updateWorkLogForEmail } from "../../../utils/mypageApi";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
@@ -15,9 +16,11 @@ type Props = {
     onClose: () => void;
     workLogs: { workLog: WorkLog; salaryTarget?: SalaryTarget }[];
     onComplete: () => void;
+    /** email 로그인 시 선택된 companyId (mypage API용) */
+    companyIdForEmail?: number | null;
 };
 
-export default function BulkEditModal({ open, onClose, workLogs, onComplete }: Props) {
+export default function BulkEditModal({ open, onClose, workLogs, onComplete, companyIdForEmail }: Props) {
     const loginMethod = getLoginMethod();
     const [startHour, setStartHour] = useState(9);
     const [startMinute, setStartMinute] = useState(0);
@@ -45,20 +48,33 @@ export default function BulkEditModal({ open, onClose, workLogs, onComplete }: P
 
         for (const { workLog, salaryTarget } of workLogs) {
             try {
-                let ac: string | undefined;
                 if (loginMethod === "email") {
-                    ac = salaryTarget?.accessCode;
+                    if (!salaryTarget || !companyIdForEmail) {
+                        failCount++;
+                    } else {
+                        await updateWorkLogForEmail(
+                            companyIdForEmail,
+                            salaryTarget.id,
+                            workLog.workLogId,
+                            {
+                                workDate: format(new Date(workLog.workDate), "yyyy-MM-dd"),
+                                startTime,
+                                endTime,
+                            }
+                        );
+                        successCount++;
+                    }
                 } else {
-                    ac = getAccessCode() || undefined;
+                    const ac = getAccessCode() || undefined;
+                    await updateWorkLog(
+                        workLog.workLogId,
+                        format(new Date(workLog.workDate), "yyyy-MM-dd"),
+                        startTime,
+                        endTime,
+                        ac
+                    );
+                    successCount++;
                 }
-                await updateWorkLog(
-                    workLog.workLogId,
-                    format(new Date(workLog.workDate), "yyyy-MM-dd"),
-                    startTime,
-                    endTime,
-                    ac
-                );
-                successCount++;
             } catch {
                 failCount++;
             }

@@ -15,6 +15,12 @@ export interface ApiSuccessResponse<T> {
     status: number;
 }
 
+export interface MypageWorkLogPayload {
+    workDate: string; // "yyyy-MM-dd"
+    startTime: string; // "HH:mm"
+    endTime: string; // "HH:mm"
+}
+
 // 업체(Company) 관련 API
 export const mypageCompaniesApi = {
     getCompanies: async (): Promise<MyPageCompany[]> => {
@@ -52,7 +58,15 @@ export const mypageWorkerApi = {
     },
 };
 
-// 근무 내역 삭제 (email 유저)
+// 근무 내역 (email 유저)
+export const createWorkLogForEmail = async (companyId: number, salaryTargetId: number, payload: MypageWorkLogPayload): Promise<void> => {
+    await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs`, payload);
+};
+
+export const updateWorkLogForEmail = async (companyId: number, salaryTargetId: number, workLogId: number, payload: MypageWorkLogPayload): Promise<void> => {
+    await urlAxios.put<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs/${workLogId}`, payload);
+};
+
 export const deleteWorkLog = async (companyId: number, salaryTargetId: number, workLogId: number): Promise<void> => {
     await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs/${workLogId}`);
 };

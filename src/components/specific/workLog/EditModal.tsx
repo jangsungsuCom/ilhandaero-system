@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { updateWorkLog, deleteWorkLogByAccessCode } from "../../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../../utils/auth";
+import { updateWorkLogForEmail, deleteWorkLog as deleteWorkLogEmail } from "../../../utils/mypageApi";
 import type { WorkLog } from "../../../types/workLog";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
@@ -32,9 +33,11 @@ type Props = {
     editingWorkLog: WorkLog;
     salaryTarget?: SalaryTarget;
     onWorkLogUpdated?: () => void;
+    /** email 로그인 시 선택된 companyId (mypage API용) */
+    companyIdForEmail?: number | null;
 };
 
-export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, onWorkLogUpdated }: Props) {
+export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog, salaryTarget, onWorkLogUpdated, companyIdForEmail }: Props) {
     const loginMethod = getLoginMethod();
     const [startHour, setStartHour] = useState(9);
     const [startMinute, setStartMinute] = useState(0);
@@ -94,14 +97,24 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
         setError("");
 
         try {
-            let accessCode: string | undefined;
+            const workDate = format(new Date(editingWorkLog.workDate), "yyyy-MM-dd");
+
             if (loginMethod === "email") {
-                if (!salaryTarget) {
-                    setError("직원 정보를 찾을 수 없습니다.");
+                if (!salaryTarget || !companyIdForEmail) {
+                    setError("업장 또는 직원 정보를 찾을 수 없습니다.");
                     setIsLoading(false);
                     return;
                 }
-                accessCode = salaryTarget.accessCode;
+                await updateWorkLogForEmail(
+                    companyIdForEmail,
+                    salaryTarget.id,
+                    editingWorkLog.workLogId,
+                    {
+                        workDate,
+                        startTime: toTimeString(startHour, startMinute),
+                        endTime: toTimeString(endHour, endMinute),
+                    }
+                );
             } else {
                 const savedAccessCode = getAccessCode();
                 if (!savedAccessCode) {
@@ -109,9 +122,14 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                     setIsLoading(false);
                     return;
                 }
-                accessCode = savedAccessCode;
+                await updateWorkLog(
+                    editingWorkLog.workLogId,
+                    workDate,
+                    toTimeString(startHour, startMinute),
+                    toTimeString(endHour, endMinute),
+                    savedAccessCode
+                );
             }
-            await updateWorkLog(editingWorkLog.workLogId, format(new Date(editingWorkLog.workDate), "yyyy-MM-dd"), toTimeString(startHour, startMinute), toTimeString(endHour, endMinute), accessCode);
             onWorkLogUpdated?.();
             setIsModalOpen(false);
         } catch (err: any) {
@@ -126,14 +144,13 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
         setIsDeleting(true);
         setError("");
         try {
-            let accessCode: string | undefined;
             if (loginMethod === "email") {
-                if (!salaryTarget) {
-                    setError("직원 정보를 찾을 수 없습니다.");
+                if (!salaryTarget || !companyIdForEmail) {
+                    setError("업장 또는 직원 정보를 찾을 수 없습니다.");
                     setIsDeleting(false);
                     return;
                 }
-                accessCode = salaryTarget.accessCode;
+                await deleteWorkLogEmail(companyIdForEmail, salaryTarget.id, editingWorkLog.workLogId);
             } else {
                 const savedAccessCode = getAccessCode();
                 if (!savedAccessCode) {
@@ -141,9 +158,8 @@ export default function EditModal({ isModalOpen, setIsModalOpen, editingWorkLog,
                     setIsDeleting(false);
                     return;
                 }
-                accessCode = savedAccessCode;
+                await deleteWorkLogByAccessCode(editingWorkLog.workLogId, savedAccessCode);
             }
-            await deleteWorkLogByAccessCode(editingWorkLog.workLogId, accessCode);
             onWorkLogUpdated?.();
             setIsModalOpen(false);
         } catch (err: any) {
