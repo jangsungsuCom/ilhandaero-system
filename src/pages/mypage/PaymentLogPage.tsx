@@ -11,18 +11,11 @@ import { mypageTitle, mypageContent } from "../../styles/mypageTypography";
 
 const DAYS_OPTIONS = [30, 90, 365];
 
-const getDeductionTypeLabel = (type?: string) => {
-    switch (type) {
-        case "FOUR_INSURANCE":
-            return "4대보험";
-        case "THREE_POINT_THREE":
-            return "3.3%";
-        case "NONE":
-            return "미적용";
-        default:
-            return "-";
-    }
-};
+interface SalaryRow {
+    salary: SalaryPayout;
+    advances: SalaryPayout[];
+    totalAdvance: number;
+}
 
 export default function PaymentLogPage() {
     const dispatch = useAppDispatch();
@@ -107,6 +100,34 @@ export default function PaymentLogPage() {
             });
     }, [selectedCompanyId, selectedSalaryTargetId, days]);
 
+    // ADVANCE를 자기보다 paymentId가 큰 최초의 SALARY에 종속시켜 그룹핑
+    const salaryRows = useMemo((): SalaryRow[] => {
+        if (payouts.length === 0) return [];
+
+        const sorted = [...payouts].sort((a, b) => a.paymentId - b.paymentId);
+        const salaries = sorted.filter((p) => p.type === "SALARY");
+        const advances = sorted.filter((p) => p.type === "ADVANCE");
+
+        const advanceMap = new Map<number, SalaryPayout[]>();
+        for (const adv of advances) {
+            const parent = salaries.find((s) => s.paymentId > adv.paymentId);
+            if (parent) {
+                const list = advanceMap.get(parent.paymentId) || [];
+                list.push(adv);
+                advanceMap.set(parent.paymentId, list);
+            }
+        }
+
+        return salaries.map((s) => {
+            const childAdvances = advanceMap.get(s.paymentId) || [];
+            return {
+                salary: s,
+                advances: childAdvances,
+                totalAdvance: childAdvances.reduce((sum, a) => sum + (a.amount || 0), 0),
+            };
+        });
+    }, [payouts]);
+
     if (storesLoading) {
         return (
             <Container>
@@ -154,7 +175,7 @@ export default function PaymentLogPage() {
 
                 {loading ? (
                     <LoadingText>결제 내역 불러오는 중...</LoadingText>
-                ) : payouts.length === 0 ? (
+                ) : salaryRows.length === 0 ? (
                     <EmptyState>업장과 직원을 선택하면 결제 내역이 표시됩니다.</EmptyState>
                 ) : (
                     <Table>
@@ -163,22 +184,46 @@ export default function PaymentLogPage() {
                                 <TableHeaderCell>업장</TableHeaderCell>
                                 <TableHeaderCell>직원</TableHeaderCell>
                                 <TableHeaderCell>지급일</TableHeaderCell>
-                                <TableHeaderCell>근무 기간</TableHeaderCell>
-                                <TableHeaderCell>정산 금액</TableHeaderCell>
-                                <TableHeaderCell>공제</TableHeaderCell>
-                                <TableHeaderCell>공제타입</TableHeaderCell>
+                                <TableHeaderCell>근무기간</TableHeaderCell>
+                                <TableHeaderCell>결제금액</TableHeaderCell>
+                                <TableHeaderCell>선정산금액</TableHeaderCell>
+                                <TableHeaderCell>명세서</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
                         <tbody>
-                            {payouts.map((p) => (
-                                <TableRow key={p.paymentId}>
+                            {salaryRows.map((row) => (
+                                <TableRow key={row.salary.paymentId}>
                                     <TableCell>{selectedCompany?.name || "-"}</TableCell>
                                     <TableCell>{selectedWorker?.workerName || "-"}</TableCell>
-                                    <TableCell>{p.paidAt ? format(new Date(p.paidAt), "yyyy.MM.dd") : "-"}</TableCell>
-                                    <TableCell>{p.periodFrom && p.periodTo ? `${p.periodFrom} ~ ${p.periodTo}` : "-"}</TableCell>
-                                    <TableCell>{typeof p.amount === "number" ? `${p.amount.toLocaleString()}원` : "-"}</TableCell>
-                                    <TableCell>{typeof p.deduction === "number" ? `${p.deduction.toLocaleString()}원` : "-"}</TableCell>
-                                    <TableCell>{getDeductionTypeLabel(p.deductionDetail?.appliedType)}</TableCell>
+                                    <TableCell>{row.salary.paidAt ? format(new Date(row.salary.paidAt), "yyyy.MM.dd") : "-"}</TableCell>
+                                    <TableCell>
+                                        {row.salary.periodFrom && row.salary.periodTo
+                                            ? `${row.salary.periodFrom} ~ ${row.salary.periodTo}`
+                                            : "-"}
+                                    </TableCell>
+                                    <TableCell>{`${(row.salary.amount ?? 0).toLocaleString()}원`}</TableCell>
+                                    <TableCell>{row.totalAdvance > 0 ? `${row.totalAdvance.toLocaleString()}원` : "-"}</TableCell>
+                                    <TableCell>
+                                        <DetailButton
+                                            type="button"
+                                            onClick={() => {
+                                                const params = new URLSearchParams({
+                                                    companyId: String(selectedCompanyId),
+                                                    companyName: selectedCompany?.name || "",
+                                                    salaryTargetId: String(selectedSalaryTargetId),
+                                                    paymentId: String(row.salary.paymentId),
+                                                    advanceAmount: String(row.totalAdvance),
+                                                });
+                                                window.open(
+                                                    `/payslip?${params.toString()}`,
+                                                    "_blank",
+                                                    "width=460,height=640,scrollbars=yes,resizable=yes"
+                                                );
+                                            }}
+                                        >
+                                            명세서 보기
+                                        </DetailButton>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </tbody>
@@ -344,4 +389,25 @@ const ErrorText = styled.div`
     color: #d32f2f;
     font-weight: 700;
     margin-bottom: 12px;
+`;
+
+const DetailButton = styled.button`
+    ${mypageContent}
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #00ccc7;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 0.85;
+    }
+
+    ${media.mobile} {
+        padding: 4px 10px;
+    }
 `;

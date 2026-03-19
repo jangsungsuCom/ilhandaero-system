@@ -74,3 +74,21 @@ export const getSalaryPayouts = async (companyId: number, salaryTargetId: number
 
     return response.data.data;
 };
+
+/**
+ * GET /owner/companies/{companyId}/salary-targets/{salaryTargetId}/payouts/{paymentId}/payslip
+ */
+export const getPayslip = async (companyId: number, salaryTargetId: number, paymentId: number): Promise<SalaryPayout> => {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error("인증 토큰이 없습니다.");
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const response = await urlAxios.get<ApiSuccessResponse<SalaryPayout>>(
+        `/owner/companies/${companyId}/salary-targets/${salaryTargetId}/payouts/${paymentId}/payslip`,
+        { headers }
+    );
+
+    return response.data.data;
+};
