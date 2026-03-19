@@ -32,11 +32,16 @@ type Props = {
 
 const getAdvanceStatusLabel = (status: string): string => {
     switch (status) {
-        case "PENDING": return "대기중";
-        case "APPROVED": return "승인";
-        case "REJECTED": return "거절";
-        case "PAID": return "결제완료";
-        default: return "대기중";
+        case "PENDING":
+            return "대기중";
+        case "APPROVED":
+            return "승인";
+        case "REJECTED":
+            return "거절";
+        case "PAID":
+            return "결제완료";
+        default:
+            return "대기중";
     }
 };
 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import styled from "styled-components";
 import { useMypageAdvanceRequests } from "../../hooks/useMypageAdvanceRequests";
-import { getStatusLabel } from "../../types/mypage";
+import { getStatusLabel, type MyPageAdvanceRequest } from "../../types/mypage";
 import { media } from "../../styles/breakpoints";
 import { mypageTitle, mypageContent } from "../../styles/mypageTypography";
 
@@ -29,7 +29,7 @@ export default function AdvanceRequestPage() {
     const availableMonths = useMemo(() => {
         const months = new Set(
             requests
-                .map((r) => r.requestDate?.slice(0, 7))
+                .map((r) => r.requestedAt?.slice(0, 7))
                 .filter(Boolean) as string[]
         );
         return Array.from(months).sort().reverse();
@@ -39,15 +39,15 @@ export default function AdvanceRequestPage() {
         return requests.filter((r) => {
             if (selectedCompany && r.companyName !== selectedCompany) return false;
             if (selectedWorker && r.workerName !== selectedWorker) return false;
-            if (selectedMonth && (!r.requestDate || !r.requestDate.startsWith(selectedMonth))) return false;
+            if (selectedMonth && (!r.requestedAt || !r.requestedAt.startsWith(selectedMonth))) return false;
             if (selectedStatus && (r.status || "PENDING") !== selectedStatus) return false;
             return true;
         });
     }, [requests, selectedCompany, selectedWorker, selectedMonth, selectedStatus]);
 
-    const handleApprove = async (request: any) => {
+    const handleApprove = async (request: MyPageAdvanceRequest) => {
         if (window.confirm("선정산 요청을 승인하시겠습니까?")) {
-            setProcessingId(request.requestId);
+            setProcessingId(request.id);
             try {
                 await approveRequest(request);
                 // 테스트용: 직접 urlAxios로 POST 요청
@@ -62,17 +62,21 @@ export default function AdvanceRequestPage() {
                 //     }
                 // );
                 //window.location.reload();
-            } catch (err: any) {
-                alert(err.response?.data?.message || "승인 처리에 실패했습니다.");
+            } catch (err: unknown) {
+                const message =
+                    err && typeof err === "object" && "response" in err
+                        ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? "승인 처리에 실패했습니다.")
+                        : "승인 처리에 실패했습니다.";
+                alert(message);
             } finally {
                 setProcessingId(null);
             }
         }
     };
 
-    const handleReject = async (request: any) => {
+    const handleReject = async (request: MyPageAdvanceRequest) => {
         if (window.confirm("선정산 요청을 거절하시겠습니까?")) {
-            setProcessingId(request.requestId);
+            setProcessingId(request.id);
             try {
                 await rejectRequest(request);
             } finally {
@@ -139,28 +143,30 @@ export default function AdvanceRequestPage() {
                                 <TableHeaderCell>직원명</TableHeaderCell>
                                 <TableHeaderCell>요청일</TableHeaderCell>
                                 <TableHeaderCell>금액</TableHeaderCell>
+                                <TableHeaderCell>수수료</TableHeaderCell>
                                 <TableHeaderCell>상태</TableHeaderCell>
                                 <TableHeaderCell>작업</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
                         <tbody>
                             {filteredRequests.map((request) => (
-                                <TableRow key={`${request.companyId}-${request.salaryTargetId}-${request.requestId}`}>
+                                <TableRow key={`${request.companyId}-${request.salaryTargetId}-${request.id}`}>
                                     <TableCell>{request.companyName || "-"}</TableCell>
                                     <TableCell>{request.workerName || "-"}</TableCell>
-                                    <TableCell>{request.requestDate ? request.requestDate.slice(0, 10) : "-"}</TableCell>
-                                    <TableCell>{request.amount ? `${request.amount.toLocaleString()}원` : "-"}</TableCell>
+                                    <TableCell>{request.requestedAt ? request.requestedAt.slice(0, 10) : "-"}</TableCell>
+                                    <TableCell>{`${(request.amount ?? 0).toLocaleString()}원`}</TableCell>
+                                    <TableCell>{`${(request.feeAmount ?? 0).toLocaleString()}원`}</TableCell>
                                     <TableCell>
                                         <StatusBadge $status={request.status || "PENDING"}>{getStatusLabel(request.status)}</StatusBadge>
                                     </TableCell>
                                     <TableCell>
                                         {request.status === "PENDING" && (
                                             <ActionButtons>
-                                                <ApproveButton onClick={() => handleApprove(request)} disabled={processingId === request.requestId}>
-                                                    {processingId === request.requestId ? "처리중..." : "승인"}
+                                                <ApproveButton onClick={() => handleApprove(request)} disabled={processingId === request.id}>
+                                                    {processingId === request.id ? "처리중..." : "승인"}
                                                 </ApproveButton>
-                                                <RejectButton onClick={() => handleReject(request)} disabled={processingId === request.requestId}>
-                                                    {processingId === request.requestId ? "처리중..." : "거절"}
+                                                <RejectButton onClick={() => handleReject(request)} disabled={processingId === request.id}>
+                                                    {processingId === request.id ? "처리중..." : "거절"}
                                                 </RejectButton>
                                             </ActionButtons>
                                         )}

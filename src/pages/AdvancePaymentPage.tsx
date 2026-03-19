@@ -70,7 +70,7 @@ export default function AdvancePaymentPage() {
 
                 const response = await getWorkAmount(accessCode, from, to);
                 console.log("response", response);
-                setCumulativeReceived(response.data.grossAmount);
+                setCumulativeReceived(response.data.netAfterDeduction);
                 setCumulativeAdvance(response.data.totalAdvanced ?? response.data.totalAdvancedInPeriod ?? 0);
                 setMaxAdvanceAmount(response.data.maxAdvance);
             } catch (error) {

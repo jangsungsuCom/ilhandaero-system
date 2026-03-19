@@ -29,7 +29,6 @@ export function useMypageAdvanceRequests() {
                                 salaryTargetId: worker.id,
                                 workerName: worker.workerName,
                                 companyName: company.name,
-                                requestDate: req.requestDate || req.createdAt || req.requestedAt || req.date || undefined,
                             }));
 
                             allRequests.push(...requestsWithInfo);
@@ -56,7 +55,7 @@ export function useMypageAdvanceRequests() {
 
     const approveRequest = async (request: MyPageAdvanceRequest) => {
         try {
-            await mypageAdvanceRequestApi.approveAdvanceRequest(request.companyId, request.salaryTargetId, request.requestId);
+            await mypageAdvanceRequestApi.approveAdvanceRequest(request.companyId, request.salaryTargetId, request.id);
             await fetchAllAdvanceRequests();
             return { success: true };
         } catch (err) {
@@ -66,7 +65,7 @@ export function useMypageAdvanceRequests() {
 
     const rejectRequest = async (request: MyPageAdvanceRequest) => {
         try {
-            await mypageAdvanceRequestApi.rejectAdvanceRequest(request.companyId, request.salaryTargetId, request.requestId);
+            await mypageAdvanceRequestApi.rejectAdvanceRequest(request.companyId, request.salaryTargetId, request.id);
             await fetchAllAdvanceRequests();
             return { success: true };
         } catch (err) {

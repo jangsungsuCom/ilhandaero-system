@@ -24,6 +24,7 @@ export default function MypageLayout() {
             ? [{ path: "/mypage/work-history", name: "근무내역" }]
             : [
                   { path: "/mypage/dashboard", name: "업장 관리" },
+                  { path: "/mypage/payment", name: "결제 내역" },
                   { path: "/mypage/advance-requests", name: "선정산 요청" },
                   { path: "/mypage/profile", name: "회원 정보 수정" },
               ];

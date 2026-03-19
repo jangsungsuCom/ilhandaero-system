@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { getWorkLogs, getWorkAmount } from "../../utils/workLog";
+import { getWorkLogs, getWorkAmount, getWorkerInfo, updateWorkerBankAccount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
 import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
+import type { WorkerInfo } from "../../types/worker";
 import { IosWheelPicker, type WheelOption } from "../../components/common/IosWheelPicker";
 import { media } from "../../styles/breakpoints";
 import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
@@ -16,6 +17,14 @@ export default function WorkHistoryPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [workLogs, setWorkLogs] = useState<any[]>([]);
     const [workAmount, setWorkAmount] = useState<WorkAmountData | null>(null);
+    const [workerInfo, setWorkerInfo] = useState<WorkerInfo | null>(null);
+    const [deductionDetailsOpen, setDeductionDetailsOpen] = useState(false);
+
+    const [bankEditOpen, setBankEditOpen] = useState(false);
+    const [bankNameEdit, setBankNameEdit] = useState("");
+    const [accountNumberEdit, setAccountNumberEdit] = useState("");
+    const [bankSaving, setBankSaving] = useState(false);
+    const [bankError, setBankError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pendingYear, setPendingYear] = useState(new Date().getFullYear());
@@ -64,7 +73,11 @@ export default function WorkHistoryPage() {
             const from = format(startDate, "yyyy-MM-dd");
             const to = format(endDate, "yyyy-MM-dd");
 
-            const [workLogsResponse, workAmountResponse] = await Promise.all([getWorkLogs(currentYear, currentMonth, accessCode), getWorkAmount(accessCode, from, to)]);
+            const [workLogsResponse, workAmountResponse, workerInfoResponse] = await Promise.all([
+                getWorkLogs(currentYear, currentMonth, accessCode),
+                getWorkAmount(accessCode, from, to),
+                getWorkerInfo(accessCode),
+            ]);
 
             setWorkLogs(workLogsResponse.data || []);
             const waData = workAmountResponse?.data;
@@ -76,10 +89,56 @@ export default function WorkHistoryPage() {
             } else {
                 setWorkAmount(null);
             }
+
+            setWorkerInfo(workerInfoResponse?.data ?? null);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const openBankEdit = () => {
+        setBankError(null);
+        setBankNameEdit(workerInfo?.bankName ?? "");
+        setAccountNumberEdit("");
+        setBankEditOpen(true);
+    };
+
+    const cancelBankEdit = () => {
+        setBankError(null);
+        setBankEditOpen(false);
+        setBankSaving(false);
+    };
+
+    const saveBankAccount = async () => {
+        const accessCode = getAccessCode();
+        if (!accessCode) return;
+
+        const bankName = bankNameEdit.trim();
+        const accountNumber = accountNumberEdit.replace(/\s/g, "");
+        if (!bankName) {
+            setBankError("은행을 선택해주세요.");
+            return;
+        }
+        if (!accountNumber) {
+            setBankError("계좌번호를 입력해주세요.");
+            return;
+        }
+
+        setBankSaving(true);
+        setBankError(null);
+        try {
+            await updateWorkerBankAccount(bankName, accountNumber, accessCode);
+            const refreshed = await getWorkerInfo(accessCode);
+            setWorkerInfo(refreshed?.data ?? null);
+            setBankEditOpen(false);
+            setAccountNumberEdit("");
+        } catch (e) {
+            console.error("Error updating bank account:", e);
+            setBankError("계좌 정보 수정에 실패했습니다.");
+        } finally {
+            setBankSaving(false);
         }
     };
 
@@ -113,6 +172,17 @@ export default function WorkHistoryPage() {
         setPickerOpen(false);
     };
 
+    const convertDeductionType = (deductionType: string): string => {
+        switch (deductionType) {
+            case "FOUR_INSURANCE":
+                return "4대보험";
+            case "THREE_POINT_THREE":
+                return "3.3%";
+            default:
+                return "미적용";
+        }
+    };
+
     if (loading) {
         return (
             <Container>
@@ -131,9 +201,68 @@ export default function WorkHistoryPage() {
                 <SummaryCard>
                     <SummaryMainItem>
                         <SummaryMainLabel>총 급여</SummaryMainLabel>
-                        <SummaryMainValue>{workAmount?.grossAmount != null ? `${workAmount.grossAmount.toLocaleString()}원` : "-"}</SummaryMainValue>
+                        <SummaryMainValue>{workAmount?.netAfterDeduction != null ? `${workAmount.netAfterDeduction.toLocaleString()}원` : "-"}</SummaryMainValue>
                     </SummaryMainItem>
                     <SummaryDivider />
+                    <SummaryMeta>
+                        <SummaryMetaRow>
+                            <SummaryMetaLabel>기본금</SummaryMetaLabel>
+                            <SummaryMetaValue>{workAmount?.grossAmount != null ? `${workAmount.grossAmount.toLocaleString()}원` : "-"}</SummaryMetaValue>
+                        </SummaryMetaRow>
+                        <SummaryMetaRow>
+                            <SummaryMetaLabel>공제내역({convertDeductionType(workAmount?.deductionType ?? "")})</SummaryMetaLabel>
+                            <SummaryMetaValue>{workAmount?.deduction != null ? `${workAmount.deduction.toLocaleString()}원` : "-"}</SummaryMetaValue>
+                        </SummaryMetaRow>
+
+                        {workAmount?.deductionType && workAmount.deductionType !== "NONE" && (
+                            <SummaryMetaDetails>
+                                <SummaryMetaDetailsHeader>
+                                    <SummaryMetaDetailsTitle>세부사항</SummaryMetaDetailsTitle>
+                                    <SummaryMetaDetailsToggle
+                                        type="button"
+                                        aria-expanded={deductionDetailsOpen}
+                                        onClick={() => setDeductionDetailsOpen((v) => !v)}
+                                        title={deductionDetailsOpen ? "세부사항 접기" : "세부사항 펼치기"}
+                                    >
+                                        <SummaryMetaDetailsArrow $open={deductionDetailsOpen}>▾</SummaryMetaDetailsArrow>
+                                    </SummaryMetaDetailsToggle>
+                                </SummaryMetaDetailsHeader>
+
+                                {deductionDetailsOpen &&
+                                    (workAmount.deductionType === "THREE_POINT_THREE" ? (
+                                        <SummaryMetaDetailsList>
+                                            <SummaryMetaDetailsItem>
+                                                <span>사업소득세(3.0%)</span>
+                                                <span>{workAmount.threePointThree?.businessIncomeTax != null ? `${workAmount.threePointThree.businessIncomeTax.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                            <SummaryMetaDetailsItem>
+                                                <span>지방소득세(0.3%)</span>
+                                                <span>{workAmount.threePointThree?.localIncomeTax != null ? `${workAmount.threePointThree.localIncomeTax.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                        </SummaryMetaDetailsList>
+                                    ) : (
+                                        <SummaryMetaDetailsList>
+                                            <SummaryMetaDetailsItem>
+                                                <span>국민연금(4.75%)</span>
+                                                <span>{workAmount.fourInsurance?.pension != null ? `${workAmount.fourInsurance.pension.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                            <SummaryMetaDetailsItem>
+                                                <span>건강보험(3.595%)</span>
+                                                <span>{workAmount.fourInsurance?.health != null ? `${workAmount.fourInsurance.health.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                            <SummaryMetaDetailsItem>
+                                                <span>장기요양보험(0.4724%)</span>
+                                                <span>{workAmount.fourInsurance?.longTermCare != null ? `${workAmount.fourInsurance.longTermCare.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                            <SummaryMetaDetailsItem>
+                                                <span>고용보험(0.9%)</span>
+                                                <span>{workAmount.fourInsurance?.employment != null ? `${workAmount.fourInsurance.employment.toLocaleString()}원` : "-"}</span>
+                                            </SummaryMetaDetailsItem>
+                                        </SummaryMetaDetailsList>
+                                    ))}
+                            </SummaryMetaDetails>
+                        )}
+                    </SummaryMeta>
                     <SummarySubItem>
                         <SummaryLabel>선정산액</SummaryLabel>
                         <SummaryValue>{workAmount?.totalAdvanced != null ? `${workAmount.totalAdvanced.toLocaleString()}원` : "-"}</SummaryValue>
@@ -147,6 +276,70 @@ export default function WorkHistoryPage() {
                         <SummaryValue>{workAmount?.maxAdvance != null ? `${workAmount.maxAdvance.toLocaleString()}원` : "-"}</SummaryValue>
                     </SummarySubItem>
                 </SummaryCard>
+
+                <BankInfoCard>
+                    <BankInfoHeader>
+                        <BankInfoTitle>계좌 정보</BankInfoTitle>
+                        {!bankEditOpen ? (
+                            <BankEditButton type="button" onClick={openBankEdit}>
+                                수정
+                            </BankEditButton>
+                        ) : (
+                            <BankEditButton type="button" onClick={cancelBankEdit}>
+                                취소
+                            </BankEditButton>
+                        )}
+                    </BankInfoHeader>
+                    <SummaryDivider />
+                    {!bankEditOpen ? (
+                        <BankInfoBody>
+                            <BankInfoRow>
+                                <BankInfoValue>{workerInfo?.bankName || "-"}</BankInfoValue>
+
+                                <BankInfoValue>{workerInfo?.maskedAccountNumber || "-"}</BankInfoValue>
+                            </BankInfoRow>
+                        </BankInfoBody>
+                    ) : (
+                        <BankEditBody>
+                            <BankEditGrid>
+                                <BankSelect value={bankNameEdit} onChange={(e) => setBankNameEdit(e.target.value)} required>
+                                    <option value="">은행을 선택하세요</option>
+                                    <option value="KB국민은행">KB국민은행</option>
+                                    <option value="신한은행">신한은행</option>
+                                    <option value="우리은행">우리은행</option>
+                                    <option value="하나은행">하나은행</option>
+                                    <option value="NH농협은행">NH농협은행</option>
+                                    <option value="카카오뱅크">카카오뱅크</option>
+                                    <option value="토스뱅크">토스뱅크</option>
+                                    <option value="IBK기업은행">IBK기업은행</option>
+                                    <option value="SC제일은행">SC제일은행</option>
+                                    <option value="한국씨티은행">한국씨티은행</option>
+                                    <option value="케이뱅크">케이뱅크</option>
+                                    <option value="새마을금고">새마을금고</option>
+                                    <option value="신협">신협</option>
+                                    <option value="우체국">우체국</option>
+                                    <option value="수협은행">수협은행</option>
+                                    <option value="대구은행">대구은행</option>
+                                    <option value="부산은행">부산은행</option>
+                                    <option value="경남은행">경남은행</option>
+                                    <option value="광주은행">광주은행</option>
+                                    <option value="전북은행">전북은행</option>
+                                    <option value="제주은행">제주은행</option>
+                                </BankSelect>
+
+                                <AccountInput type="text" value={accountNumberEdit} onChange={(e) => setAccountNumberEdit(e.target.value)} placeholder="계좌번호를 입력하세요" />
+                            </BankEditGrid>
+
+                            {bankError && <BankErrorText>{bankError}</BankErrorText>}
+
+                            <BankEditActions>
+                                <BankSaveButton type="button" onClick={saveBankAccount} disabled={bankSaving}>
+                                    {bankSaving ? "저장 중..." : "저장"}
+                                </BankSaveButton>
+                            </BankEditActions>
+                        </BankEditBody>
+                    )}
+                </BankInfoCard>
 
                 <MonthSelector>
                     <MonthPickerButton onClick={() => setPickerOpen(!pickerOpen)}>
@@ -248,6 +441,162 @@ const SummaryCard = styled.div`
     }
 `;
 
+const BankInfoCard = styled.div`
+    background: transparent;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1.5px solid #00ccc7;
+
+    ${media.mobile} {
+        padding: 16px;
+        border-radius: 8px;
+    }
+`;
+
+const BankInfoHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+`;
+
+const BankInfoTitle = styled.div`
+    ${mypageSubtitle}
+    font-weight: 700;
+    color: #000;
+`;
+
+const BankEditButton = styled.button`
+    ${mypageContent}
+    border: none;
+    background: transparent;
+    color: #00ccc7;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 6px 8px;
+
+    &:hover {
+        opacity: 0.85;
+    }
+`;
+
+const BankInfoBody = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+const BankInfoRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 20px;
+`;
+
+// const BankInfoLabel = styled.div`
+//     ${mypageContent}
+//     color: #000;
+//     font-weight: 500;
+// `;
+
+const BankInfoValue = styled.div`
+    ${mypageContent}
+    color: #000;
+    font-weight: 600;
+    text-align: right;
+`;
+
+const BankEditBody = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+`;
+
+const BankEditGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    ${media.mobile} {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const BankSelect = styled.select`
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    ${mypageContent}
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300a8a5%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 12px;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: #00ccc7;
+        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+    }
+
+    option[value=""] {
+        display: none;
+    }
+`;
+
+const AccountInput = styled.input`
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    ${mypageContent}
+    border: 1.5px solid #00ccc7;
+    border-radius: 12px;
+    background: #ffffff;
+
+    &:focus {
+        outline: none;
+        border-color: #00ccc7;
+        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+    }
+`;
+
+const BankEditActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+`;
+
+const BankSaveButton = styled.button`
+    ${mypageContent}
+    padding: 10px 16px;
+    border: none;
+    border-radius: 12px;
+    background: #00ccc7;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const BankErrorText = styled.div`
+    ${mypageContent}
+    color: #d32f2f;
+    font-weight: 600;
+`;
+
 const SummaryMainItem = styled.div`
     display: flex;
     justify-content: space-between;
@@ -268,9 +617,97 @@ const SummaryMainValue = styled.div`
 `;
 
 const SummaryDivider = styled.div`
+    width: 100%;
     height: 1px;
     background: #e0e0e0;
     margin: 12px 0;
+`;
+
+const SummaryMeta = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+`;
+
+const SummaryMetaRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+`;
+
+const SummaryMetaLabel = styled.div`
+    ${mypageContent}
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+`;
+
+const SummaryMetaValue = styled.div`
+    ${mypageContent}
+    font-size: 13px;
+    color: #555;
+    font-weight: 700;
+    text-align: right;
+`;
+
+const SummaryMetaDetails = styled.div`
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
+const SummaryMetaDetailsHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+`;
+
+const SummaryMetaDetailsTitle = styled.div`
+    ${mypageContent}
+    font-size: 12px;
+    color: #777;
+    font-weight: 700;
+`;
+
+const SummaryMetaDetailsToggle = styled.button`
+    border: none;
+    background: transparent;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: #777;
+    display: inline-flex;
+    align-items: center;
+
+    &:hover {
+        opacity: 0.85;
+    }
+`;
+
+const SummaryMetaDetailsArrow = styled.span<{ $open: boolean }>`
+    display: inline-block;
+    transition: transform 0.15s ease;
+    transform: ${({ $open }) => ($open ? "rotate(180deg)" : "rotate(0deg)")};
+`;
+
+const SummaryMetaDetailsList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+const SummaryMetaDetailsItem = styled.div`
+    ${mypageContent}
+    font-size: 12px;
+    color: #777;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
 `;
 
 const SummarySubItem = styled.div`

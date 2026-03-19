@@ -20,6 +20,8 @@ import WorkerFormPage from "./pages/mypage/WorkerFormPage";
 import AdvanceRequestPage from "./pages/mypage/AdvanceRequestPage";
 import WorkHistoryPage from "./pages/mypage/WorkHistoryPage";
 import MyInfoPage from "./pages/mypage/MyInfoPage";
+import PaymentLogPage from "./pages/mypage/PaymentLogPage";
+import PayslipPage from "./pages/PayslipPage";
 import FAQPage from "./pages/FAQPage";
 import FindEmailPage from "./pages/FindEmailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -54,6 +56,14 @@ function App() {
                             >
                                 <HomePage />
                             </motion.div>
+                        }
+                    />
+                    <Route
+                        path="/payslip"
+                        element={
+                            <ProtectedRoute allowedMethods={["email"]}>
+                                <PayslipPage />
+                            </ProtectedRoute>
                         }
                     />
                     <Route
@@ -135,6 +145,14 @@ function App() {
                                 element={
                                     <ProtectedRoute allowedMethods={["email"]}>
                                         <MyInfoPage />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="payment"
+                                element={
+                                    <ProtectedRoute allowedMethods={["email"]}>
+                                        <PaymentLogPage />
                                     </ProtectedRoute>
                                 }
                             />

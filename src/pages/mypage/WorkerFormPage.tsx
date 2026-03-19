@@ -219,6 +219,15 @@ export default function WorkerFormPage() {
                                     <CheckboxCircle $checked={formData.deductionType === "THREE_POINT_THREE"} />
                                     <span>3.3%</span>
                                 </CheckboxOption>
+                                <CheckboxOption
+                                    type="button"
+                                    role="checkbox"
+                                    aria-checked={formData.deductionType === "NONE"}
+                                    onClick={() => setFormData({ ...formData, deductionType: "NONE" })}
+                                >
+                                    <CheckboxCircle $checked={formData.deductionType === "NONE"} />
+                                    <span>미적용</span>
+                                </CheckboxOption>
                             </CheckboxRow>
                         </FieldGroup>
 
