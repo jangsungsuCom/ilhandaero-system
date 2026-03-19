@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import styled from "styled-components";
+import html2canvas from "html2canvas";
 import { getPayslip, type SalaryPayout } from "../utils/paymentApi";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -39,9 +40,27 @@ export default function PayslipPage() {
     const paymentId = Number(params.get("paymentId")) || 0;
     const advanceAmount = Number(params.get("advanceAmount")) || 0;
 
+    const cardRef = useRef<HTMLDivElement>(null);
     const [data, setData] = useState<SalaryPayout | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const handleSave = async () => {
+        if (!cardRef.current) return;
+        try {
+            const canvas = await html2canvas(cardRef.current, {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true,
+            });
+            const link = document.createElement("a");
+            link.download = `payslip_${paymentId}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } catch {
+            alert("이미지 저장에 실패했습니다.");
+        }
+    };
 
     useEffect(() => {
         if (!companyId || !salaryTargetId || !paymentId) {
@@ -56,8 +75,22 @@ export default function PayslipPage() {
             .finally(() => setLoading(false));
     }, [companyId, salaryTargetId, paymentId]);
 
-    if (loading) return <Wrapper><Card><CenterText>로딩 중...</CenterText></Card></Wrapper>;
-    if (error || !data) return <Wrapper><Card><CenterText>{error || "데이터 없음"}</CenterText></Card></Wrapper>;
+    if (loading)
+        return (
+            <Wrapper>
+                <Card>
+                    <CenterText>로딩 중...</CenterText>
+                </Card>
+            </Wrapper>
+        );
+    if (error || !data)
+        return (
+            <Wrapper>
+                <Card>
+                    <CenterText>{error || "데이터 없음"}</CenterText>
+                </Card>
+            </Wrapper>
+        );
 
     const totalPay = (data.amount ?? 0) + advanceAmount;
     const paidAtDate = data.paidAt ? new Date(data.paidAt) : null;
@@ -95,16 +128,16 @@ export default function PayslipPage() {
 
     return (
         <Wrapper>
-            <Card>
+            <Card ref={cardRef}>
                 <Header>
                     <HeaderLeft>
                         <HeaderSub>
                             {companyName} | {data.periodFrom && data.periodTo ? `${formatShortDate(data.periodFrom)} ~ ${formatShortDate(data.periodTo)}` : "-"}
                         </HeaderSub>
-                        <HeaderAmount>{totalPay.toLocaleString()}원 <NetBadge>실수령액</NetBadge></HeaderAmount>
-                        {paidAtDate && (
-                            <HeaderPayday>급여 지급일 {formatDateWithDay(data.paidAt)}</HeaderPayday>
-                        )}
+                        <HeaderAmount>
+                            {totalPay.toLocaleString()}원 <NetBadge>실수령액</NetBadge>
+                        </HeaderAmount>
+                        {paidAtDate && <HeaderPayday>급여 지급일 {formatDateWithDay(data.paidAt)}</HeaderPayday>}
                     </HeaderLeft>
                 </Header>
 
@@ -148,6 +181,9 @@ export default function PayslipPage() {
                     )}
                 </Section>
             </Card>
+            <SaveButton type="button" onClick={handleSave}>
+                이미지로 저장
+            </SaveButton>
         </Wrapper>
     );
 }
@@ -155,15 +191,16 @@ export default function PayslipPage() {
 const Wrapper = styled.div`
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     padding: 24px 16px;
     background: #f5f5f5;
+    overflow: auto;
 `;
 
 const Card = styled.div`
     width: 420px;
-    max-width: 100%;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
@@ -208,7 +245,7 @@ const NetBadge = styled.span`
 
 const HeaderPayday = styled.div`
     font-size: 14px;
-    color: #6b8bf5;
+    color: #00ccc7;
     font-weight: 500;
 `;
 
@@ -244,7 +281,7 @@ const TitleIcon = styled.span`
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #6b8bf5;
+    background: #00ccc7;
     color: #fff;
     font-size: 16px;
     font-weight: 800;
@@ -288,4 +325,27 @@ const CenterText = styled.div`
     text-align: center;
     font-size: 16px;
     color: #888;
+`;
+
+const SaveButton = styled.button`
+    width: 420px;
+    max-width: 100%;
+    margin-top: 16px;
+    padding: 14px 0;
+    border: none;
+    border-radius: 14px;
+    background: #00ccc7;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 0.85;
+    }
+
+    &:active {
+        opacity: 0.7;
+    }
 `;
