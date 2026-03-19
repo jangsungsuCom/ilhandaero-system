@@ -2,6 +2,7 @@ import urlAxios from "./urlAxios";
 import type { WorkLogActivity, NotificationItem } from "../types/notification";
 import type { Company } from "../types/company";
 import type { SalaryTarget } from "../types/salaryTarget";
+import { getAccessCode } from "./auth";
 
 interface ApiResponse<T> {
     status: number;
@@ -9,14 +10,53 @@ interface ApiResponse<T> {
     data: T;
 }
 
+type RawActivity = {
+    id?: number;
+    activityId?: number;
+    workLogId: number;
+    actionType: WorkLogActivity["actionType"];
+    actorType: WorkLogActivity["actorType"];
+    actorLabel: string;
+    occurredAt?: string;
+    createdAt?: string;
+    isRead?: boolean;
+    read?: boolean;
+    readAt: string | null;
+    beforeStartAt: string | null;
+    beforeEndAt: string | null;
+    beforeWorkedMinutes: number | null;
+    afterStartAt: string | null;
+    afterEndAt: string | null;
+    afterWorkedMinutes: number | null;
+};
+
+function normalizeActivity(raw: RawActivity): WorkLogActivity {
+    return {
+        id: raw.id ?? raw.activityId ?? 0,
+        workLogId: raw.workLogId,
+        actionType: raw.actionType,
+        actorType: raw.actorType,
+        actorLabel: raw.actorLabel,
+        occurredAt: raw.occurredAt ?? raw.createdAt ?? "",
+        isRead: typeof raw.isRead === "boolean" ? raw.isRead : !!raw.read,
+        readAt: raw.readAt,
+        beforeStartAt: raw.beforeStartAt,
+        beforeEndAt: raw.beforeEndAt,
+        beforeWorkedMinutes: raw.beforeWorkedMinutes,
+        afterStartAt: raw.afterStartAt,
+        afterEndAt: raw.afterEndAt,
+        afterWorkedMinutes: raw.afterWorkedMinutes,
+    };
+}
+
 export async function getWorklogActivities(
     companyId: number,
     salaryTargetId: number
 ): Promise<WorkLogActivity[]> {
-    const res = await urlAxios.get<ApiResponse<WorkLogActivity[]>>(
+    const res = await urlAxios.get<ApiResponse<RawActivity[]>>(
         `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/worklog-activities`
     );
-    return res.data.data ?? [];
+    return (res.data.data ?? []).map(normalizeActivity);
 }
 
 export async function markActivityAsRead(
@@ -89,4 +129,27 @@ export async function getAllNotifications(
             new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
     );
     return all;
+}
+
+export async function getAccessCodeNotifications(): Promise<NotificationItem[]> {
+    const accessCode = getAccessCode();
+    if (!accessCode) return [];
+
+    const res = await urlAxios.get<ApiResponse<RawActivity[]>>(`/pud/${encodeURIComponent(accessCode)}/worklog-activities`);
+    const activities = (res.data.data ?? []).map(normalizeActivity);
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+
+    return activities
+        .filter((a) => {
+            const t = new Date(a.occurredAt).getTime();
+            return Number.isFinite(t) && t >= cutoff && a.actorType === "OWNER";
+        })
+        .map((a) => ({
+            ...a,
+            companyId: 0,
+            companyName: "내 근무지",
+            salaryTargetId: 0,
+            workerName: a.actorType === "OWNER" ? "사장" : "근로자",
+        }))
+        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
 }

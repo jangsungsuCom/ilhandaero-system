@@ -21,6 +21,7 @@ import AdvanceRequestPage from "./pages/mypage/AdvanceRequestPage";
 import WorkHistoryPage from "./pages/mypage/WorkHistoryPage";
 import MyInfoPage from "./pages/mypage/MyInfoPage";
 import PaymentLogPage from "./pages/mypage/PaymentLogPage";
+import AccessCodePaymentHistoryPage from "./pages/mypage/AccessCodePaymentHistoryPage";
 import PayslipPage from "./pages/PayslipPage";
 import FAQPage from "./pages/FAQPage";
 import FindEmailPage from "./pages/FindEmailPage";
@@ -61,7 +62,7 @@ function App() {
                     <Route
                         path="/payslip"
                         element={
-                            <ProtectedRoute allowedMethods={["email"]}>
+                            <ProtectedRoute allowedMethods={["email", "accessCode"]}>
                                 <PayslipPage />
                             </ProtectedRoute>
                         }
@@ -161,6 +162,14 @@ function App() {
                                 element={
                                     <ProtectedRoute allowedMethods={["accessCode"]}>
                                         <WorkHistoryPage />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="payment-history"
+                                element={
+                                    <ProtectedRoute allowedMethods={["accessCode"]}>
+                                        <AccessCodePaymentHistoryPage />
                                     </ProtectedRoute>
                                 }
                             />

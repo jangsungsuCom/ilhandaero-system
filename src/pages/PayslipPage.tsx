@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import html2canvas from "html2canvas";
-import { getPayslip, type SalaryPayout } from "../utils/paymentApi";
+import { getAccessCode } from "../utils/auth";
+import { getAccessCodePayslip, getPayslip, type SalaryPayout } from "../utils/paymentApi";
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -34,8 +35,9 @@ const getDeductionTypeLabel = (type?: string) => {
 
 export default function PayslipPage() {
     const [params] = useSearchParams();
+    const mode = params.get("mode") || "email";
     const companyId = Number(params.get("companyId")) || 0;
-    const companyName = params.get("companyName") || "";
+    const companyName = params.get("companyName") || "내 근무지";
     const salaryTargetId = Number(params.get("salaryTargetId")) || 0;
     const paymentId = Number(params.get("paymentId")) || 0;
     const advanceAmount = Number(params.get("advanceAmount")) || 0;
@@ -63,7 +65,30 @@ export default function PayslipPage() {
     };
 
     useEffect(() => {
-        if (!companyId || !salaryTargetId || !paymentId) {
+        if (!paymentId) {
+            setError("잘못된 접근입니다.");
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        if (mode === "accessCode") {
+            const accessCode = getAccessCode();
+            if (!accessCode) {
+                setError("접근 코드가 없습니다.");
+                setLoading(false);
+                return;
+            }
+            getAccessCodePayslip(accessCode, paymentId)
+                .then((res) => setData(res))
+                .catch(() => setError("명세서를 불러올 수 없습니다."))
+                .finally(() => setLoading(false));
+            return;
+        }
+
+        if (!companyId || !salaryTargetId) {
             setError("잘못된 접근입니다.");
             setLoading(false);
             return;
@@ -73,7 +98,7 @@ export default function PayslipPage() {
             .then((res) => setData(res))
             .catch(() => setError("명세서를 불러올 수 없습니다."))
             .finally(() => setLoading(false));
-    }, [companyId, salaryTargetId, paymentId]);
+    }, [mode, companyId, salaryTargetId, paymentId]);
 
     if (loading)
         return (

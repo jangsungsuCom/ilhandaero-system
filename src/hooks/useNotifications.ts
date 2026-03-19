@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getLoginMethod } from "../utils/auth";
-import { getAllNotifications, markActivityAsRead, markAllActivitiesAsRead } from "../utils/notificationApi";
+import { getAccessCodeNotifications, getAllNotifications, markActivityAsRead, markAllActivitiesAsRead } from "../utils/notificationApi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCompanies } from "../store/slices/companySlice";
 import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
@@ -11,6 +11,8 @@ const POLL_INTERVAL = 60_000;
 export function useNotifications() {
     const loginMethod = getLoginMethod();
     const isOwner = loginMethod === "email";
+    const isAccessCode = loginMethod === "accessCode";
+    const canUseNotifications = isOwner || isAccessCode;
 
     const dispatch = useAppDispatch();
     const companies = useAppSelector((s) => s.company.companies);
@@ -39,6 +41,19 @@ export function useNotifications() {
     }, [isOwner, companies, salaryTargetsByCompany, dispatch]);
 
     const load = useCallback(async () => {
+        if (isAccessCode) {
+            setIsLoading(true);
+            try {
+                const items = await getAccessCodeNotifications();
+                setNotifications(items);
+            } catch {
+                // silent
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
+
         if (!isOwner || companies.length === 0) return;
 
         const hasTargets = companies.some(
@@ -55,19 +70,19 @@ export function useNotifications() {
         } finally {
             setIsLoading(false);
         }
-    }, [isOwner, companies, salaryTargetsByCompany]);
+    }, [isOwner, isAccessCode, companies, salaryTargetsByCompany]);
 
     useEffect(() => {
         load();
     }, [load]);
 
     useEffect(() => {
-        if (!isOwner) return;
+        if (!canUseNotifications) return;
         timerRef.current = setInterval(load, POLL_INTERVAL);
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [isOwner, load]);
+    }, [canUseNotifications, load]);
 
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -76,9 +91,11 @@ export function useNotifications() {
             setNotifications((prev) =>
                 prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
             );
-            await markActivityAsRead(item.companyId, item.salaryTargetId, item.id);
+            if (isOwner) {
+                await markActivityAsRead(item.companyId, item.salaryTargetId, item.id);
+            }
         },
-        []
+        [isOwner]
     );
 
     const markAllAsRead = useCallback(async () => {
@@ -94,11 +111,13 @@ export function useNotifications() {
             grouped.get(key)!.push(item.id);
         }
 
-        for (const [key] of grouped) {
-            const [cId, stId] = key.split(":").map(Number);
-            await markAllActivitiesAsRead(cId, stId);
+        if (isOwner) {
+            for (const [key] of grouped) {
+                const [cId, stId] = key.split(":").map(Number);
+                await markAllActivitiesAsRead(cId, stId);
+            }
         }
-    }, [notifications]);
+    }, [notifications, isOwner]);
 
     return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, refresh: load };
 }
