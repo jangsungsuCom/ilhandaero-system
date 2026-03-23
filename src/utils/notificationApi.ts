@@ -65,7 +65,7 @@ export async function markActivityAsRead(
     activityId: number
 ): Promise<boolean> {
     try {
-        await urlAxios.put(
+        await urlAxios.post(
             `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/worklog-activities/${activityId}/read`
         );
         return true;
@@ -79,7 +79,7 @@ export async function markAllActivitiesAsRead(
     salaryTargetId: number
 ): Promise<boolean> {
     try {
-        await urlAxios.put(
+        await urlAxios.post(
             `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/worklog-activities/read-all`
         );
         return true;
@@ -104,11 +104,7 @@ export async function getAllNotifications(
                 getWorklogActivities(company.companyId, target.id)
                     .then((activities) =>
                         activities
-                            .filter(
-                                (a) =>
-                                    a.actorType === "WORKER" &&
-                                    a.occurredAt >= cutoff
-                            )
+                            .filter((a) => a.occurredAt >= cutoff)
                             .map((a) => ({
                                 ...a,
                                 companyId: company.companyId,
@@ -142,7 +138,7 @@ export async function getAccessCodeNotifications(): Promise<NotificationItem[]> 
     return activities
         .filter((a) => {
             const t = new Date(a.occurredAt).getTime();
-            return Number.isFinite(t) && t >= cutoff && a.actorType === "OWNER";
+            return Number.isFinite(t) && t >= cutoff;
         })
         .map((a) => ({
             ...a,
@@ -152,4 +148,26 @@ export async function getAccessCodeNotifications(): Promise<NotificationItem[]> 
             workerName: a.actorType === "OWNER" ? "사장" : "근로자",
         }))
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+}
+
+export async function markAccessCodeActivityAsRead(activityId: number): Promise<boolean> {
+    const accessCode = getAccessCode();
+    if (!accessCode) return false;
+    try {
+        await urlAxios.post(`/pud/${encodeURIComponent(accessCode)}/worklog-activities/${activityId}/read`);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function markAllAccessCodeActivitiesAsRead(): Promise<boolean> {
+    const accessCode = getAccessCode();
+    if (!accessCode) return false;
+    try {
+        await urlAxios.post(`/pud/${encodeURIComponent(accessCode)}/worklog-activities/read-all`);
+        return true;
+    } catch {
+        return false;
+    }
 }

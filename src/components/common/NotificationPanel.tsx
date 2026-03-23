@@ -8,7 +8,7 @@ type TabType = "unread" | "read";
 interface Props {
     notifications: NotificationItem[];
     onClose: () => void;
-    onClickItem: (item: NotificationItem) => void;
+    onMarkRead: (item: NotificationItem) => void;
     onMarkAllRead: () => void;
 }
 
@@ -57,7 +57,7 @@ const ACTION_LABELS: Record<string, string> = {
 export default function NotificationPanel({
     notifications,
     onClose,
-    onClickItem,
+    onMarkRead,
     onMarkAllRead,
 }: Props) {
     const panelRef = useRef<HTMLDivElement>(null);
@@ -102,14 +102,14 @@ export default function NotificationPanel({
         [unreadList]
     );
 
-    const handleItemClick = useCallback(
+    const handleReadClick = useCallback(
         (item: NotificationItem) => {
             if (!item.isRead) {
-                onClickItem(item);
+                onMarkRead(item);
                 setTimeout(() => scrollToNextUnread(item.id), 200);
             }
         },
-        [onClickItem, scrollToNextUnread]
+        [onMarkRead, scrollToNextUnread]
     );
 
     return (
@@ -154,7 +154,6 @@ export default function NotificationPanel({
                                 if (el) itemRefs.current.set(item.id, el);
                             }}
                             $unread={!item.isRead}
-                            onClick={() => handleItemClick(item)}
                         >
                             <ActionIcon $type={item.actionType}>
                                 {item.actionType === "CREATED"
@@ -204,7 +203,20 @@ export default function NotificationPanel({
                                     {formatRelativeTime(item.occurredAt)}
                                 </NotifTime>
                             </NotifContent>
-                            {!item.isRead && <UnreadDot />}
+                            {!item.isRead && (
+                                <RightArea>
+                                    <UnreadDot />
+                                    <ReadButton
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleReadClick(item);
+                                        }}
+                                    >
+                                        읽음
+                                    </ReadButton>
+                                </RightArea>
+                            )}
                         </NotifItem>
                     ))
                 )}
@@ -397,4 +409,27 @@ const UnreadDot = styled.div`
     border-radius: 50%;
     background: #00ccc7;
     margin-top: 6px;
+`;
+
+const RightArea = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+`;
+
+const ReadButton = styled.button`
+    border: 1px solid #00ccc7;
+    background: #ffffff;
+    color: #00ccc7;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        background: #f0fffe;
+    }
 `;
