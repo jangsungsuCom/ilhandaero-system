@@ -42,6 +42,7 @@ export default function WorkerFormPage() {
     const store = stores.find((s) => s.companyId === Number(storeId));
     const [formData, setFormData] = useState<CreateWorkerRequest>({
         workerName: "",
+        birthDate: "",
         phoneNumber: "",
         hourlyWage: 0,
         payDay: 1,
@@ -59,6 +60,7 @@ export default function WorkerFormPage() {
             if (worker) {
                 setFormData({
                     workerName: worker.workerName,
+                    birthDate: worker.birthDate || "",
                     phoneNumber: worker.phoneNumber,
                     hourlyWage: worker.hourlyWage,
                     payDay: worker.payDay,
@@ -113,6 +115,11 @@ export default function WorkerFormPage() {
                         <FieldGroup>
                             <Label>전화번호</Label>
                             <Input type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} required placeholder="전화번호를 입력하세요" />
+                        </FieldGroup>
+
+                        <FieldGroup>
+                            <Label>생년월일</Label>
+                            <Input type="date" value={formData.birthDate} onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })} required />
                         </FieldGroup>
 
                         <FieldGroup>

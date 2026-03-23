@@ -57,6 +57,7 @@ export default function WorkerListPage() {
                             <TableRow>
                                 <TableHeaderCell>작업</TableHeaderCell>
                                 <TableHeaderCell>이름</TableHeaderCell>
+                                <TableHeaderCell>생년월일</TableHeaderCell>
                                 <TableHeaderCell>전화번호</TableHeaderCell>
                                 <TableHeaderCell>시급</TableHeaderCell>
                                 <TableHeaderCell>지급일</TableHeaderCell>
@@ -76,6 +77,7 @@ export default function WorkerListPage() {
                                         <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
                                     </TableCell>
                                     <TableCell>{worker.workerName}</TableCell>
+                                    <TableCell>{worker.birthDate || "-"}</TableCell>
                                     <TableCell>{worker.phoneNumber}</TableCell>
                                     <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
                                     <TableCell>{worker.payDay}일</TableCell>
@@ -130,6 +132,7 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
                             <TableRow>
                                 <TableHeaderCell>작업</TableHeaderCell>
                                 <TableHeaderCell>이름</TableHeaderCell>
+                                <TableHeaderCell>생년월일</TableHeaderCell>
                                 <TableHeaderCell>전화번호</TableHeaderCell>
                                 <TableHeaderCell>시급</TableHeaderCell>
                                 <TableHeaderCell>지급일</TableHeaderCell>
@@ -148,6 +151,7 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
                                         <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
                                     </TableCell>
                                     <TableCell>{worker.workerName}</TableCell>
+                                    <TableCell>{worker.birthDate || "-"}</TableCell>
                                     <TableCell>{worker.phoneNumber}</TableCell>
                                     <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
                                     <TableCell>{worker.payDay}일</TableCell>

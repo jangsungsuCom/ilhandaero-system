@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getLoginMethod } from "../utils/auth";
-import { getAccessCodeNotifications, getAllNotifications, markActivityAsRead, markAllActivitiesAsRead } from "../utils/notificationApi";
+import {
+    getAccessCodeNotifications,
+    getAllNotifications,
+    markAccessCodeActivityAsRead,
+    markActivityAsRead,
+    markAllAccessCodeActivitiesAsRead,
+    markAllActivitiesAsRead,
+} from "../utils/notificationApi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCompanies } from "../store/slices/companySlice";
 import { fetchSalaryTargets } from "../store/slices/salaryTargetSlice";
@@ -93,9 +100,11 @@ export function useNotifications() {
             );
             if (isOwner) {
                 await markActivityAsRead(item.companyId, item.salaryTargetId, item.id);
+            } else if (isAccessCode) {
+                await markAccessCodeActivityAsRead(item.id);
             }
         },
-        [isOwner]
+        [isOwner, isAccessCode]
     );
 
     const markAllAsRead = useCallback(async () => {
@@ -104,20 +113,17 @@ export function useNotifications() {
 
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
 
-        const grouped = new Map<string, number[]>();
-        for (const item of unreadItems) {
-            const key = `${item.companyId}:${item.salaryTargetId}`;
-            if (!grouped.has(key)) grouped.set(key, []);
-            grouped.get(key)!.push(item.id);
-        }
-
         if (isOwner) {
-            for (const [key] of grouped) {
-                const [cId, stId] = key.split(":").map(Number);
-                await markAllActivitiesAsRead(cId, stId);
+            for (const company of companies) {
+                const targets = salaryTargetsByCompany[company.companyId] ?? [];
+                for (const target of targets) {
+                    await markAllActivitiesAsRead(company.companyId, target.id);
+                }
             }
+        } else if (isAccessCode) {
+            await markAllAccessCodeActivitiesAsRead();
         }
-    }, [notifications, isOwner]);
+    }, [notifications, isOwner, isAccessCode, companies, salaryTargetsByCompany]);
 
     return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, refresh: load };
 }

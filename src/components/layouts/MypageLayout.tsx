@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import styled from "styled-components";
 import { getLoginMethod } from "../../utils/auth";
 import { media } from "../../styles/breakpoints";
-import { mypageTitle } from "../../styles/mypageTypography";
 
 interface MenuItem {
     path: string;
@@ -50,7 +49,6 @@ export default function MypageLayout() {
     return (
         <Container>
             <TopHeader>
-                <TopTitle>마이페이지</TopTitle>
                 <MenuBar>
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + "/");
@@ -94,20 +92,20 @@ const TopHeader = styled.div`
     }
 `;
 
-const TopTitle = styled.h2`
-    ${mypageTitle}
-    margin: 0 0 20px;
-    font-weight: 700;
-    color: #00ccc7;
+// const TopTitle = styled.h2`
+//     ${mypageTitle}
+//     margin: 0 0 20px;
+//     font-weight: 700;
+//     color: #00ccc7;
 
-    ${media.desktop} {
-        margin-bottom: 16px;
-    }
+//     ${media.desktop} {
+//         margin-bottom: 16px;
+//     }
 
-    ${media.mobile} {
-        margin-bottom: 12px;
-    }
-`;
+//     ${media.mobile} {
+//         margin-bottom: 12px;
+//     }
+// `;
 
 const MenuBar = styled.nav`
     display: flex;

@@ -46,6 +46,9 @@ export interface SalaryPayout {
     periodTo: string; // yyyy-MM-dd
     advanceRequestId: number;
     paidAt: string; // ISO
+    workerName?: string;
+    birthDate?: string;
+    companyName?: string;
 }
 
 export interface AccessCodePayment {

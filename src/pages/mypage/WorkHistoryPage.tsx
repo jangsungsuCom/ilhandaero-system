@@ -196,8 +196,30 @@ export default function WorkHistoryPage() {
 
     return (
         <Container>
-            <PageTitle>근무내역</PageTitle>
             <ContentWrapper>
+                <TopRow>
+                    <PageTitle>근무내역</PageTitle>
+                    <MonthSelector>
+                        <MonthPickerButton onClick={() => setPickerOpen(!pickerOpen)}>
+                            {currentYear}년 {currentMonth + 1}월 ˅
+                        </MonthPickerButton>
+                    </MonthSelector>
+                </TopRow>
+
+                {pickerOpen && (
+                    <PickerBox>
+                        <WheelPickerRow>
+                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
+                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
+                        </WheelPickerRow>
+                        <PickerConfirmRow>
+                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
+                                적용
+                            </PickerConfirmButton>
+                        </PickerConfirmRow>
+                    </PickerBox>
+                )}
+
                 <SummaryCard>
                     <SummaryMainItem>
                         <SummaryMainLabel>총 급여</SummaryMainLabel>
@@ -341,25 +363,6 @@ export default function WorkHistoryPage() {
                     )}
                 </BankInfoCard>
 
-                <MonthSelector>
-                    <MonthPickerButton onClick={() => setPickerOpen(!pickerOpen)}>
-                        {currentYear}년 {currentMonth + 1}월 ˅
-                    </MonthPickerButton>
-                </MonthSelector>
-                {pickerOpen && (
-                    <PickerBox>
-                        <WheelPickerRow>
-                            <IosWheelPicker options={YEAR_OPTIONS(currentYear)} value={pendingYear} onChange={(y: number) => setPendingYear(y)} centerInputMode centerInputSuffix="년" />
-                            <IosWheelPicker options={MONTH_OPTIONS} value={pendingMonth} onChange={(m: number) => setPendingMonth(m)} centerInputMode centerInputSuffix="월" />
-                        </WheelPickerRow>
-                        <PickerConfirmRow>
-                            <PickerConfirmButton type="button" onClick={() => handleSelectMonthYear(pendingYear, pendingMonth)}>
-                                적용
-                            </PickerConfirmButton>
-                        </PickerConfirmRow>
-                    </PickerBox>
-                )}
-
                 {workLogs.length === 0 ? (
                     <EmptyState>해당 기간의 근무 기록이 없습니다.</EmptyState>
                 ) : (
@@ -399,16 +402,7 @@ const PageTitle = styled.h1`
     ${mypageTitle}
     font-weight: 700;
     color: #00ccc7;
-    margin: 0 0 30px 0;
-    align-self: flex-start;
-
-    ${media.tablet} {
-        margin-bottom: 20px;
-    }
-
-    ${media.mobile} {
-        margin-bottom: 16px;
-    }
+    margin: 0;
 `;
 
 const ContentWrapper = styled.div`
@@ -733,7 +727,24 @@ const MonthSelector = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 0;
+`;
+
+const TopRow = styled.div`
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 16px;
+
+    ${media.tablet} {
+        margin-bottom: 20px;
+    }
+
+    ${media.mobile} {
+        margin-bottom: 16px;
+    }
 `;
 
 const MonthPickerButton = styled.button`

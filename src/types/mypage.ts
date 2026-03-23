@@ -8,6 +8,7 @@ export type DeductionType = "NONE" | "FOUR_INSURANCE" | "THREE_POINT_THREE";
 export interface MyPageWorker {
     id: number;
     workerName: string;
+    birthDate?: string;
     phoneNumber: string;
     hourlyWage: number;
     payDay: number;
@@ -59,6 +60,7 @@ export interface MyPageAdvanceRequest {
 
 export interface CreateWorkerRequest {
     workerName: string;
+    birthDate: string;
     phoneNumber: string;
     hourlyWage: number;
     payDay: number;

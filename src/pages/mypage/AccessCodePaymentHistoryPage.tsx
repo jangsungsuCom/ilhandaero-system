@@ -100,13 +100,15 @@ export default function AccessCodePaymentHistoryPage() {
 
     return (
         <Container>
-            <PageTitle>지급내역</PageTitle>
             <ContentWrapper>
-                <MonthSelector>
-                    <MonthPickerButton onClick={() => setPickerOpen((v) => !v)}>
-                        {currentYear}년 {currentMonth + 1}월 ˅
-                    </MonthPickerButton>
-                </MonthSelector>
+                <TopRow>
+                    <PageTitle>지급내역</PageTitle>
+                    <MonthSelector>
+                        <MonthPickerButton onClick={() => setPickerOpen((v) => !v)}>
+                            {currentYear}년 {currentMonth + 1}월 ˅
+                        </MonthPickerButton>
+                    </MonthSelector>
+                </TopRow>
 
                 {pickerOpen && (
                     <PickerBox>
@@ -181,8 +183,7 @@ const PageTitle = styled.h1`
     ${mypageTitle}
     font-weight: 700;
     color: #00ccc7;
-    margin: 0 0 30px 0;
-    align-self: flex-start;
+    margin: 0;
 `;
 
 const ContentWrapper = styled.div`
@@ -198,7 +199,16 @@ const MonthSelector = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 0;
+`;
+
+const TopRow = styled.div`
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 16px;
 `;
 
 const MonthPickerButton = styled.button`

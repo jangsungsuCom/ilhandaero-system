@@ -221,12 +221,14 @@ export default function PaymentLogPage() {
                                         <DetailButton
                                             type="button"
                                             onClick={() => {
+                                                const target = (salaryTargetsByCompany[row.companyId] || []).find((t) => t.id === row.salaryTargetId);
                                                 const params = new URLSearchParams({
                                                     companyId: String(row.companyId),
                                                     companyName: row.companyName || "",
                                                     salaryTargetId: String(row.salaryTargetId),
                                                     paymentId: String(row.salary.paymentId),
                                                     advanceAmount: String(row.totalAdvance),
+                                                    accessCode: target?.accessCode || "",
                                                 });
                                                 window.open(
                                                     `/payslip?${params.toString()}`,

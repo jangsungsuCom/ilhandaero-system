@@ -33,7 +33,7 @@ export default function NotificationBell() {
                 <NotificationPanel
                     notifications={notifications}
                     onClose={() => setOpen(false)}
-                    onClickItem={(item) => {
+                    onMarkRead={(item) => {
                         if (!item.isRead) markAsRead(item);
                     }}
                     onMarkAllRead={() => {
