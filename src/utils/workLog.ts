@@ -1,5 +1,5 @@
 import urlAxios from "./urlAxios";
-import type { WorkLogResponse, CreateWorkLogRequest } from "../types/workLog";
+import type { WorkLog, WorkLogResponse, CreateWorkLogRequest } from "../types/workLog";
 import type { WorkAmountResponse } from "../types/payment";
 import type { WorkerInfoResponse } from "../types/worker";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -112,6 +112,13 @@ export const updateWorkLog = async (workLogId: number, workDate: string, startTi
         startTime,
         endTime,
     });
+};
+
+export const getWorkLogsByDateRange = async (from: string, to: string, accessCodeParam?: string): Promise<WorkLog[]> => {
+    const accessCode = accessCodeParam || getAccessCode();
+    if (!accessCode) throw new Error("Access code not found");
+    const response = await urlAxios.get<WorkLogResponse>(`/pud/${accessCode}/work-logs?from=${from}&to=${to}`);
+    return response.data.data || [];
 };
 
 export const deleteWorkLogByAccessCode = async (workLogId: number, accessCodeParam?: string): Promise<void> => {
