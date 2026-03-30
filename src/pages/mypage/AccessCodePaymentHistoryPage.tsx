@@ -102,7 +102,7 @@ export default function AccessCodePaymentHistoryPage() {
         <Container>
             <ContentWrapper>
                 <TopRow>
-                    <PageTitle>지급내역</PageTitle>
+                    <PageTitle>급여명세서</PageTitle>
                     <MonthSelector>
                         <MonthPickerButton onClick={() => setPickerOpen((v) => !v)}>
                             {currentYear}년 {currentMonth + 1}월 ˅

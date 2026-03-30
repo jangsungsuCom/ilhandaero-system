@@ -22,7 +22,7 @@ export default function MypageLayout() {
         loginMethod === "accessCode"
             ? [
                   { path: "/mypage/work-history", name: "근무내역" },
-                  { path: "/mypage/payment-history", name: "지급내역" },
+                  { path: "/mypage/payment-history", name: "급여명세서" },
               ]
             : [
                   { path: "/mypage/dashboard", name: "업장 관리" },
