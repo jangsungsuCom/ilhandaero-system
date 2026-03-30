@@ -14,6 +14,16 @@ function fmtDate(dateStr: string): string {
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function fmtFileDate(dateStr?: string | null): string {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function sanitizeFileNamePart(value?: string | null): string {
+    if (!value) return "이름없음";
+    return value.replace(/[\\/:*?"<>|]/g, "_").trim() || "이름없음";
+}
+
 function fmtDateWithDay(dateStr: string): string {
     const d = new Date(dateStr);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
@@ -81,7 +91,9 @@ export default function PayslipPage() {
                 useCORS: true,
             });
             const link = document.createElement("a");
-            link.download = `payslip_${paymentId}.png`;
+            const fileDate = fmtFileDate(data?.paidAt || data?.periodTo || data?.periodFrom);
+            const fileName = sanitizeFileNamePart(data?.workerName || params.get("workerName"));
+            link.download = `${fileDate}_${fileName}_급여명세서.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         } catch {
