@@ -11,7 +11,11 @@ export default function NotificationBell() {
 
     return (
         <BellWrapper>
-            <BellButton onClick={() => setOpen((v) => !v)} aria-label="알림">
+            <BellButton
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => setOpen((v) => !v)}
+                aria-label="알림"
+            >
                 <svg
                     width="29"
                     height="29"

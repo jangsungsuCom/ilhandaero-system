@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+    useState,
+    useEffect,
+    useRef,
+    useCallback,
+    useMemo,
+} from "react";
 import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
 import type { NotificationItem } from "../../types/notification";
