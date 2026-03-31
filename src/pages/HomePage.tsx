@@ -25,11 +25,11 @@ const HomePage = () => {
                     <PaymentBtnContainer src={PaymentButton} alt="payment" onClick={() => navigate("/work-log")} style={{ cursor: "pointer" }} />
                     <IntroTop>
                         <div className="subTitle">사장님은 계산할 필요 없이</div>
-                        <div className="title">간편 송금</div>
+                        <div className="title">업무 자동 시스템</div>
                     </IntroTop>
                     <IntroBottom>
                         <div className="subTitle">알바생은 기다릴 필요 없이</div>
-                        <div className="title">선정산 요청</div>
+                        <div className="title">정산 데이터 요청</div>
                         <div style={{ height: "48px" }} />
                         <div className="more">{`더 알아보기 >`}</div>
                     </IntroBottom>
@@ -59,8 +59,8 @@ const TopNavBar = () => {
 
     const navLinks = [
         { path: "/work-log", name: "기록하기", requiresAuth: true },
-        { path: "/payment", name: "결제하기", requiresAuth: true },
-        { path: "/advance-payment", name: "선정산 요청", requiresAuth: true },
+        { path: "/payment", name: "업무 자동 시스템", requiresAuth: true },
+        { path: "/advance-payment", name: "정산 데이터 요청", requiresAuth: true },
         { path: "/faq", name: "자주묻는 질문" },
         { path: "/mypage", name: "마이페이지", requiresAuth: true },
         { path: "/login", name: isAuthenticated ? "로그아웃" : "로그인" },
@@ -350,12 +350,13 @@ const HamburgerButton = styled.button`
 
 const NavLinksContainer = styled.div<{ $isOpen: boolean }>`
     display: flex;
+    width: 100%;
     align-items: center;
-    gap: 100px;
+    justify-content: space-between;
 
-    ${media.desktop} {
-        gap: 60px;
-    }
+    // ${media.desktop} {
+    //     gap: 40px;
+    // }
 
     ${media.tablet} {
         position: fixed;

@@ -48,8 +48,8 @@ const NavBar = () => {
 
     const navLinks: NavLink[] = [
         { path: "/work-log", name: "기록하기", requiresAuth: true },
-        { path: "/payment", name: "결제하기", requiresAuth: true },
-        { path: "/advance-payment", name: "선정산 요청", requiresAuth: true },
+        { path: "/payment", name: "업무 자동 시스템", requiresAuth: true },
+        { path: "/advance-payment", name: "정산 데이터 요청", requiresAuth: true },
         { path: "/faq", name: "자주묻는 질문" },
         { path: "/mypage", name: "마이페이지", requiresAuth: true },
         { path: "/login", name: isAuthenticated ? "로그아웃" : "로그인" },
