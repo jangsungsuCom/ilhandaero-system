@@ -171,3 +171,59 @@ export async function markAllAccessCodeActivitiesAsRead(): Promise<boolean> {
         return false;
     }
 }
+
+export async function acceptAccessCodeActivity(activityId: number): Promise<boolean> {
+    const accessCode = getAccessCode();
+    if (!accessCode) return false;
+    try {
+        await urlAxios.post(
+            `/pud/${encodeURIComponent(accessCode)}/worklog-activities/${activityId}/accept`
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function rejectAccessCodeActivity(activityId: number): Promise<boolean> {
+    const accessCode = getAccessCode();
+    if (!accessCode) return false;
+    try {
+        await urlAxios.post(
+            `/pud/${encodeURIComponent(accessCode)}/worklog-activities/${activityId}/reject`
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function acceptActivity(
+    companyId: number,
+    salaryTargetId: number,
+    activityId: number
+): Promise<boolean> {
+    try {
+        await urlAxios.post(
+            `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/worklog-activities/${activityId}/accept`
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function rejectActivity(
+    companyId: number,
+    salaryTargetId: number,
+    activityId: number
+): Promise<boolean> {
+    try {
+        await urlAxios.post(
+            `/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/worklog-activities/${activityId}/reject`
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}

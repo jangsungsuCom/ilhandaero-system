@@ -7,6 +7,10 @@ import {
     markActivityAsRead,
     markAllAccessCodeActivitiesAsRead,
     markAllActivitiesAsRead,
+    acceptAccessCodeActivity,
+    rejectAccessCodeActivity,
+    acceptActivity,
+    rejectActivity,
 } from "../utils/notificationApi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCompanies } from "../store/slices/companySlice";
@@ -125,5 +129,58 @@ export function useNotifications() {
         }
     }, [notifications, isOwner, isAccessCode, companies, salaryTargetsByCompany]);
 
-    return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, refresh: load };
+    const respondToUpdate = useCallback(
+        async (item: NotificationItem, decision: "accept" | "reject") => {
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
+            );
+
+            let actionOk = false;
+            if (isOwner) {
+                actionOk =
+                    decision === "accept"
+                        ? await acceptActivity(item.companyId, item.salaryTargetId, item.id)
+                        : await rejectActivity(item.companyId, item.salaryTargetId, item.id);
+            } else if (isAccessCode) {
+                actionOk =
+                    decision === "accept"
+                        ? await acceptAccessCodeActivity(item.id)
+                        : await rejectAccessCodeActivity(item.id);
+            }
+
+            if (!actionOk) {
+                setNotifications((prev) =>
+                    prev.map((n) => (n.id === item.id ? { ...n, isRead: item.isRead } : n))
+                );
+                throw new Error("처리에 실패했습니다.");
+            }
+
+            const readOk = isOwner
+                ? await markActivityAsRead(item.companyId, item.salaryTargetId, item.id)
+                : isAccessCode
+                  ? await markAccessCodeActivityAsRead(item.id)
+                  : false;
+
+            if (!readOk) {
+                await load();
+                throw new Error("읽음 처리에 실패했습니다.");
+            }
+
+            if (decision === "reject") {
+                await load();
+                window.dispatchEvent(new Event("worklog:changed"));
+            }
+        },
+        [isOwner, isAccessCode, load]
+    );
+
+    return {
+        notifications,
+        unreadCount,
+        isLoading,
+        markAsRead,
+        markAllAsRead,
+        respondToUpdate,
+        refresh: load,
+    };
 }

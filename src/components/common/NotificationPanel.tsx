@@ -16,6 +16,10 @@ interface Props {
     onClose: () => void;
     onMarkRead: (item: NotificationItem) => void;
     onMarkAllRead: () => void;
+    onRespondUpdate: (
+        item: NotificationItem,
+        decision: "accept" | "reject"
+    ) => Promise<void>;
 }
 
 function parseUTC(dateStr: string): Date {
@@ -65,6 +69,7 @@ export default function NotificationPanel({
     onClose,
     onMarkRead,
     onMarkAllRead,
+    onRespondUpdate,
 }: Props) {
     const panelRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -212,15 +217,38 @@ export default function NotificationPanel({
                             {!item.isRead && (
                                 <RightArea>
                                     <UnreadDot />
-                                    <ReadButton
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleReadClick(item);
-                                        }}
-                                    >
-                                        읽음
-                                    </ReadButton>
+                                    {item.actionType === "UPDATED" ? (
+                                        <ActionButtons>
+                                            <RejectButton
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onRespondUpdate(item, "reject");
+                                                }}
+                                            >
+                                                거절
+                                            </RejectButton>
+                                            <AcceptButton
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onRespondUpdate(item, "accept");
+                                                }}
+                                            >
+                                                수락
+                                            </AcceptButton>
+                                        </ActionButtons>
+                                    ) : (
+                                        <ReadButton
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReadClick(item);
+                                            }}
+                                        >
+                                            읽음
+                                        </ReadButton>
+                                    )}
                                 </RightArea>
                             )}
                         </NotifItem>
@@ -427,6 +455,43 @@ const RightArea = styled.div`
 const ReadButton = styled.button`
     border: 1px solid #00ccc7;
     background: #ffffff;
+    color: #00ccc7;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        background: #f0fffe;
+    }
+`;
+
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 6px;
+`;
+
+const RejectButton = styled.button`
+    border: 1px solid #d9534f;
+    background: #fff;
+    color: #d9534f;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        background: #fff1f1;
+    }
+`;
+
+const AcceptButton = styled.button`
+    border: 1px solid #00ccc7;
+    background: #fff;
     color: #00ccc7;
     font-size: 11px;
     font-weight: 700;

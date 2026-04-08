@@ -143,6 +143,57 @@ const WorkLogPage = () => {
         }
     }, [loginMethod, currentYear, currentMonth, dispatch, workLogsByAccessCode]);
 
+    useEffect(() => {
+        function handleWorkLogChanged() {
+            // accessCode 로그인인 경우 재로드
+            if (loginMethod === "accessCode") {
+                const accessCode = getAccessCode();
+                if (accessCode) {
+                    dispatch(
+                        fetchWorkLogsByAccessCode({
+                            accessCode,
+                            year: currentYear,
+                            month: currentMonth,
+                        })
+                    );
+                }
+            }
+            // email 로그인인 경우 선택된 업장의 모든 직원들의 근무기록 재로드
+            else if (
+                loginMethod === "email" &&
+                selectedCompanyId &&
+                salaryTargets[selectedCompanyId]
+            ) {
+                const targets = salaryTargets[selectedCompanyId];
+                targets.forEach((target: { codeStatus: string; accessCode: string }) => {
+                    if (target.codeStatus === "ACTIVE") {
+                        dispatch(
+                            fetchWorkLogsByAccessCode({
+                                accessCode: target.accessCode,
+                                year: currentYear,
+                                month: currentMonth,
+                            })
+                        );
+                    }
+                });
+            }
+            // 총 급여 데이터도 다시 로드
+            loadWorkAmountData(currentYear, currentMonth);
+        }
+
+        window.addEventListener("worklog:changed", handleWorkLogChanged);
+        return () => {
+            window.removeEventListener("worklog:changed", handleWorkLogChanged);
+        };
+    }, [
+        loginMethod,
+        selectedCompanyId,
+        salaryTargets,
+        currentYear,
+        currentMonth,
+        dispatch,
+    ]);
+
     // workAmount 데이터를 로드하는 함수
     const loadWorkAmountData = (year: number, month: number) => {
         if (loginMethod === "email" && selectedCompanyId && salaryTargets[selectedCompanyId]) {

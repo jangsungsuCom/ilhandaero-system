@@ -5,7 +5,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import NotificationPanel from "./NotificationPanel";
 
 export default function NotificationBell() {
-    const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    const { notifications, unreadCount, markAsRead, markAllAsRead, respondToUpdate } =
         useNotifications();
     const [open, setOpen] = useState(false);
 
@@ -42,6 +42,13 @@ export default function NotificationBell() {
                     }}
                     onMarkAllRead={() => {
                         markAllAsRead();
+                    }}
+                    onRespondUpdate={async (item, decision) => {
+                        try {
+                            await respondToUpdate(item, decision);
+                        } catch {
+                            alert("요청 처리에 실패했습니다.");
+                        }
                     }}
                 />
             )}
