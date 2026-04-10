@@ -1,10 +1,4 @@
-import {
-    useState,
-    useEffect,
-    useRef,
-    useCallback,
-    useMemo,
-} from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
 import type { NotificationItem } from "../../types/notification";
@@ -16,10 +10,7 @@ interface Props {
     onClose: () => void;
     onMarkRead: (item: NotificationItem) => void;
     onMarkAllRead: () => void;
-    onRespondUpdate: (
-        item: NotificationItem,
-        decision: "accept" | "reject"
-    ) => Promise<void>;
+    onRespondUpdate: (item: NotificationItem, decision: "accept" | "reject") => Promise<void>;
 }
 
 function parseUTC(dateStr: string): Date {
@@ -64,25 +55,13 @@ const ACTION_LABELS: Record<string, string> = {
     DELETED: "삭제",
 };
 
-export default function NotificationPanel({
-    notifications,
-    onClose,
-    onMarkRead,
-    onMarkAllRead,
-    onRespondUpdate,
-}: Props) {
+export default function NotificationPanel({ notifications, onClose, onMarkRead, onMarkAllRead, onRespondUpdate }: Props) {
     const panelRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const [activeTab, setActiveTab] = useState<TabType>("unread");
 
-    const unreadList = useMemo(
-        () => notifications.filter((n) => !n.isRead),
-        [notifications]
-    );
-    const readList = useMemo(
-        () => notifications.filter((n) => n.isRead),
-        [notifications]
-    );
+    const unreadList = useMemo(() => notifications.filter((n) => !n.isRead), [notifications]);
+    const readList = useMemo(() => notifications.filter((n) => n.isRead), [notifications]);
 
     const visibleList = activeTab === "unread" ? unreadList : readList;
 
@@ -110,7 +89,7 @@ export default function NotificationPanel({
                 el?.scrollIntoView({ behavior: "smooth", block: "center" });
             }
         },
-        [unreadList]
+        [unreadList],
     );
 
     const handleReadClick = useCallback(
@@ -120,43 +99,27 @@ export default function NotificationPanel({
                 setTimeout(() => scrollToNextUnread(item.id), 200);
             }
         },
-        [onMarkRead, scrollToNextUnread]
+        [onMarkRead, scrollToNextUnread],
     );
 
     return (
         <PanelContainer ref={panelRef}>
             <PanelHeader>
                 <PanelTitle>알림</PanelTitle>
-                {activeTab === "unread" && unreadList.length > 0 && (
-                    <MarkAllButton onClick={onMarkAllRead}>
-                        전체 읽음
-                    </MarkAllButton>
-                )}
+                {activeTab === "unread" && unreadList.length > 0 && <MarkAllButton onClick={onMarkAllRead}>전체 읽음</MarkAllButton>}
             </PanelHeader>
             <TabBar>
-                <Tab
-                    $active={activeTab === "unread"}
-                    onClick={() => setActiveTab("unread")}
-                >
+                <Tab $active={activeTab === "unread"} onClick={() => setActiveTab("unread")}>
                     안읽음
-                    {unreadList.length > 0 && (
-                        <TabCount>{unreadList.length}</TabCount>
-                    )}
+                    {unreadList.length > 0 && <TabCount>{unreadList.length}</TabCount>}
                 </Tab>
-                <Tab
-                    $active={activeTab === "read"}
-                    onClick={() => setActiveTab("read")}
-                >
+                <Tab $active={activeTab === "read"} onClick={() => setActiveTab("read")}>
                     읽음
                 </Tab>
             </TabBar>
             <PanelBody>
                 {visibleList.length === 0 ? (
-                    <EmptyMessage>
-                        {activeTab === "unread"
-                            ? "읽지 않은 알림이 없습니다"
-                            : "읽은 알림이 없습니다"}
-                    </EmptyMessage>
+                    <EmptyMessage>{activeTab === "unread" ? "읽지 않은 알림이 없습니다" : "읽은 알림이 없습니다"}</EmptyMessage>
                 ) : (
                     visibleList.map((item) => (
                         <NotifItem
@@ -166,53 +129,37 @@ export default function NotificationPanel({
                             }}
                             $unread={!item.isRead}
                         >
-                            <ActionIcon $type={item.actionType}>
-                                {item.actionType === "CREATED"
-                                    ? "+"
-                                    : item.actionType === "DELETED"
-                                      ? "×"
-                                      : "✎"}
-                            </ActionIcon>
+                            <ActionIcon $type={item.actionType}>{item.actionType === "CREATED" ? "+" : item.actionType === "DELETED" ? "×" : "✎"}</ActionIcon>
                             <NotifContent>
                                 <NotifText>
-                                    <CompanyTag>{item.companyName}</CompanyTag>{" "}
-                                    {item.workerName}님이 근무기록을{" "}
-                                    {ACTION_LABELS[item.actionType]}했습니다
+                                    <CompanyTag>{item.companyName}</CompanyTag> {item.workerName}님이 근무기록을 {ACTION_LABELS[item.actionType]}했습니다
                                 </NotifText>
                                 {item.actionType === "UPDATED" && (
                                     <ChangeDetail>
                                         {formatDate(item.beforeStartAt)}
                                         {formatDate(item.beforeStartAt) && " "}
-                                        {formatTime(item.beforeStartAt)}~
-                                        {formatTime(item.beforeEndAt)}
+                                        {formatTime(item.beforeStartAt)}~{formatTime(item.beforeEndAt)}
                                         {" → "}
                                         {formatDate(item.afterStartAt)}
                                         {formatDate(item.afterStartAt) && " "}
-                                        {formatTime(item.afterStartAt)}~
-                                        {formatTime(item.afterEndAt)}
+                                        {formatTime(item.afterStartAt)}~{formatTime(item.afterEndAt)}
                                     </ChangeDetail>
                                 )}
-                                {item.actionType === "CREATED" &&
-                                    item.afterStartAt && (
-                                        <ChangeDetail>
-                                            {formatDate(item.afterStartAt)}
-                                            {formatDate(item.afterStartAt) && " "}
-                                            {formatTime(item.afterStartAt)}~
-                                            {formatTime(item.afterEndAt)}
-                                        </ChangeDetail>
-                                    )}
-                                {item.actionType === "DELETED" &&
-                                    (item.beforeStartAt || item.beforeEndAt) && (
-                                        <ChangeDetail>
-                                            {formatDate(item.beforeStartAt || item.beforeEndAt)}
-                                            {(item.beforeStartAt || item.beforeEndAt) && " "}
-                                            {formatTime(item.beforeStartAt)}~
-                                            {formatTime(item.beforeEndAt)}
-                                        </ChangeDetail>
-                                    )}
-                                <NotifTime>
-                                    {formatRelativeTime(item.occurredAt)}
-                                </NotifTime>
+                                {item.actionType === "CREATED" && item.afterStartAt && (
+                                    <ChangeDetail>
+                                        {formatDate(item.afterStartAt)}
+                                        {formatDate(item.afterStartAt) && " "}
+                                        {formatTime(item.afterStartAt)}~{formatTime(item.afterEndAt)}
+                                    </ChangeDetail>
+                                )}
+                                {item.actionType === "DELETED" && (item.beforeStartAt || item.beforeEndAt) && (
+                                    <ChangeDetail>
+                                        {formatDate(item.beforeStartAt || item.beforeEndAt)}
+                                        {(item.beforeStartAt || item.beforeEndAt) && " "}
+                                        {formatTime(item.beforeStartAt)}~{formatTime(item.beforeEndAt)}
+                                    </ChangeDetail>
+                                )}
+                                <NotifTime>{formatRelativeTime(item.occurredAt)}</NotifTime>
                             </NotifContent>
                             {!item.isRead && (
                                 <RightArea>
@@ -274,6 +221,14 @@ const PanelContainer = styled.div`
     flex-direction: column;
     overflow: hidden;
 
+    ${media.desktopUp} {
+        width: 760px;
+        max-height: 960px;
+        margin-top: 16px;
+        border-radius: 24px;
+        box-shadow: 0 8px 48px rgba(0, 0, 0, 0.15);
+    }
+
     ${media.mobile} {
         position: fixed;
         top: 12px;
@@ -289,6 +244,10 @@ const PanelHeader = styled.div`
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px 8px;
+
+    ${media.desktopUp} {
+        padding: 32px 40px 16px;
+    }
 `;
 
 const PanelTitle = styled.h3`
@@ -296,6 +255,10 @@ const PanelTitle = styled.h3`
     font-size: 16px;
     font-weight: 700;
     color: #000;
+
+    ${media.desktopUp} {
+        font-size: 32px;
+    }
 `;
 
 const MarkAllButton = styled.button`
@@ -308,6 +271,12 @@ const MarkAllButton = styled.button`
     padding: 4px 8px;
     border-radius: 6px;
 
+    ${media.desktopUp} {
+        font-size: 26px;
+        padding: 8px 16px;
+        border-radius: 12px;
+    }
+
     &:hover {
         background: #f0fffe;
     }
@@ -317,6 +286,11 @@ const TabBar = styled.div`
     display: flex;
     border-bottom: 1px solid #f0f0f0;
     padding: 0 20px;
+
+    ${media.desktopUp} {
+        padding: 0 40px;
+        border-bottom-width: 2px;
+    }
 `;
 
 const Tab = styled.button<{ $active: boolean }>`
@@ -333,7 +307,16 @@ const Tab = styled.button<{ $active: boolean }>`
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+
+    ${media.desktopUp} {
+        font-size: 28px;
+        padding: 20px 0;
+        gap: 12px;
+        border-bottom-width: 4px;
+    }
 
     &:hover {
         color: #00ccc7;
@@ -352,6 +335,14 @@ const TabCount = styled.span`
     align-items: center;
     justify-content: center;
     padding: 0 5px;
+
+    ${media.desktopUp} {
+        font-size: 22px;
+        min-width: 36px;
+        height: 36px;
+        border-radius: 18px;
+        padding: 0 10px;
+    }
 `;
 
 const PanelBody = styled.div`
@@ -364,6 +355,11 @@ const EmptyMessage = styled.div`
     text-align: center;
     color: #000;
     font-size: 14px;
+
+    ${media.desktopUp} {
+        padding: 96px 40px;
+        font-size: 28px;
+    }
 `;
 
 const NotifItem = styled.div<{ $unread: boolean }>`
@@ -383,6 +379,11 @@ const NotifItem = styled.div<{ $unread: boolean }>`
     &:last-child {
         border-bottom: none;
     }
+
+    ${media.desktopUp} {
+        gap: 24px;
+        padding: 28px 40px;
+    }
 `;
 
 const ActionIcon = styled.div<{ $type: string }>`
@@ -397,12 +398,14 @@ const ActionIcon = styled.div<{ $type: string }>`
     font-weight: 700;
     margin-top: 2px;
     color: #fff;
-    background: ${({ $type }) =>
-        $type === "CREATED"
-            ? "#00ccc7"
-            : $type === "UPDATED"
-              ? "#f1c40f"
-              : "#e74c3c"};
+    background: ${({ $type }) => ($type === "CREATED" ? "#00ccc7" : $type === "UPDATED" ? "#f1c40f" : "#e74c3c")};
+
+    ${media.desktopUp} {
+        width: 56px;
+        height: 56px;
+        font-size: 32px;
+        margin-top: 4px;
+    }
 `;
 
 const NotifContent = styled.div`
@@ -415,6 +418,10 @@ const NotifText = styled.div`
     color: #000;
     line-height: 1.5;
     word-break: keep-all;
+
+    ${media.desktopUp} {
+        font-size: 26px;
+    }
 `;
 
 const CompanyTag = styled.span`
@@ -428,12 +435,22 @@ const ChangeDetail = styled.div`
     color: #000;
     margin-top: 2px;
     font-family: "Pretendard", monospace;
+
+    ${media.desktopUp} {
+        font-size: 24px;
+        margin-top: 4px;
+    }
 `;
 
 const NotifTime = styled.div`
     font-size: 11px;
     color: #000;
     margin-top: 4px;
+
+    ${media.desktopUp} {
+        font-size: 22px;
+        margin-top: 8px;
+    }
 `;
 
 const UnreadDot = styled.div`
@@ -443,6 +460,12 @@ const UnreadDot = styled.div`
     border-radius: 50%;
     background: #00ccc7;
     margin-top: 6px;
+
+    ${media.desktopUp} {
+        width: 16px;
+        height: 16px;
+        margin-top: 12px;
+    }
 `;
 
 const RightArea = styled.div`
@@ -450,6 +473,10 @@ const RightArea = styled.div`
     flex-direction: column;
     align-items: center;
     gap: 6px;
+
+    ${media.desktopUp} {
+        gap: 12px;
+    }
 `;
 
 const ReadButton = styled.button`
@@ -463,6 +490,13 @@ const ReadButton = styled.button`
     cursor: pointer;
     white-space: nowrap;
 
+    ${media.desktopUp} {
+        font-size: 22px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        border-width: 2px;
+    }
+
     &:hover {
         background: #f0fffe;
     }
@@ -471,6 +505,10 @@ const ReadButton = styled.button`
 const ActionButtons = styled.div`
     display: flex;
     gap: 6px;
+
+    ${media.desktopUp} {
+        gap: 12px;
+    }
 `;
 
 const RejectButton = styled.button`
@@ -483,6 +521,13 @@ const RejectButton = styled.button`
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
+
+    ${media.desktopUp} {
+        font-size: 22px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        border-width: 2px;
+    }
 
     &:hover {
         background: #fff1f1;
@@ -499,6 +544,13 @@ const AcceptButton = styled.button`
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
+
+    ${media.desktopUp} {
+        font-size: 22px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        border-width: 2px;
+    }
 
     &:hover {
         background: #f0fffe;
