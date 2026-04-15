@@ -23,3 +23,24 @@ export const userApi = {
         return unwrapData(res) as MyInfoResponse;
     },
 };
+
+export interface AdminUser {
+    userId: number;
+    email: string;
+    name?: string;
+    phone?: string;
+    role: "USER" | "ADMIN";
+    status: "INIT" | "INFO_REGISTERED";
+    active: boolean;
+}
+
+export const adminUserApi = {
+    getUsers: async (): Promise<AdminUser[]> => {
+        const res = await urlAxios.get<ApiSuccessResponse<AdminUser[]> | AdminUser[]>("/admin");
+        return unwrapData(res) as AdminUser[];
+    },
+
+    updateUserActive: async (userId: number, active: boolean): Promise<void> => {
+        await urlAxios.put(`/admin/users/${userId}`, { active });
+    },
+};

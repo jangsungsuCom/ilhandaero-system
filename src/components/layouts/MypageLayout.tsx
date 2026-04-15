@@ -1,8 +1,8 @@
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { getLoginMethod } from "../../utils/auth";
 import { media } from "../../styles/breakpoints";
+import { getLoginMethod } from "../../utils/auth";
 
 interface MenuItem {
     path: string;
@@ -27,7 +27,7 @@ export default function MypageLayout() {
             : [
                   { path: "/mypage/dashboard", name: "업장 관리" },
                   { path: "/mypage/payment", name: "결제 내역" },
-                  { path: "/mypage/advance-requests", name: "선정산 요청" },
+                  { path: "/mypage/advance-requests", name: "선지급 요청" },
                   { path: "/mypage/profile", name: "회원 정보 수정" },
               ];
 
@@ -91,21 +91,6 @@ const TopHeader = styled.div`
         padding: 16px 16px 0;
     }
 `;
-
-// const TopTitle = styled.h2`
-//     ${mypageTitle}
-//     margin: 0 0 20px;
-//     font-weight: 700;
-//     color: #00ccc7;
-
-//     ${media.desktop} {
-//         margin-bottom: 16px;
-//     }
-
-//     ${media.mobile} {
-//         margin-bottom: 12px;
-//     }
-// `;
 
 const MenuBar = styled.nav`
     display: flex;

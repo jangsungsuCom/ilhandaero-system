@@ -63,7 +63,6 @@ export default function PayslipPage() {
     const companyId = Number(params.get("companyId")) || 0;
     const salaryTargetId = Number(params.get("salaryTargetId")) || 0;
     const paymentId = Number(params.get("paymentId")) || 0;
-    const advanceAmount = Number(params.get("advanceAmount")) || 0;
     const urlAccessCode = params.get("accessCode") || "";
 
     const cardRef = useRef<HTMLDivElement>(null);
@@ -159,7 +158,7 @@ export default function PayslipPage() {
                     <SectionTitle>급여명세서</SectionTitle>
                     <SectionDivider />
                     <SmallLabel>실 지급액</SmallLabel>
-                    <BigAmount>{fmtMoney((data.amount ?? 0) + advanceAmount)}원</BigAmount>
+                    <BigAmount>{fmtMoney(data.amount ?? 0)}원</BigAmount>
                     <InfoLine>
                         정산기간{" "}
                         <DateText>
@@ -298,17 +297,6 @@ export default function PayslipPage() {
                     </SectionBlock>
                 )}
 
-                {/* 비고 */}
-                {advanceAmount > 0 && (
-                    <SectionBlock>
-                        <SectionTitle>비고</SectionTitle>
-                        <SectionDivider />
-                        <PayRow>
-                            <PayLabel>선지급</PayLabel>
-                            <PayValue>{fmtMoney(advanceAmount)}원</PayValue>
-                        </PayRow>
-                    </SectionBlock>
-                )}
             </Card>
             <SaveButton type="button" onClick={handleSave}>
                 이미지로 저장

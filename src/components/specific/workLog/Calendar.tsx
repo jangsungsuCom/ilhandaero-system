@@ -368,10 +368,10 @@ const Calendar: React.FC<CalendarProps> = ({
                                 <BulkCancelButton onClick={toggleBulkEditMode}>취소</BulkCancelButton>
                             </BulkEditActions>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                                {headerRight}
+                            <HeaderTools>
                                 <BulkEditToggle onClick={toggleBulkEditMode}>선택 수정</BulkEditToggle>
-                            </div>
+                                {headerRight}
+                            </HeaderTools>
                         )}
                     </HeaderRightArea>
                 </Row1>
@@ -905,6 +905,16 @@ const BulkCheckbox = styled.span<{ $checked: boolean }>`
 `;
 
 const HeaderRightArea = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    ${media.mobile} {
+        gap: 6px;
+    }
+`;
+
+const HeaderTools = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;

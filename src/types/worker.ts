@@ -5,6 +5,7 @@ export interface WorkerInfo {
     paidTotal?: number;
     colorHex?: string;
     bankName?: string;
+    accountNumber?: string;
     maskedAccountNumber?: string;
 }
 

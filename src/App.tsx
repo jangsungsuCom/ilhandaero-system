@@ -173,6 +173,7 @@ function App() {
                                     </ProtectedRoute>
                                 }
                             />
+                            <Route path="user-blacklist" element={<Navigate to="/mypage/dashboard" replace />} />
                         </Route>
                     </Route>
                 </Routes>

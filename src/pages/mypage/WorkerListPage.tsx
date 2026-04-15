@@ -1,10 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import { useMypageWorkers } from "../../hooks/useMypageWorkers";
 import { useMypageStores } from "../../hooks/useMypageStores";
-import type { DeductionType } from "../../types/mypage";
+import { useMypageWorkers } from "../../hooks/useMypageWorkers";
 import { media } from "../../styles/breakpoints";
-import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
+import { mypageContent, mypageSubtitle, mypageTitle } from "../../styles/mypageTypography";
+import type { DeductionType, MyPageWorker } from "../../types/mypage";
+
+const DEFAULT_COLOR = "#00ccc7";
 
 function getDeductionLabel(type?: DeductionType): string {
     switch (type) {
@@ -17,15 +19,111 @@ function getDeductionLabel(type?: DeductionType): string {
     }
 }
 
-const DEFAULT_COLOR = "#00ccc7";
+function isBlacklisted(worker: MyPageWorker): boolean {
+    return Boolean(worker.blacklisted);
+}
+
+function getBlacklistActionLabel(worker: MyPageWorker): string {
+    return isBlacklisted(worker) ? "해제" : "블랙";
+}
+
+function getBlacklistConfirmMessage(worker: MyPageWorker): string {
+    return isBlacklisted(worker)
+        ? `${worker.workerName} 직원의 블랙리스트를 해제하시겠습니까?`
+        : `${worker.workerName} 직원을 블랙리스트 처리하시겠습니까?`;
+}
+
+interface WorkerTableProps {
+    workers: MyPageWorker[];
+    onEdit: (workerId: number) => void;
+    onDelete: (workerId: number, workerName: string) => void;
+    onToggleBlacklist: (worker: MyPageWorker) => void;
+}
+
+function WorkerTable({ workers, onEdit, onDelete, onToggleBlacklist }: WorkerTableProps) {
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHeaderCell>작업</TableHeaderCell>
+                    <TableHeaderCell>이름</TableHeaderCell>
+                    <TableHeaderCell>생년월일</TableHeaderCell>
+                    <TableHeaderCell>전화번호</TableHeaderCell>
+                    <TableHeaderCell>시급</TableHeaderCell>
+                    <TableHeaderCell>지급일</TableHeaderCell>
+                    <TableHeaderCell>은행</TableHeaderCell>
+                    <TableHeaderCell>계좌번호</TableHeaderCell>
+                    <TableHeaderCell>주휴수당</TableHeaderCell>
+                    <TableHeaderCell>공제 방식</TableHeaderCell>
+                    <TableHeaderCell>접근코드</TableHeaderCell>
+                    <TableHeaderCell>색상</TableHeaderCell>
+                    <TableHeaderCell>상태</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <tbody>
+                {workers.map((worker) => {
+                    const blacklisted = isBlacklisted(worker);
+
+                    return (
+                        <TableRow key={worker.id} $blacklisted={blacklisted}>
+                            <TableCell>
+                                <ActionButtonsInline>
+                                    <ActionButton onClick={() => onEdit(worker.id)}>수정</ActionButton>
+                                    <ActionButton $variant={blacklisted ? "restore" : "blacklist"} onClick={() => onToggleBlacklist(worker)}>
+                                        {getBlacklistActionLabel(worker)}
+                                    </ActionButton>
+                                    <ActionButton $variant="delete" onClick={() => onDelete(worker.id, worker.workerName)}>
+                                        삭제
+                                    </ActionButton>
+                                </ActionButtonsInline>
+                            </TableCell>
+                            <TableCell>{worker.workerName}</TableCell>
+                            <TableCell>{worker.birthDate || "-"}</TableCell>
+                            <TableCell>{worker.phoneNumber}</TableCell>
+                            <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
+                            <TableCell>{worker.payDay}일</TableCell>
+                            <TableCell>{worker.bankName}</TableCell>
+                            <TableCell>{worker.accountNumber}</TableCell>
+                            <TableCell>{worker.weeklyAllowanceEnabled ? "적용" : "미적용"}</TableCell>
+                            <TableCell>{getDeductionLabel(worker.deductionType)}</TableCell>
+                            <TableCell>
+                                <AccessCode $blacklisted={blacklisted}>{worker.accessCode}</AccessCode>
+                            </TableCell>
+                            <TableCell>
+                                <ColorDot
+                                    $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR}
+                                    title={worker.colorHex || DEFAULT_COLOR}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <StatusBadge $blacklisted={blacklisted}>{blacklisted ? "블랙리스트" : "정상"}</StatusBadge>
+                            </TableCell>
+                        </TableRow>
+                    );
+                })}
+            </tbody>
+        </Table>
+    );
+}
 
 export default function WorkerListPage() {
     const { storeId } = useParams<{ storeId: string }>();
-    const { workers, loading } = useMypageWorkers(storeId ? Number(storeId) : undefined);
+    const numericStoreId = storeId ? Number(storeId) : undefined;
+    const { workers, loading, deleteWorker, toggleWorkerBlacklist } = useMypageWorkers(numericStoreId);
     const { stores } = useMypageStores();
     const navigate = useNavigate();
 
-    const store = stores.find((s) => s.companyId === Number(storeId));
+    const store = stores.find((s) => s.companyId === numericStoreId);
+
+    const handleDeleteWorker = async (workerId: number, workerName: string) => {
+        if (!window.confirm(`${workerName} 직원을 삭제하시겠습니까?`)) return;
+        await deleteWorker(workerId);
+    };
+
+    const handleToggleBlacklist = async (worker: MyPageWorker) => {
+        if (!window.confirm(getBlacklistConfirmMessage(worker))) return;
+        await toggleWorkerBlacklist(worker);
+    };
 
     if (loading) {
         return (
@@ -50,54 +148,14 @@ export default function WorkerListPage() {
                 </Header>
 
                 {workers.length === 0 ? (
-                    <EmptyState>등록된 직원이 없습니다. 직원을 등록해주세요.</EmptyState>
+                    <EmptyState>등록된 직원이 없습니다. 직원을 먼저 등록해주세요.</EmptyState>
                 ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHeaderCell>작업</TableHeaderCell>
-                                <TableHeaderCell>이름</TableHeaderCell>
-                                <TableHeaderCell>생년월일</TableHeaderCell>
-                                <TableHeaderCell>전화번호</TableHeaderCell>
-                                <TableHeaderCell>시급</TableHeaderCell>
-                                <TableHeaderCell>지급일</TableHeaderCell>
-                                <TableHeaderCell>은행</TableHeaderCell>
-                                <TableHeaderCell>계좌번호</TableHeaderCell>
-                                <TableHeaderCell>주휴수당</TableHeaderCell>
-                                <TableHeaderCell>고용형태</TableHeaderCell>
-                                <TableHeaderCell>접근코드</TableHeaderCell>
-                                <TableHeaderCell>색상</TableHeaderCell>
-                                {/* <TableHeaderCell>상태</TableHeaderCell> */}
-                            </TableRow>
-                        </TableHeader>
-                        <tbody>
-                            {workers.map((worker) => (
-                                <TableRow key={worker.id}>
-                                    <TableCell>
-                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
-                                    </TableCell>
-                                    <TableCell>{worker.workerName}</TableCell>
-                                    <TableCell>{worker.birthDate || "-"}</TableCell>
-                                    <TableCell>{worker.phoneNumber}</TableCell>
-                                    <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
-                                    <TableCell>{worker.payDay}일</TableCell>
-                                    <TableCell>{worker.bankName}</TableCell>
-                                    <TableCell>{worker.accountNumber}</TableCell>
-                                    <TableCell>{worker.weeklyAllowanceEnabled ? "적용" : "미적용"}</TableCell>
-                                    <TableCell>{getDeductionLabel(worker.deductionType)}</TableCell>
-                                    <TableCell>
-                                        <AccessCode>{worker.accessCode}</AccessCode>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
-                                    </TableCell>
-                                    {/* <TableCell>
-                                        <StatusBadge $status={worker.codeStatus}>{worker.codeStatus === "ACTIVE" ? "활성" : "비활성"}</StatusBadge>
-                                    </TableCell> */}
-                                </TableRow>
-                            ))}
-                        </tbody>
-                    </Table>
+                    <WorkerTable
+                        workers={workers}
+                        onEdit={(workerId) => navigate(`/mypage/stores/${numericStoreId}/workers/${workerId}/edit`)}
+                        onDelete={handleDeleteWorker}
+                        onToggleBlacklist={handleToggleBlacklist}
+                    />
                 )}
             </ContentWrapper>
         </Container>
@@ -105,8 +163,18 @@ export default function WorkerListPage() {
 }
 
 export function WorkerListInline({ storeId }: { storeId: number }) {
-    const { workers, loading } = useMypageWorkers(storeId);
+    const { workers, loading, deleteWorker, toggleWorkerBlacklist } = useMypageWorkers(storeId);
     const navigate = useNavigate();
+
+    const handleDeleteWorker = async (workerId: number, workerName: string) => {
+        if (!window.confirm(`${workerName} 직원을 삭제하시겠습니까?`)) return;
+        await deleteWorker(workerId);
+    };
+
+    const handleToggleBlacklist = async (worker: MyPageWorker) => {
+        if (!window.confirm(getBlacklistConfirmMessage(worker))) return;
+        await toggleWorkerBlacklist(worker);
+    };
 
     if (loading) {
         return (
@@ -124,51 +192,15 @@ export function WorkerListInline({ storeId }: { storeId: number }) {
             </InlineHeader>
 
             {workers.length === 0 ? (
-                <EmptyState>등록된 직원이 없습니다. 직원을 등록해주세요.</EmptyState>
+                <EmptyState>등록된 직원이 없습니다. 직원을 먼저 등록해주세요.</EmptyState>
             ) : (
                 <InlineTableWrapper>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHeaderCell>작업</TableHeaderCell>
-                                <TableHeaderCell>이름</TableHeaderCell>
-                                <TableHeaderCell>생년월일</TableHeaderCell>
-                                <TableHeaderCell>전화번호</TableHeaderCell>
-                                <TableHeaderCell>시급</TableHeaderCell>
-                                <TableHeaderCell>지급일</TableHeaderCell>
-                                <TableHeaderCell>은행</TableHeaderCell>
-                                <TableHeaderCell>계좌번호</TableHeaderCell>
-                                <TableHeaderCell>주휴수당</TableHeaderCell>
-                                <TableHeaderCell>고용형태</TableHeaderCell>
-                                <TableHeaderCell>접근코드</TableHeaderCell>
-                                <TableHeaderCell>색상</TableHeaderCell>
-                            </TableRow>
-                        </TableHeader>
-                        <tbody>
-                            {workers.map((worker) => (
-                                <TableRow key={worker.id}>
-                                    <TableCell>
-                                        <ActionButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/${worker.id}/edit`)}>수정</ActionButton>
-                                    </TableCell>
-                                    <TableCell>{worker.workerName}</TableCell>
-                                    <TableCell>{worker.birthDate || "-"}</TableCell>
-                                    <TableCell>{worker.phoneNumber}</TableCell>
-                                    <TableCell>{worker.hourlyWage.toLocaleString()}원</TableCell>
-                                    <TableCell>{worker.payDay}일</TableCell>
-                                    <TableCell>{worker.bankName}</TableCell>
-                                    <TableCell>{worker.accountNumber}</TableCell>
-                                    <TableCell>{worker.weeklyAllowanceEnabled ? "적용" : "미적용"}</TableCell>
-                                    <TableCell>{getDeductionLabel(worker.deductionType)}</TableCell>
-                                    <TableCell>
-                                        <AccessCode>{worker.accessCode}</AccessCode>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ColorDot $color={worker.colorHex && /^#[0-9A-Fa-f]{6}$/.test(worker.colorHex) ? worker.colorHex : DEFAULT_COLOR} title={worker.colorHex || DEFAULT_COLOR} />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </tbody>
-                    </Table>
+                    <WorkerTable
+                        workers={workers}
+                        onEdit={(workerId) => navigate(`/mypage/stores/${storeId}/workers/${workerId}/edit`)}
+                        onDelete={handleDeleteWorker}
+                        onToggleBlacklist={handleToggleBlacklist}
+                    />
                 </InlineTableWrapper>
             )}
         </InlineWrapper>
@@ -261,7 +293,7 @@ const TextButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        color: #00ccc7;
+        color: #00a8a5;
     }
 `;
 
@@ -276,13 +308,13 @@ const BackButton = styled.button`
     transition: all 0.2s ease;
 
     &:hover {
-        color: #000;
+        color: #444;
     }
 `;
 
 const Table = styled.table`
     width: 100%;
-    min-width: 900px;
+    min-width: 1080px;
     background: transparent;
     border-radius: 12px;
     overflow: hidden;
@@ -294,11 +326,12 @@ const TableHeader = styled.thead`
     background-color: #ffffff;
 `;
 
-const TableRow = styled.tr`
+const TableRow = styled.tr<{ $blacklisted?: boolean }>`
     border-bottom: 1px solid #e0e0e0;
+    background-color: ${({ $blacklisted }) => ($blacklisted ? "#fff6f6" : "#ffffff")};
 
     &:hover {
-        background-color: #ffffff;
+        background-color: ${({ $blacklisted }) => ($blacklisted ? "#ffecec" : "#fafafa")};
     }
 
     &:last-child {
@@ -340,42 +373,59 @@ const ColorDot = styled.span<{ $color: string }>`
     vertical-align: middle;
 `;
 
-const AccessCode = styled.code`
+const AccessCode = styled.code<{ $blacklisted?: boolean }>`
     ${mypageContent}
-    background-color: #f0f0f0;
+    background-color: ${({ $blacklisted }) => ($blacklisted ? "#fde4e4" : "#f0f0f0")};
     padding: 4px 8px;
     border-radius: 6px;
     font-family: monospace;
-    color: #000;
+    color: ${({ $blacklisted }) => ($blacklisted ? "#b71c1c" : "#000")};
 
     ${media.tablet} {
         padding: 3px 6px;
     }
 `;
 
-// const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
-//     padding: 4px 12px;
-//     border-radius: 12px;
-//     font-size: 13px;
-//     font-weight: 500;
-//     background-color: ${(props) => (props.$status === "ACTIVE" ? "#d4edda" : "#f8d7da")};
-//     color: ${(props) => (props.$status === "ACTIVE" ? "#155724" : "#721c24")};
-// `;
+const StatusBadge = styled.span<{ $blacklisted: boolean }>`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: ${({ $blacklisted }) => ($blacklisted ? "#fde4e4" : "#e7f8f7")};
+    color: ${({ $blacklisted }) => ($blacklisted ? "#b71c1c" : "#008884")};
+    font-weight: 700;
+`;
 
-const ActionButton = styled.button`
+const ActionButtonsInline = styled.div`
+    display: flex;
+    gap: 6px;
+`;
+
+const ActionButton = styled.button<{ $variant?: "delete" | "blacklist" | "restore" }>`
     ${mypageContent}
     padding: 4px 8px;
-    width: 48px;
+    min-width: 48px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
-    background-color: #00cbc7;
+    background-color: ${({ $variant }) => {
+        if ($variant === "delete") return "#000";
+        if ($variant === "blacklist") return "#d32f2f";
+        if ($variant === "restore") return "#2e7d32";
+        return "#00cbc7";
+    }};
     color: white;
     font-weight: 600;
 
     &:hover {
-        background-color: #00a8a5;
+        background-color: ${({ $variant }) => {
+            if ($variant === "delete") return "#222";
+            if ($variant === "blacklist") return "#b71c1c";
+            if ($variant === "restore") return "#1b5e20";
+            return "#00a8a5";
+        }};
     }
 `;
 

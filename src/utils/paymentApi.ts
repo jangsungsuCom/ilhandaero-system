@@ -64,6 +64,28 @@ export interface AccessCodePayment {
     paidAt: string;
 }
 
+export interface AccessCodePaymentDetail {
+    paymentId: number;
+    workerName: string;
+    birthDate: string;
+    bankName: string;
+    accountNumber: string;
+    type: string;
+    periodFrom: string | null;
+    periodTo: string | null;
+    advanceRequestId: number | null;
+    basePay: number;
+    weeklyAllowance: number;
+    extraPay: number;
+    extraMemo: string;
+    deduction: number;
+    configuredDeductionType?: string;
+    appliedDeductionType?: string;
+    deductionOverrideReason?: string;
+    amount: number;
+    paidAt: string;
+}
+
 /**
  * POST /owner/companies/{companyId}/salary-targets/{salaryTargetId}/payouts/salary/pay
  * Query: from, to (yyyy-MM-dd)
@@ -133,6 +155,20 @@ export const getAccessCodePayslip = async (accessCode: string, paymentId: number
 
     const response = await urlAxios.get<ApiSuccessResponse<SalaryPayout>>(
         `/access-codes/${encodeURIComponent(accessCode)}/payments/${paymentId}/payslip`
+    );
+    return response.data.data;
+};
+
+/**
+ * GET /access-codes/{accessCode}/payments/{paymentId}
+ */
+export const getAccessCodePaymentDetail = async (accessCode: string, paymentId: number): Promise<AccessCodePaymentDetail> => {
+    if (!accessCode) {
+        throw new Error("접근 코드가 없습니다.");
+    }
+
+    const response = await urlAxios.get<ApiSuccessResponse<AccessCodePaymentDetail>>(
+        `/access-codes/${encodeURIComponent(accessCode)}/payments/${encodeURIComponent(String(paymentId))}`
     );
     return response.data.data;
 };

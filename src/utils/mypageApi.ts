@@ -1,7 +1,7 @@
-import urlAxios from "./urlAxios";
 import type { AxiosError } from "axios";
-import type { MyPageCompany, MyPageWorker, MyPageAdvanceRequest, CreateWorkerRequest } from "../types/mypage";
+import type { CreateWorkerRequest, MyPageAdvanceRequest, MyPageCompany, MyPageWorker } from "../types/mypage";
 import { getAuthToken } from "./auth";
+import urlAxios from "./urlAxios";
 
 export interface ApiErrorResponse {
     data: null;
@@ -16,12 +16,11 @@ export interface ApiSuccessResponse<T> {
 }
 
 export interface MypageWorkLogPayload {
-    workDate: string; // "yyyy-MM-dd"
-    startTime: string; // "HH:mm"
-    endTime: string; // "HH:mm"
+    workDate: string;
+    startTime: string;
+    endTime: string;
 }
 
-// 업체(Company) 관련 API
 export const mypageCompaniesApi = {
     getCompanies: async (): Promise<MyPageCompany[]> => {
         const res = await urlAxios.get<ApiSuccessResponse<MyPageCompany[]>>("/companies");
@@ -42,7 +41,6 @@ export const mypageCompaniesApi = {
     },
 };
 
-// 직원(급여 대상자) 관련 API
 export const mypageWorkerApi = {
     getWorkers: async (companyId: number): Promise<MyPageWorker[]> => {
         const res = await urlAxios.get<ApiSuccessResponse<MyPageWorker[]>>(`/mypage/companies/${companyId}/salary-targets`);
@@ -56,9 +54,20 @@ export const mypageWorkerApi = {
     updateWorker: async (companyId: number, salaryTargetId: number, data: CreateWorkerRequest): Promise<void> => {
         await urlAxios.put<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}`, data);
     },
+
+    blacklistWorker: async (companyId: number, salaryTargetId: number): Promise<void> => {
+        await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/blacklist`);
+    },
+
+    unblacklistWorker: async (companyId: number, salaryTargetId: number): Promise<void> => {
+        await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/blacklist`);
+    },
+
+    deleteWorker: async (companyId: number, salaryTargetId: number): Promise<void> => {
+        await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}`);
+    },
 };
 
-// 근무 내역 (email 유저)
 export const createWorkLogForEmail = async (companyId: number, salaryTargetId: number, payload: MypageWorkLogPayload): Promise<void> => {
     await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs`, payload);
 };
@@ -71,7 +80,6 @@ export const deleteWorkLog = async (companyId: number, salaryTargetId: number, w
     await urlAxios.delete<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/work-logs/${workLogId}`);
 };
 
-// 선정산 요청 관련 API
 export const mypageAdvanceRequestApi = {
     getAdvanceRequests: async (companyId: number, salaryTargetId: number): Promise<MyPageAdvanceRequest[]> => {
         const res = await urlAxios.get<ApiSuccessResponse<MyPageAdvanceRequest[]>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests`);
@@ -82,10 +90,7 @@ export const mypageAdvanceRequestApi = {
         const token = getAuthToken();
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1단계: approve 요청
         await urlAxios.post<ApiSuccessResponse<void>>(`/mypage/companies/${companyId}/salary-targets/${salaryTargetId}/advance-requests/${requestId}/approve`, {}, { headers });
-
-        // 2단계: pay 요청 (1단계 성공 시)
         await urlAxios.post<ApiSuccessResponse<void>>(`/owner/companies/${companyId}/salary-targets/${salaryTargetId}/payouts/advance-requests/${requestId}/pay`, {}, { headers });
     },
 

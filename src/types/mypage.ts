@@ -15,11 +15,10 @@ export interface MyPageWorker {
     bankName: string;
     accountNumber: string;
     accessCode: string;
-    codeStatus: "ACTIVE" | "INACTIVE";
-    /** GET 미구현: 없으면 default 사용 */
+    codeStatus: "ACTIVE" | "REVOKED";
+    blacklisted: boolean;
     weeklyAllowanceEnabled?: boolean;
     deductionType?: DeductionType;
-    /** 표시 색상 #RRGGBB */
     colorHex?: string;
 }
 
@@ -68,7 +67,6 @@ export interface CreateWorkerRequest {
     accountNumber: string;
     weeklyAllowanceEnabled: boolean;
     deductionType: DeductionType;
-    /** 표시 색상 #RRGGBB (^#[0-9A-Fa-f]{6}$) */
     colorHex: string;
 }
 

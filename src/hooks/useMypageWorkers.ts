@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { CreateWorkerRequest, MyPageWorker } from "../types/mypage";
 import { mypageWorkerApi } from "../utils/mypageApi";
-import type { MyPageWorker, CreateWorkerRequest } from "../types/mypage";
 
 export function useMypageWorkers(companyId?: number) {
     const [workers, setWorkers] = useState<MyPageWorker[]>([]);
@@ -57,12 +57,47 @@ export function useMypageWorkers(companyId?: number) {
         }
     };
 
+    const deleteWorker = async (salaryTargetId: number) => {
+        if (!companyId) {
+            return { success: false, error: "업체 ID가 필요합니다." };
+        }
+
+        try {
+            await mypageWorkerApi.deleteWorker(companyId, salaryTargetId);
+            await fetchWorkers();
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err };
+        }
+    };
+
+    const toggleWorkerBlacklist = async (worker: MyPageWorker) => {
+        if (!companyId) {
+            return { success: false, error: "업체 ID가 필요합니다." };
+        }
+
+        try {
+            if (worker.blacklisted) {
+                await mypageWorkerApi.unblacklistWorker(companyId, worker.id);
+            } else {
+                await mypageWorkerApi.blacklistWorker(companyId, worker.id);
+            }
+
+            await fetchWorkers();
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err };
+        }
+    };
+
     return {
         workers,
         loading,
         error,
         createWorker,
         updateWorker,
+        deleteWorker,
+        toggleWorkerBlacklist,
         refresh: fetchWorkers,
     };
 }

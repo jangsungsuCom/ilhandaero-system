@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { getWorkLogs, getWorkAmount, getWorkerInfo, updateWorkerBankAccount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
+import { getAccessCodePaymentDetail, getAccessCodePayments } from "../../utils/paymentApi";
 import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
 import type { WorkerInfo } from "../../types/worker";
@@ -12,6 +13,47 @@ import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageT
 const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({ length: 21 }, (_, i) => centerYear - 10 + i).map((y) => ({ value: y, label: `${y}년` }));
 
 const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
+const ACCOUNT_NUMBER_STORAGE_PREFIX = "workerAccountNumber:";
+
+const getStoredAccountNumber = (accessCode: string): string => {
+    return localStorage.getItem(`${ACCOUNT_NUMBER_STORAGE_PREFIX}${accessCode}`) || "";
+};
+
+const isMaskedAccountNumber = (value: string): boolean => {
+    return /[*xX]/.test(value);
+};
+
+const setStoredAccountNumber = (accessCode: string, accountNumber: string) => {
+    const normalized = accountNumber.replace(/\s/g, "");
+    if (!normalized || isMaskedAccountNumber(normalized)) return;
+    localStorage.setItem(`${ACCOUNT_NUMBER_STORAGE_PREFIX}${accessCode}`, normalized);
+};
+
+const resolveAccountNumber = (workerData: WorkerInfo, accessCode: string): string => {
+    const raw = workerData as WorkerInfo & { bankAccountNumber?: string; accountNo?: string };
+    const apiAccountNumber = (raw.accountNumber || raw.bankAccountNumber || raw.accountNo || "").replace(/\s/g, "");
+    if (apiAccountNumber && !isMaskedAccountNumber(apiAccountNumber)) {
+        setStoredAccountNumber(accessCode, apiAccountNumber);
+        return apiAccountNumber;
+    }
+    return getStoredAccountNumber(accessCode);
+};
+
+const fetchAccountNumberFromPaymentDetail = async (accessCode: string, from: string, to: string): Promise<string> => {
+    try {
+        const payments = await getAccessCodePayments(accessCode, from, to);
+        if (!payments.length) return "";
+        const latest = [...payments].sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
+        if (!latest?.paymentId) return "";
+        const detail = await getAccessCodePaymentDetail(accessCode, latest.paymentId);
+        const accountNumber = (detail?.accountNumber || "").replace(/\s/g, "");
+        if (!accountNumber || isMaskedAccountNumber(accountNumber)) return "";
+        setStoredAccountNumber(accessCode, accountNumber);
+        return accountNumber;
+    } catch {
+        return "";
+    }
+};
 
 export default function WorkHistoryPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -90,7 +132,19 @@ export default function WorkHistoryPage() {
                 setWorkAmount(null);
             }
 
-            setWorkerInfo(workerInfoResponse?.data ?? null);
+            const workerData = workerInfoResponse?.data ?? null;
+            if (workerData) {
+                let fullAccountNumber = resolveAccountNumber(workerData, accessCode);
+                if (!fullAccountNumber) {
+                    fullAccountNumber = await fetchAccountNumberFromPaymentDetail(accessCode, from, to);
+                }
+                setWorkerInfo({
+                    ...workerData,
+                    accountNumber: fullAccountNumber || workerData.accountNumber || workerData.maskedAccountNumber || "",
+                });
+            } else {
+                setWorkerInfo(null);
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -130,8 +184,18 @@ export default function WorkHistoryPage() {
         setBankError(null);
         try {
             await updateWorkerBankAccount(bankName, accountNumber, accessCode);
+            setStoredAccountNumber(accessCode, accountNumber);
             const refreshed = await getWorkerInfo(accessCode);
-            setWorkerInfo(refreshed?.data ?? null);
+            const refreshedData = refreshed?.data ?? null;
+            if (refreshedData) {
+                const fullAccountNumber = resolveAccountNumber(refreshedData, accessCode) || accountNumber;
+                setWorkerInfo({
+                    ...refreshedData,
+                    accountNumber: fullAccountNumber,
+                });
+            } else {
+                setWorkerInfo(null);
+            }
             setBankEditOpen(false);
             setAccountNumberEdit("");
         } catch (e) {
@@ -318,7 +382,7 @@ export default function WorkHistoryPage() {
                             <BankInfoRow>
                                 <BankInfoValue>{workerInfo?.bankName || "-"}</BankInfoValue>
 
-                                <BankInfoValue>{workerInfo?.maskedAccountNumber || "-"}</BankInfoValue>
+                                <BankInfoValue>{workerInfo?.accountNumber || "-"}</BankInfoValue>
                             </BankInfoRow>
                         </BankInfoBody>
                     ) : (
