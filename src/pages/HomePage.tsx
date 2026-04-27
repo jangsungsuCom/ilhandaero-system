@@ -14,6 +14,9 @@ import { media } from "../styles/breakpoints";
 
 const HomePage = () => {
     const navigate = useNavigate();
+    const openKakaoChannel = () => {
+        window.open("http://pf.kakao.com/_NxfQIX", "_blank", "noopener,noreferrer");
+    };
 
     return (
         <>
@@ -33,8 +36,8 @@ const HomePage = () => {
                         <div style={{ height: "48px" }} />
                         <div className="more">{`더 알아보기 >`}</div>
                     </IntroBottom>
-                    <KakaoButtonContainer>
-                        <img src={Kakao} style={{ cursor: "pointer" }} />
+                    <KakaoButtonContainer onClick={openKakaoChannel} aria-label="일한대로 카카오고객센터 열기">
+                        <img src={Kakao} alt="kakao" />
                     </KakaoButtonContainer>
                     <RightBotTriangle>
                         <AppStoreText>앱스토어 오픈예정</AppStoreText>
@@ -426,10 +429,11 @@ const Overlay = styled.div`
 `;
 
 const KakaoButtonContainer = styled.div`
-    z-index: 3;
+    z-index: 100;
     position: absolute;
     bottom: 193px;
     right: 40px;
+    cursor: pointer;
 
     img {
         width: 90%;
@@ -437,7 +441,15 @@ const KakaoButtonContainer = styled.div`
     }
 
     ${media.mobile} {
-        display: none;
+        position: absolute;
+        right: -15px;
+        bottom: 16px;
+        z-index: 3;
+
+        img {
+            width: 63%;
+            height: 63%;
+        }
     }
 `;
 

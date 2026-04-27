@@ -9,6 +9,7 @@ import { getLoginMethod } from "../../../utils/auth";
 import { createWorkLogForEmail } from "../../../utils/mypageApi";
 import type { SalaryTarget } from "../../../types/salaryTarget";
 import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
+import CustomSelect from "../../common/CustomSelect";
 
 const HOUR_OPTIONS: WheelOption<number>[] = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${i}시` }));
 const MINUTE_OPTIONS: WheelOption<number>[] = Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${i}분` }));
@@ -151,16 +152,14 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                     {loginMethod === "email" && salaryTargets.length > 0 && (
                         <>
                             <SectionTitle>직원 선택</SectionTitle>
-                            <Select value={selectedTargetId} onChange={(e) => setSelectedTargetId(e.target.value ? Number(e.target.value) : "")}>
-                                <option value="">직원을 선택하세요</option>
-                                {salaryTargets
+                            <Select
+                                value={selectedTargetId}
+                                placeholder="직원을 선택하세요"
+                                options={salaryTargets
                                     .filter((target) => target.codeStatus === "ACTIVE")
-                                    .map((target) => (
-                                        <option key={target.id} value={target.id}>
-                                            {target.workerName}
-                                        </option>
-                                    ))}
-                            </Select>
+                                    .map((target) => ({ value: target.id, label: target.workerName }))}
+                                onChange={(value) => setSelectedTargetId(value ? Number(value) : "")}
+                            />
                         </>
                     )}
 
@@ -358,24 +357,10 @@ const MinutePickerWrap = styled.div`
     min-width: 88px;
 `;
 
-const Select = styled.select`
+const Select = styled(CustomSelect)`
     width: 100%;
-    padding: 12px;
-    border: 1.5px solid #00ccc7;
-    border-radius: 8px;
     font-size: 16px;
     margin-bottom: 30px;
-    background: white;
-    cursor: pointer;
-
-    &:focus {
-        outline: none;
-        border-color: #00ccc7;
-    }
-
-    option[value=""] {
-        display: none;
-    }
 `;
 
 const ErrorText = styled.div`

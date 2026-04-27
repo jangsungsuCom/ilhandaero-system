@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
+import CustomSelect from "./CustomSelect";
 
 const EMAIL_DOMAINS = [
     { value: "naver.com", label: "naver.com" },
@@ -47,8 +48,7 @@ export const EmailInput = ({ value, onChange, placeholder = "이메일", disable
         updateEmail(newId, domain);
     };
 
-    const handleDomainSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const domain = e.target.value;
+    const handleDomainSelect = (domain: string) => {
         setSelectedDomain(domain);
         if (domain) {
             setCustomDomain("");
@@ -69,13 +69,7 @@ export const EmailInput = ({ value, onChange, placeholder = "이메일", disable
             <EmailIdInput type="text" value={emailId} onChange={handleIdChange} placeholder={placeholder} disabled={disabled} />
             <AtSymbol>@</AtSymbol>
             {selectedDomain === "" && <EmailDomainInput type="text" value={customDomain} onChange={handleCustomDomainChange} placeholder="도메인 입력" disabled={disabled} />}
-            <EmailDomainSelect value={selectedDomain} onChange={handleDomainSelect} disabled={disabled}>
-                {EMAIL_DOMAINS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                        {d.label}
-                    </option>
-                ))}
-            </EmailDomainSelect>
+            <EmailDomainSelect value={selectedDomain} options={EMAIL_DOMAINS} onChange={handleDomainSelect} disabled={disabled} />
         </EmailInputContainer>
     );
 };
@@ -175,34 +169,17 @@ const EmailDomainInput = styled.input`
     }
 `;
 
-const EmailDomainSelect = styled.select`
+const EmailDomainSelect = styled(CustomSelect)`
     width: 110px;
     height: 52px;
-    padding: 0 8px;
     font-size: 15px;
-    border: 1.5px solid #00ccc7;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
     flex-shrink: 0;
-
-    &:focus {
-        outline: none;
-        border-color: #00ccc7;
-    }
-
-    &:disabled {
-        background: #f5f5f5;
-        color: #000;
-        cursor: not-allowed;
-    }
 
     ${media.mobile} {
         width: auto;
         min-width: 80px;
         height: 46px;
         font-size: 13px;
-        padding: 0 4px;
     }
 `;
 

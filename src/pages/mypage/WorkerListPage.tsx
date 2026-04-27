@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useMypageStores } from "../../hooks/useMypageStores";
@@ -29,8 +30,40 @@ function getBlacklistActionLabel(worker: MyPageWorker): string {
 
 function getBlacklistConfirmMessage(worker: MyPageWorker): string {
     return isBlacklisted(worker)
-        ? `${worker.workerName} 직원의 블랙리스트를 해제하시겠습니까?`
-        : `${worker.workerName} 직원을 블랙리스트 처리하시겠습니까?`;
+        ? "해당 코드는 해제되어 정상적으로 로그인이 가능합니다."
+        : "해당 코드는 즉시 로그인이 불가하며, 해제 전까지 로그인이 불가능합니다.";
+}
+
+function getBlacklistReleaseDoneMessage(): string {
+    return "해당 코드는 해제되어 정상적으로 로그인이 가능합니다.";
+}
+
+interface DeleteConfirmModalProps {
+    open: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
+function DeleteConfirmModal({ open, onConfirm, onCancel }: DeleteConfirmModalProps) {
+    if (!open) return null;
+
+    return (
+        <ModalOverlay onClick={onCancel}>
+            <ModalCard onClick={(e) => e.stopPropagation()}>
+                <ModalMessage>
+                    삭제하시면 이 코드에 기록한 데이터들은 영구 삭제되며 복구할 수 없습니다. 정말 <DangerText>삭제</DangerText>하시겠습니까?
+                </ModalMessage>
+                <ModalActionRow>
+                    <ModalSecondaryButton type="button" onClick={onCancel}>
+                        아니오
+                    </ModalSecondaryButton>
+                    <ModalDangerButton type="button" onClick={onConfirm}>
+                        예
+                    </ModalDangerButton>
+                </ModalActionRow>
+            </ModalCard>
+        </ModalOverlay>
+    );
 }
 
 interface WorkerTableProps {
@@ -106,6 +139,48 @@ function WorkerTable({ workers, onEdit, onDelete, onToggleBlacklist }: WorkerTab
     );
 }
 
+interface WorkerListContentProps {
+    storeId: number;
+    workers: MyPageWorker[];
+    loading: boolean;
+    onDeleteWorker: (workerId: number, workerName: string) => void;
+    onToggleBlacklist: (worker: MyPageWorker) => void;
+}
+
+function WorkerListContent({ storeId, workers, loading, onDeleteWorker, onToggleBlacklist }: WorkerListContentProps) {
+    const navigate = useNavigate();
+
+    if (loading) {
+        return (
+            <InlineWrapper>
+                <LoadingText>로딩 중...</LoadingText>
+            </InlineWrapper>
+        );
+    }
+
+    return (
+        <InlineWrapper>
+            <InlineHeader>
+                <InlineTitle>직원 목록</InlineTitle>
+                <TextButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/new`)}>+ 직원 등록</TextButton>
+            </InlineHeader>
+
+            {workers.length === 0 ? (
+                <EmptyState>등록된 직원이 없습니다. 직원을 먼저 등록해주세요.</EmptyState>
+            ) : (
+                <InlineTableWrapper>
+                    <WorkerTable
+                        workers={workers}
+                        onEdit={(workerId) => navigate(`/mypage/stores/${storeId}/workers/${workerId}/edit`)}
+                        onDelete={onDeleteWorker}
+                        onToggleBlacklist={onToggleBlacklist}
+                    />
+                </InlineTableWrapper>
+            )}
+        </InlineWrapper>
+    );
+}
+
 export default function WorkerListPage() {
     const { storeId } = useParams<{ storeId: string }>();
     const numericStoreId = storeId ? Number(storeId) : undefined;
@@ -113,16 +188,26 @@ export default function WorkerListPage() {
     const { stores } = useMypageStores();
     const navigate = useNavigate();
 
+    const [pendingDeleteWorker, setPendingDeleteWorker] = useState<{ id: number; name: string } | null>(null);
+
     const store = stores.find((s) => s.companyId === numericStoreId);
 
-    const handleDeleteWorker = async (workerId: number, workerName: string) => {
-        if (!window.confirm(`${workerName} 직원을 삭제하시겠습니까?`)) return;
-        await deleteWorker(workerId);
+    const handleDeleteWorker = (workerId: number, workerName: string) => {
+        setPendingDeleteWorker({ id: workerId, name: workerName });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!pendingDeleteWorker) return;
+        await deleteWorker(pendingDeleteWorker.id);
+        setPendingDeleteWorker(null);
     };
 
     const handleToggleBlacklist = async (worker: MyPageWorker) => {
         if (!window.confirm(getBlacklistConfirmMessage(worker))) return;
-        await toggleWorkerBlacklist(worker);
+        const result = await toggleWorkerBlacklist(worker);
+        if (result.success && worker.blacklisted) {
+            alert(getBlacklistReleaseDoneMessage());
+        }
     };
 
     if (loading) {
@@ -158,52 +243,47 @@ export default function WorkerListPage() {
                     />
                 )}
             </ContentWrapper>
+
+            <DeleteConfirmModal
+                open={Boolean(pendingDeleteWorker)}
+                onCancel={() => setPendingDeleteWorker(null)}
+                onConfirm={handleConfirmDelete}
+            />
         </Container>
     );
 }
 
 export function WorkerListInline({ storeId }: { storeId: number }) {
     const { workers, loading, deleteWorker, toggleWorkerBlacklist } = useMypageWorkers(storeId);
-    const navigate = useNavigate();
+    const [pendingDeleteWorker, setPendingDeleteWorker] = useState<{ id: number; name: string } | null>(null);
 
-    const handleDeleteWorker = async (workerId: number, workerName: string) => {
-        if (!window.confirm(`${workerName} 직원을 삭제하시겠습니까?`)) return;
-        await deleteWorker(workerId);
+    const handleDeleteWorker = (workerId: number, workerName: string) => {
+        setPendingDeleteWorker({ id: workerId, name: workerName });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!pendingDeleteWorker) return;
+        await deleteWorker(pendingDeleteWorker.id);
+        setPendingDeleteWorker(null);
     };
 
     const handleToggleBlacklist = async (worker: MyPageWorker) => {
         if (!window.confirm(getBlacklistConfirmMessage(worker))) return;
-        await toggleWorkerBlacklist(worker);
+        const result = await toggleWorkerBlacklist(worker);
+        if (result.success && worker.blacklisted) {
+            alert(getBlacklistReleaseDoneMessage());
+        }
     };
 
-    if (loading) {
-        return (
-            <InlineWrapper>
-                <LoadingText>로딩 중...</LoadingText>
-            </InlineWrapper>
-        );
-    }
-
     return (
-        <InlineWrapper>
-            <InlineHeader>
-                <InlineTitle>직원 목록</InlineTitle>
-                <TextButton onClick={() => navigate(`/mypage/stores/${storeId}/workers/new`)}>+ 직원 등록</TextButton>
-            </InlineHeader>
-
-            {workers.length === 0 ? (
-                <EmptyState>등록된 직원이 없습니다. 직원을 먼저 등록해주세요.</EmptyState>
-            ) : (
-                <InlineTableWrapper>
-                    <WorkerTable
-                        workers={workers}
-                        onEdit={(workerId) => navigate(`/mypage/stores/${storeId}/workers/${workerId}/edit`)}
-                        onDelete={handleDeleteWorker}
-                        onToggleBlacklist={handleToggleBlacklist}
-                    />
-                </InlineTableWrapper>
-            )}
-        </InlineWrapper>
+        <>
+            <WorkerListContent storeId={storeId} workers={workers} loading={loading} onDeleteWorker={handleDeleteWorker} onToggleBlacklist={handleToggleBlacklist} />
+            <DeleteConfirmModal
+                open={Boolean(pendingDeleteWorker)}
+                onCancel={() => setPendingDeleteWorker(null)}
+                onConfirm={handleConfirmDelete}
+            />
+        </>
     );
 }
 
@@ -449,4 +529,64 @@ const LoadingText = styled.div`
     ${media.mobile} {
         padding: 40px 16px;
     }
+`;
+
+const ModalOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 20px;
+`;
+
+const ModalCard = styled.div`
+    width: 100%;
+    max-width: 460px;
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+`;
+
+const ModalMessage = styled.p`
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #374151;
+    word-break: keep-all;
+`;
+
+const DangerText = styled.span`
+    color: #d32f2f;
+    font-weight: 800;
+`;
+
+const ModalActionRow = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+`;
+
+const ModalButton = styled.button`
+    min-width: 96px;
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid #111827;
+    background: #ffffff;
+    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+`;
+
+const ModalSecondaryButton = styled(ModalButton)`
+    font-weight: 700;
+`;
+
+const ModalDangerButton = styled(ModalButton)`
+    font-weight: 800;
 `;

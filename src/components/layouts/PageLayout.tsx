@@ -17,6 +17,9 @@ interface NavLink {
 const PageLayout = () => {
     const navigate = useNavigate();
     const loginMethod = getLoginMethod();
+    const openKakaoChannel = () => {
+        window.open("http://pf.kakao.com/_NxfQIX", "_blank", "noopener,noreferrer");
+    };
 
     return (
         <LayoutContainer>
@@ -32,7 +35,7 @@ const PageLayout = () => {
             <PageWrapper>
                 <Outlet />
             </PageWrapper>
-            <KakaoButton>
+            <KakaoButton onClick={openKakaoChannel} aria-label="일한대로 카카오고객센터 열기">
                 <img src={KakaoLogo} alt="kakao" />
             </KakaoButton>
         </LayoutContainer>

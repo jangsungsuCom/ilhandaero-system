@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import styled from "styled-components";
 import { useMypageAdvanceRequests } from "../../hooks/useMypageAdvanceRequests";
 import { getStatusLabel, type MyPageAdvanceRequest } from "../../types/mypage";
 import { media } from "../../styles/breakpoints";
 import { mypageTitle, mypageContent } from "../../styles/mypageTypography";
+import CustomSelect from "../../components/common/CustomSelect";
 
 export default function AdvanceRequestPage() {
     const { requests, loading, approveRequest, rejectRequest } = useMypageAdvanceRequests();
@@ -102,36 +103,37 @@ export default function AdvanceRequestPage() {
             <ContentWrapper>
                 <FilterRow>
                     {companyNames.length > 0 && (
-                        <FilterSelect value={selectedCompany} onChange={(e) => { setSelectedCompany(e.target.value); setSelectedWorker(""); }}>
-                            <option value="">전체 업장</option>
-                            {companyNames.map((name) => (
-                                <option key={name} value={name}>{name}</option>
-                            ))}
-                        </FilterSelect>
+                        <FilterSelect
+                            value={selectedCompany}
+                            options={[{ value: "", label: "전체 업장" }, ...companyNames.map((name) => ({ value: name, label: name }))]}
+                            onChange={(value) => { setSelectedCompany(value); setSelectedWorker(""); }}
+                        />
                     )}
                     {workerNames.length > 0 && (
-                        <FilterSelect value={selectedWorker} onChange={(e) => setSelectedWorker(e.target.value)}>
-                            <option value="">전체 직원</option>
-                            {workerNames.map((name) => (
-                                <option key={name} value={name}>{name}</option>
-                            ))}
-                        </FilterSelect>
+                        <FilterSelect
+                            value={selectedWorker}
+                            options={[{ value: "", label: "전체 직원" }, ...workerNames.map((name) => ({ value: name, label: name }))]}
+                            onChange={setSelectedWorker}
+                        />
                     )}
                     {availableMonths.length > 0 && (
-                        <FilterSelect value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-                            <option value="">전체 월</option>
-                            {availableMonths.map((month) => (
-                                <option key={month} value={month}>{month}</option>
-                            ))}
-                        </FilterSelect>
+                        <FilterSelect
+                            value={selectedMonth}
+                            options={[{ value: "", label: "전체 월" }, ...availableMonths.map((month) => ({ value: month, label: month }))]}
+                            onChange={setSelectedMonth}
+                        />
                     )}
-                    <FilterSelect value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-                        <option value="">전체 상태</option>
-                        <option value="PENDING">대기중</option>
-                        <option value="APPROVED">승인</option>
-                        <option value="REJECTED">거절</option>
-                        <option value="PAID">결제완료</option>
-                    </FilterSelect>
+                    <FilterSelect
+                        value={selectedStatus}
+                        options={[
+                            { value: "", label: "전체 상태" },
+                            { value: "PENDING", label: "대기중" },
+                            { value: "APPROVED", label: "승인" },
+                            { value: "REJECTED", label: "거절" },
+                            { value: "PAID", label: "결제완료" },
+                        ]}
+                        onChange={setSelectedStatus}
+                    />
                 </FilterRow>
                 {filteredRequests.length === 0 ? (
                     <EmptyState>선정산 요청이 없습니다.</EmptyState>
@@ -212,32 +214,28 @@ const FilterRow = styled.div`
     }
 `;
 
-const FilterSelect = styled.select`
-    ${mypageContent}
-    padding: 10px 16px;
-    padding-right: 32px;
-    font-weight: 600;
-    border: 1.5px solid #00ccc7;
-    border-radius: 10px;
-    background: #ffffff;
-    color: #000;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%2300ccc7%22%20d%3D%22M287%20197.9L159.3%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.9c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.7%203.7%209.7%203.7%2013.4%200l110.7-110.7c3.7-3.7%209.7-3.7%2013.4%200l110.7%20110.7c3.7%203.7%209.7%203.7%2013.4%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 10px;
-    padding-right: 32px;
+const FilterSelect = styled(CustomSelect)`
+    .custom-select-button {
+        ${mypageContent}
+        padding: 10px 32px 10px 16px;
+        font-weight: 600;
+        border: 1.5px solid #00ccc7;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #000;
+        cursor: pointer;
+    }
 
-    &:focus {
+    .custom-select-button:focus {
         outline: none;
         border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
     ${media.mobile} {
-        padding: 8px 12px;
-        padding-right: 28px;
+        .custom-select-button {
+            padding: 8px 28px 8px 12px;
+        }
     }
 `;
 
@@ -349,3 +347,4 @@ const LoadingText = styled.div`
     padding: 60px 20px;
     color: #000;
 `;
+

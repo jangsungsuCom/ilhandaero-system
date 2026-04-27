@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { getWorkLogs, getWorkAmount, getWorkerInfo, updateWorkerBankAccount } from "../../utils/workLog";
 import { getAccessCode, getLoginMethod } from "../../utils/auth";
@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import type { WorkAmountData } from "../../types/payment";
 import type { WorkerInfo } from "../../types/worker";
 import { IosWheelPicker, type WheelOption } from "../../components/common/IosWheelPicker";
+import CustomSelect from "../../components/common/CustomSelect";
 import { media } from "../../styles/breakpoints";
 import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 
@@ -14,6 +15,29 @@ const YEAR_OPTIONS = (centerYear: number): WheelOption<number>[] => Array.from({
 
 const MONTH_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `${i + 1}월` }));
 const ACCOUNT_NUMBER_STORAGE_PREFIX = "workerAccountNumber:";
+const BANK_OPTIONS = [
+    "KB국민은행",
+    "신한은행",
+    "우리은행",
+    "하나은행",
+    "NH농협은행",
+    "카카오뱅크",
+    "토스뱅크",
+    "IBK기업은행",
+    "SC제일은행",
+    "한국씨티은행",
+    "케이뱅크",
+    "새마을금고",
+    "신협",
+    "우체국",
+    "수협은행",
+    "대구은행",
+    "부산은행",
+    "경남은행",
+    "광주은행",
+    "전북은행",
+    "제주은행",
+].map((bank) => ({ value: bank, label: bank }));
 
 const getStoredAccountNumber = (accessCode: string): string => {
     return localStorage.getItem(`${ACCOUNT_NUMBER_STORAGE_PREFIX}${accessCode}`) || "";
@@ -388,30 +412,7 @@ export default function WorkHistoryPage() {
                     ) : (
                         <BankEditBody>
                             <BankEditGrid>
-                                <BankSelect value={bankNameEdit} onChange={(e) => setBankNameEdit(e.target.value)} required>
-                                    <option value="">은행을 선택하세요</option>
-                                    <option value="KB국민은행">KB국민은행</option>
-                                    <option value="신한은행">신한은행</option>
-                                    <option value="우리은행">우리은행</option>
-                                    <option value="하나은행">하나은행</option>
-                                    <option value="NH농협은행">NH농협은행</option>
-                                    <option value="카카오뱅크">카카오뱅크</option>
-                                    <option value="토스뱅크">토스뱅크</option>
-                                    <option value="IBK기업은행">IBK기업은행</option>
-                                    <option value="SC제일은행">SC제일은행</option>
-                                    <option value="한국씨티은행">한국씨티은행</option>
-                                    <option value="케이뱅크">케이뱅크</option>
-                                    <option value="새마을금고">새마을금고</option>
-                                    <option value="신협">신협</option>
-                                    <option value="우체국">우체국</option>
-                                    <option value="수협은행">수협은행</option>
-                                    <option value="대구은행">대구은행</option>
-                                    <option value="부산은행">부산은행</option>
-                                    <option value="경남은행">경남은행</option>
-                                    <option value="광주은행">광주은행</option>
-                                    <option value="전북은행">전북은행</option>
-                                    <option value="제주은행">제주은행</option>
-                                </BankSelect>
+                                <BankSelect value={bankNameEdit} placeholder="은행을 선택하세요" options={BANK_OPTIONS} onChange={setBankNameEdit} />
 
                                 <AccountInput type="text" value={accountNumberEdit} onChange={(e) => setAccountNumberEdit(e.target.value)} placeholder="계좌번호를 입력하세요" />
                             </BankEditGrid>
@@ -580,7 +581,7 @@ const BankEditGrid = styled.div`
     }
 `;
 
-const BankSelect = styled.select`
+const BankSelect = styled(CustomSelect)`
     width: 100%;
     height: 52px;
     padding: 0 16px;
@@ -601,11 +602,7 @@ const BankSelect = styled.select`
         border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
-
-    option[value=""] {
-        display: none;
-    }
-`;
+`;
 
 const AccountInput = styled.input`
     width: 100%;
@@ -965,3 +962,4 @@ const LoadingText = styled.div`
         padding: 40px 16px;
     }
 `;
+

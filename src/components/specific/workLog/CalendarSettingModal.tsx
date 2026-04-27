@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { getCalendarSettings, setCalendarStartDay, setCalendarWorkTimeFormat, type CalendarStartDay, type WorkTimeDisplayFormat } from "../../../utils/calendarSettings";
 import { media } from "../../../styles/breakpoints";
+import CustomSelect from "../../common/CustomSelect";
 
 type Props = {
     open: boolean;
@@ -53,12 +54,12 @@ const CalendarSettingModal: React.FC<Props> = ({ open, onClose, onSettingsChange
         }
     };
 
-    const handleStartDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setStartDayState(Number(e.target.value) as CalendarStartDay);
+    const handleStartDayChange = (value: string) => {
+        setStartDayState(Number(value) as CalendarStartDay);
     };
 
-    const handleWorkTimeFormatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setWorkTimeFormatState(e.target.value as WorkTimeDisplayFormat);
+    const handleWorkTimeFormatChange = (value: string) => {
+        setWorkTimeFormatState(value as WorkTimeDisplayFormat);
     };
 
     const handleApply = () => {
@@ -80,23 +81,11 @@ const CalendarSettingModal: React.FC<Props> = ({ open, onClose, onSettingsChange
                 <DialogBody>
                     <SettingRow>
                         <Label>시작 요일</Label>
-                        <Select value={startDay} onChange={handleStartDayChange}>
-                            {START_DAY_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </Select>
+                        <Select value={startDay} options={START_DAY_OPTIONS} onChange={handleStartDayChange} />
                     </SettingRow>
                     <SettingRow>
                         <Label>근무시간 표시</Label>
-                        <Select value={workTimeFormat} onChange={handleWorkTimeFormatChange}>
-                            {WORK_TIME_FORMAT_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </Select>
+                        <Select value={workTimeFormat} options={WORK_TIME_FORMAT_OPTIONS} onChange={handleWorkTimeFormatChange} />
                     </SettingRow>
                     <Footer>
                         <ApplyButton type="button" onClick={handleApply}>
@@ -203,23 +192,11 @@ const Label = styled.label`
     }
 `;
 
-const Select = styled.select`
-    padding: 10px 12px;
+const Select = styled(CustomSelect)`
     font-size: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-    color: #000;
-    cursor: pointer;
-
-    &:focus {
-        outline: none;
-        border-color: #00ccc7;
-    }
 
     ${media.mobile} {
         font-size: 14px;
-        padding: 10px;
     }
 `;
 

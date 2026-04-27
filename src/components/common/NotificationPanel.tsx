@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
 import type { NotificationItem } from "../../types/notification";
@@ -7,7 +7,6 @@ type TabType = "unread" | "read";
 
 interface Props {
     notifications: NotificationItem[];
-    onClose: () => void;
     onMarkRead: (item: NotificationItem) => void;
     onMarkAllRead: () => void;
 }
@@ -19,7 +18,6 @@ function parseUTC(dateStr: string): Date {
     return new Date(dateStr + "Z");
 }
 
-/** 근무 시간 문자열을 로컬 시간으로 파싱 (UTC 변환 없이) */
 function parseLocal(dateStr: string): Date {
     return new Date(dateStr);
 }
@@ -27,12 +25,16 @@ function parseLocal(dateStr: string): Date {
 function formatRelativeTime(dateStr: string): string {
     const diff = Date.now() - parseUTC(dateStr).getTime();
     const minutes = Math.floor(diff / 60_000);
+
     if (minutes < 1) return "방금";
     if (minutes < 60) return `${minutes}분 전`;
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}시간 전`;
+
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}일 전`;
+
     return parseUTC(dateStr).toLocaleDateString("ko-KR");
 }
 
@@ -54,41 +56,13 @@ const ACTION_LABELS: Record<string, string> = {
     DELETED: "삭제",
 };
 
-export default function NotificationPanel({
-    notifications,
-    onClose,
-    onMarkRead,
-    onMarkAllRead,
-}: Props) {
-    const panelRef = useRef<HTMLDivElement>(null);
+export default function NotificationPanel({ notifications, onMarkRead, onMarkAllRead }: Props) {
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const [activeTab, setActiveTab] = useState<TabType>("unread");
 
-    const unreadList = useMemo(
-        () => notifications.filter((n) => !n.isRead),
-        [notifications]
-    );
-    const readList = useMemo(
-        () => notifications.filter((n) => n.isRead),
-        [notifications]
-    );
-
+    const unreadList = useMemo(() => notifications.filter((n) => !n.isRead), [notifications]);
+    const readList = useMemo(() => notifications.filter((n) => n.isRead), [notifications]);
     const visibleList = activeTab === "unread" ? unreadList : readList;
-
-    useEffect(() => {
-        function handleClick(e: MouseEvent) {
-            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-                onClose();
-            }
-        }
-        const timer = setTimeout(() => {
-            document.addEventListener("mousedown", handleClick);
-        }, 0);
-        return () => {
-            clearTimeout(timer);
-            document.removeEventListener("mousedown", handleClick);
-        };
-    }, [onClose]);
 
     const scrollToNextUnread = useCallback(
         (currentId: number) => {
@@ -113,39 +87,23 @@ export default function NotificationPanel({
     );
 
     return (
-        <PanelContainer ref={panelRef}>
+        <PanelContainer>
             <PanelHeader>
                 <PanelTitle>알림</PanelTitle>
-                {activeTab === "unread" && unreadList.length > 0 && (
-                    <MarkAllButton onClick={onMarkAllRead}>
-                        전체 읽음
-                    </MarkAllButton>
-                )}
+                {activeTab === "unread" && unreadList.length > 0 && <MarkAllButton onClick={onMarkAllRead}>전체 읽음</MarkAllButton>}
             </PanelHeader>
             <TabBar>
-                <Tab
-                    $active={activeTab === "unread"}
-                    onClick={() => setActiveTab("unread")}
-                >
-                    안읽음
-                    {unreadList.length > 0 && (
-                        <TabCount>{unreadList.length}</TabCount>
-                    )}
+                <Tab $active={activeTab === "unread"} onClick={() => setActiveTab("unread")}>
+                    읽지 않음
+                    {unreadList.length > 0 && <TabCount>{unreadList.length}</TabCount>}
                 </Tab>
-                <Tab
-                    $active={activeTab === "read"}
-                    onClick={() => setActiveTab("read")}
-                >
+                <Tab $active={activeTab === "read"} onClick={() => setActiveTab("read")}>
                     읽음
                 </Tab>
             </TabBar>
             <PanelBody>
                 {visibleList.length === 0 ? (
-                    <EmptyMessage>
-                        {activeTab === "unread"
-                            ? "읽지 않은 알림이 없습니다"
-                            : "읽은 알림이 없습니다"}
-                    </EmptyMessage>
+                    <EmptyMessage>{activeTab === "unread" ? "읽지 않은 알림이 없습니다" : "읽은 알림이 없습니다"}</EmptyMessage>
                 ) : (
                     visibleList.map((item) => (
                         <NotifItem
@@ -156,52 +114,38 @@ export default function NotificationPanel({
                             $unread={!item.isRead}
                         >
                             <ActionIcon $type={item.actionType}>
-                                {item.actionType === "CREATED"
-                                    ? "+"
-                                    : item.actionType === "DELETED"
-                                      ? "×"
-                                      : "✎"}
+                                {item.actionType === "CREATED" ? "+" : item.actionType === "DELETED" ? "×" : "↻"}
                             </ActionIcon>
                             <NotifContent>
                                 <NotifText>
-                                    <CompanyTag>{item.companyName}</CompanyTag>{" "}
-                                    {item.workerName}님이 근무기록을{" "}
-                                    {ACTION_LABELS[item.actionType]}했습니다
+                                    <CompanyTag>{item.companyName}</CompanyTag> {item.workerName}님의 근무기록이 {ACTION_LABELS[item.actionType]}되었습니다
                                 </NotifText>
                                 {item.actionType === "UPDATED" && (
                                     <ChangeDetail>
                                         {formatDate(item.beforeStartAt)}
                                         {formatDate(item.beforeStartAt) && " "}
-                                        {formatTime(item.beforeStartAt)}~
-                                        {formatTime(item.beforeEndAt)}
+                                        {formatTime(item.beforeStartAt)}~{formatTime(item.beforeEndAt)}
                                         {" → "}
                                         {formatDate(item.afterStartAt)}
                                         {formatDate(item.afterStartAt) && " "}
-                                        {formatTime(item.afterStartAt)}~
-                                        {formatTime(item.afterEndAt)}
+                                        {formatTime(item.afterStartAt)}~{formatTime(item.afterEndAt)}
                                     </ChangeDetail>
                                 )}
-                                {item.actionType === "CREATED" &&
-                                    item.afterStartAt && (
-                                        <ChangeDetail>
-                                            {formatDate(item.afterStartAt)}
-                                            {formatDate(item.afterStartAt) && " "}
-                                            {formatTime(item.afterStartAt)}~
-                                            {formatTime(item.afterEndAt)}
-                                        </ChangeDetail>
-                                    )}
-                                {item.actionType === "DELETED" &&
-                                    (item.beforeStartAt || item.beforeEndAt) && (
-                                        <ChangeDetail>
-                                            {formatDate(item.beforeStartAt || item.beforeEndAt)}
-                                            {(item.beforeStartAt || item.beforeEndAt) && " "}
-                                            {formatTime(item.beforeStartAt)}~
-                                            {formatTime(item.beforeEndAt)}
-                                        </ChangeDetail>
-                                    )}
-                                <NotifTime>
-                                    {formatRelativeTime(item.occurredAt)}
-                                </NotifTime>
+                                {item.actionType === "CREATED" && item.afterStartAt && (
+                                    <ChangeDetail>
+                                        {formatDate(item.afterStartAt)}
+                                        {formatDate(item.afterStartAt) && " "}
+                                        {formatTime(item.afterStartAt)}~{formatTime(item.afterEndAt)}
+                                    </ChangeDetail>
+                                )}
+                                {item.actionType === "DELETED" && (item.beforeStartAt || item.beforeEndAt) && (
+                                    <ChangeDetail>
+                                        {formatDate(item.beforeStartAt || item.beforeEndAt)}
+                                        {(item.beforeStartAt || item.beforeEndAt) && " "}
+                                        {formatTime(item.beforeStartAt)}~{formatTime(item.beforeEndAt)}
+                                    </ChangeDetail>
+                                )}
+                                <NotifTime>{formatRelativeTime(item.occurredAt)}</NotifTime>
                             </NotifContent>
                             {!item.isRead && (
                                 <RightArea>
@@ -363,12 +307,7 @@ const ActionIcon = styled.div<{ $type: string }>`
     font-weight: 700;
     margin-top: 2px;
     color: #fff;
-    background: ${({ $type }) =>
-        $type === "CREATED"
-            ? "#00ccc7"
-            : $type === "UPDATED"
-              ? "#f1c40f"
-              : "#e74c3c"};
+    background: ${({ $type }) => ($type === "CREATED" ? "#00ccc7" : $type === "UPDATED" ? "#f1c40f" : "#e74c3c")};
 `;
 
 const NotifContent = styled.div`

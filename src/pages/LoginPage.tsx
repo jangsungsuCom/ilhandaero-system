@@ -1,19 +1,20 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
-import { PageContainer, FormCard, Form, FieldGroup, Label, Input, SubmitButton, ToggleButton, EmailInput } from "../components/common/FormCard";
-import { loginWithEmail, validateAccessCode } from "../utils/auth";
+import { EmailInput, Form, FormCard, Input, Label, PageContainer, SubmitButton, ToggleButton, FieldGroup } from "../components/common/FormCard";
+import { media } from "../styles/breakpoints";
 import { useAppDispatch } from "../store/hooks";
-import { setAccessToken, setAccessCode } from "../store/slices/authSlice";
+import { setAccessCode, setAccessToken } from "../store/slices/authSlice";
 import { fetchCompanies } from "../store/slices/companySlice";
 import type { LoginMethod } from "../types/auth";
-import { media } from "../styles/breakpoints";
+import { loginWithEmail, validateAccessCode } from "../utils/auth";
 
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
     const dispatch = useAppDispatch();
+
     const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -32,7 +33,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (searchParams.get("session_expired") === "1") {
-            setSuccessMessage("로그인이 만료되었습니다. 다시 로그인해주세요.");
+            setSuccessMessage("로그인이 만료되었습니다. 다시 로그인해 주세요.");
             setSearchParams({}, { replace: true });
         }
     }, [searchParams, setSearchParams]);
@@ -49,31 +50,34 @@ export default function LoginPage() {
                     setIsLoading(false);
                     return;
                 }
+
                 const response = await loginWithEmail({ email, password });
-                // response.data.data에서 accessToken 추출
                 const token = response.data.accessToken;
                 dispatch(setAccessToken({ token, method: loginMethod }));
-
-                // 업장 목록 로드
                 await dispatch(fetchCompanies()).unwrap();
-
                 navigate("/work-log");
-            } else {
-                if (!inputAccessCode.trim()) {
-                    setError("접근 코드를 입력해주세요.");
-                    setIsLoading(false);
-                    return;
-                }
-                // accessCode 유효성 검증 (work-logs API 호출)
-                await validateAccessCode(inputAccessCode);
-                // 유효한 경우 로그인 처리
-                dispatch(setAccessCode(inputAccessCode));
-                navigate("/work-log");
+                return;
             }
+
+            if (!inputAccessCode.trim()) {
+                setError("접근 코드를 입력해주세요.");
+                setIsLoading(false);
+                return;
+            }
+
+            await validateAccessCode(inputAccessCode);
+            dispatch(setAccessCode(inputAccessCode));
+            navigate("/work-log");
         } catch (err: any) {
-            // 에러 응답에서 메시지 추출
-            const errorMessage = err.response?.data?.message || err.message || "로그인에 실패했습니다. 다시 시도해주세요.";
-            setError(errorMessage);
+            const originalMessage = err.response?.data?.originalMessage || err.response?.data?.message || err.message;
+
+            if (loginMethod === "accessCode" && typeof originalMessage === "string" && originalMessage.includes("블랙리스트에 등록된 급여 대상자입니다")) {
+                alert("현재 해당 계정은 접근이 제한된 상태입니다.\n이용 문의는 '일한대로 카카오고객센터'를 이용해 주세요");
+                setError("");
+            } else {
+                const errorMessage = err.response?.data?.message || err.message || "로그인에 실패했습니다. 다시 시도해주세요.";
+                setError(errorMessage);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -139,25 +143,25 @@ export default function LoginPage() {
                 </Form>
 
                 {loginMethod === "email" && (
-                    <div style={{ width: "100%", display: "flex", gap: "12px", justifyContent: "center", alignItems: "center", marginTop: "24px", marginRight: "5px" }}>
+                    <LinkRow>
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/find-email")}>
                                 아이디 찾기
                             </RegisterButton>
                         </RegisterLink>
-                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00ccc7" }} />
+                        <Divider />
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/reset-password")}>
                                 비밀번호 찾기
                             </RegisterButton>
                         </RegisterLink>
-                        <div style={{ width: "2px", height: "12px", backgroundColor: "#00ccc7" }} />
+                        <Divider />
                         <RegisterLink>
                             <RegisterButton type="button" onClick={() => navigate("/register")}>
                                 회원가입
                             </RegisterButton>
                         </RegisterLink>
-                    </div>
+                    </LinkRow>
                 )}
             </LoginFormCard>
         </PageContainer>
@@ -187,25 +191,6 @@ const ErrorText = styled.p`
 
     ${media.mobile} {
         font-size: 13px;
-    }
-`;
-
-const RegisterLink = styled.div`
-    text-align: center;
-    font-size: 14px;
-`;
-
-const RegisterButton = styled.button`
-    background: none;
-    border: none;
-    color: #00ccc7;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0;
-
-    &:hover {
-        opacity: 0.8;
     }
 `;
 
@@ -257,4 +242,39 @@ const LoginFormCard = styled(FormCard)`
     ${media.mobile} {
         min-width: 100%;
     }
+`;
+
+const LinkRow = styled.div`
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    margin-right: 5px;
+`;
+
+const RegisterLink = styled.div`
+    text-align: center;
+    font-size: 14px;
+`;
+
+const RegisterButton = styled.button`
+    background: none;
+    border: none;
+    color: #00ccc7;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover {
+        opacity: 0.8;
+    }
+`;
+
+const Divider = styled.div`
+    width: 2px;
+    height: 12px;
+    background-color: #00ccc7;
 `;

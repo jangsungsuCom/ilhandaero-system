@@ -1,5 +1,5 @@
 // src/components/Calendar.tsx
-import React, { useState, type JSX } from "react";
+import React, { useEffect, useRef, useState, type JSX } from "react";
 import styled from "styled-components";
 import AddModal from "./AddModal";
 import EditModal from "./EditModal";
@@ -87,6 +87,20 @@ const Calendar: React.FC<CalendarProps> = ({
     const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
     const [bulkEditTargets, setBulkEditTargets] = useState<{ workLog: WorkLog; salaryTarget?: SalaryTarget }[]>([]);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+    const companySelectRef = useRef<HTMLDivElement>(null);
+    const selectedCompany = companies.find((company) => company.companyId === selectedCompanyId);
+
+    useEffect(() => {
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!companySelectRef.current?.contains(event.target as Node)) {
+                setCompanyDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        return () => document.removeEventListener("pointerdown", handlePointerDown);
+    }, []);
 
     const toggleBulkEditMode = () => {
         if (bulkEditMode) {
@@ -379,16 +393,47 @@ const Calendar: React.FC<CalendarProps> = ({
                     <CardsGridCell>{headerLeft}</CardsGridCell>
                     <CardsGridCell>
                         {loginMethod === "email" && companies.length > 0 && onCompanyChange ? (
-                            <CompanySelectWrapper>
-                                <CompanySelect value={selectedCompanyId ?? ""} onChange={(e) => onCompanyChange(e.target.value ? Number(e.target.value) : null)}>
-                                    <option value="">업장을 선택하세요</option>
-                                    {companies.map((c) => (
-                                        <option key={c.companyId} value={c.companyId}>
-                                            {c.name}
-                                        </option>
-                                    ))}
+                            <CompanySelectWrapper ref={companySelectRef}>
+                                <CompanySelect
+                                    type="button"
+                                    onClick={() => setCompanyDropdownOpen((open) => !open)}
+                                    aria-haspopup="listbox"
+                                    aria-expanded={companyDropdownOpen}
+                                >
+                                    <CompanySelectText>{selectedCompany?.name ?? "업장을 선택하세요"}</CompanySelectText>
                                 </CompanySelect>
-                                <SelectArrow>˅</SelectArrow>
+                                <SelectArrow $open={companyDropdownOpen}>˅</SelectArrow>
+                                {companyDropdownOpen ? (
+                                    <CompanyOptionList role="listbox">
+                                        <CompanyOptionButton
+                                            type="button"
+                                            role="option"
+                                            aria-selected={selectedCompanyId == null}
+                                            $selected={selectedCompanyId == null}
+                                            onClick={() => {
+                                                onCompanyChange(null);
+                                                setCompanyDropdownOpen(false);
+                                            }}
+                                        >
+                                            업장을 선택하세요
+                                        </CompanyOptionButton>
+                                        {companies.map((company) => (
+                                            <CompanyOptionButton
+                                                key={company.companyId}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={selectedCompanyId === company.companyId}
+                                                $selected={selectedCompanyId === company.companyId}
+                                                onClick={() => {
+                                                    onCompanyChange(company.companyId);
+                                                    setCompanyDropdownOpen(false);
+                                                }}
+                                            >
+                                                {company.name}
+                                            </CompanyOptionButton>
+                                        ))}
+                                    </CompanyOptionList>
+                                ) : null}
                             </CompanySelectWrapper>
                         ) : loginMethod === "accessCode" && pageTitle != null && pageTitle !== "" ? (
                             <TitleTextWrap>
@@ -574,6 +619,7 @@ const CompanySelectWrapper = styled.div`
     cursor: pointer;
     display: flex;
     align-items: center;
+    overflow: visible;
 
     &:hover {
         opacity: 0.95;
@@ -594,7 +640,7 @@ const CompanySelectWrapper = styled.div`
     }
 `;
 
-const CompanySelect = styled.select`
+const CompanySelect = styled.button`
     height: 100%;
     width: 100%;
     padding: 0 40px 0 24px;
@@ -605,15 +651,10 @@ const CompanySelect = styled.select`
     background: transparent;
     color: #ffffff;
     cursor: pointer;
-    appearance: none;
+    text-align: left;
 
     &:focus {
         outline: none;
-    }
-
-    option {
-        background: white;
-        color: #000;
     }
 
     ${media.desktop} {
@@ -632,14 +673,74 @@ const CompanySelect = styled.select`
     }
 `;
 
-const SelectArrow = styled.span`
+const CompanySelectText = styled.span`
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const CompanyOptionList = styled.div`
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding: 8px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(0, 204, 199, 0.22);
+    box-shadow:
+        0 24px 52px rgba(15, 23, 42, 0.18),
+        0 8px 18px rgba(0, 204, 199, 0.12);
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+`;
+
+const CompanyOptionButton = styled.button<{ $selected: boolean }>`
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 16px;
+    border: none;
+    background: ${({ $selected }) => ($selected ? "linear-gradient(135deg, #00d7d1 0%, #00b9b5 100%)" : "transparent")};
+    color: ${({ $selected }) => ($selected ? "#ffffff" : "#111827")};
+    font-size: 15px;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        transform 0.18s ease;
+
+    &:hover {
+        background: ${({ $selected }) => ($selected ? "linear-gradient(135deg, #00d7d1 0%, #00b9b5 100%)" : "rgba(0, 204, 199, 0.1)")};
+        color: ${({ $selected }) => ($selected ? "#ffffff" : "#007f7c")};
+        transform: translateX(2px);
+    }
+
+    ${media.mobile} {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 13px;
+        font-size: 13px;
+    }
+`;
+
+const SelectArrow = styled.span<{ $open: boolean }>`
     position: absolute;
     right: 16px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) rotate(${({ $open }) => ($open ? "180deg" : "0deg")});
     color: #ffffff;
     font-size: 18px;
     pointer-events: none;
+    transition: transform 0.2s ease;
 
     ${media.tablet} {
         right: 12px;
@@ -955,7 +1056,7 @@ const BulkEditToggle = styled.button`
 const BulkEditInfo = styled.span`
     font-size: 19px;
     font-weight: 700;
-    color: #00ccc7;
+    color: #000;
     white-space: nowrap;
 
     ${media.desktop} {
@@ -974,10 +1075,10 @@ const BulkEditInfo = styled.span`
 const BulkEditActions = styled.div`
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
 
     ${media.mobile} {
-        gap: 5px;
+        gap: 10px;
     }
 `;
 
@@ -985,7 +1086,7 @@ const BulkEditButton = styled.button`
     padding: 0;
     font-size: 19px;
     font-weight: 700;
-    color: #00ccc7;
+    color: #000;
     background: none;
     border: none;
     cursor: pointer;
@@ -1049,6 +1150,7 @@ const BulkDeleteButton = styled.button`
 
 const BulkCancelButton = styled.button`
     padding: 0;
+    margin-left: auto;
     font-size: 19px;
     font-weight: 700;
     color: #000;

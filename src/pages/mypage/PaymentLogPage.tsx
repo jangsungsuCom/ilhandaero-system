@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import styled from "styled-components";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -8,6 +8,7 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { getSalaryPayouts, type SalaryPayout } from "../../utils/paymentApi";
 import { media } from "../../styles/breakpoints";
 import { mypageTitle, mypageContent } from "../../styles/mypageTypography";
+import CustomSelect from "../../components/common/CustomSelect";
 
 const DAYS_OPTIONS = [30, 90, 365];
 
@@ -158,31 +159,23 @@ export default function PaymentLogPage() {
             <PageTitle>결제 내역</PageTitle>
             <ContentWrapper>
                 <FilterRow>
-                    <FilterSelect value={selectedCompanyId} onChange={(e) => setSelectedCompanyId(Number(e.target.value) || "")}>
-                        <option value="">전체 업장</option>
-                        {stores.map((s) => (
-                            <option key={s.companyId} value={s.companyId}>
-                                {s.name}
-                            </option>
-                        ))}
-                    </FilterSelect>
+                    <FilterSelect
+                        value={selectedCompanyId}
+                        options={[{ value: "", label: "전체 업장" }, ...stores.map((store) => ({ value: store.companyId, label: store.name }))]}
+                        onChange={(value) => setSelectedCompanyId(Number(value) || "")}
+                    />
 
-                    <FilterSelect value={selectedSalaryTargetId} onChange={(e) => setSelectedSalaryTargetId(Number(e.target.value) || "")}>
-                        <option value="">전체 직원</option>
-                        {salaryTargets.map((t) => (
-                            <option key={t.id} value={t.id}>
-                                {t.workerName}
-                            </option>
-                        ))}
-                    </FilterSelect>
+                    <FilterSelect
+                        value={selectedSalaryTargetId}
+                        options={[{ value: "", label: "전체 직원" }, ...salaryTargets.map((target) => ({ value: target.id, label: target.workerName }))]}
+                        onChange={(value) => setSelectedSalaryTargetId(Number(value) || "")}
+                    />
 
-                    <FilterSelect value={days} onChange={(e) => setDays(Number(e.target.value))}>
-                        {DAYS_OPTIONS.map((d) => (
-                            <option key={d} value={d}>
-                                최근 {d}일
-                            </option>
-                        ))}
-                    </FilterSelect>
+                    <FilterSelect
+                        value={days}
+                        options={DAYS_OPTIONS.map((option) => ({ value: option, label: `최근 ${option}일` }))}
+                        onChange={(value) => setDays(Number(value))}
+                    />
                 </FilterRow>
 
                 {error ? <ErrorText>{error}</ErrorText> : null}
@@ -293,37 +286,33 @@ const FilterRow = styled.div`
     }
 `;
 
-const FilterSelect = styled.select`
-    ${mypageContent}
-    padding: 10px 16px;
-    padding-right: 32px;
-    font-weight: 600;
-    border: 1.5px solid #00ccc7;
-    border-radius: 10px;
-    background: #ffffff;
-    color: #000;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%2300ccc7%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 10px;
-    padding-right: 32px;
+const FilterSelect = styled(CustomSelect)`
+    .custom-select-button {
+        ${mypageContent}
+        padding: 10px 32px 10px 16px;
+        font-weight: 600;
+        border: 1.5px solid #00ccc7;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #000;
+        cursor: pointer;
+    }
 
-    &:focus {
+    .custom-select-button:focus {
         outline: none;
         border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
 
-    &:disabled {
+    .custom-select-button:disabled {
         background-color: #f5f5f5;
         cursor: not-allowed;
     }
 
     ${media.mobile} {
-        padding: 8px 12px;
-        padding-right: 28px;
+        .custom-select-button {
+            padding: 8px 28px 8px 12px;
+        }
     }
 `;
 
@@ -427,3 +416,4 @@ const DetailButton = styled.button`
         padding: 4px 10px;
     }
 `;
+

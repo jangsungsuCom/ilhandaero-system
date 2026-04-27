@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { type DateRange } from "react-day-picker";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -16,6 +16,7 @@ import type { DeductionDetail } from "../types/payment";
 import { media } from "../styles/breakpoints";
 import { isInAppBrowser } from "../utils/inAppBrowser";
 import { postSalaryPay } from "../utils/paymentApi";
+import CustomSelect from "../components/common/CustomSelect";
 
 export default function PaymentPage() {
     const dispatch = useAppDispatch();
@@ -244,33 +245,26 @@ export default function PaymentPage() {
                                 <ControlArea>
                                     <Select
                                         value={selectedCompanyId || ""}
-                                        onChange={(e) => {
-                                            dispatch(setSelectedCompany(Number(e.target.value) || null));
+                                        placeholder="업장을 선택하세요"
+                                        options={companies.map((company) => ({ value: company.companyId, label: company.name }))}
+                                        onChange={(value) => {
+                                            dispatch(setSelectedCompany(Number(value) || null));
                                             setSelectedEmployeeId("");
                                         }}
-                                    >
-                                        <option value="">업장을 선택하세요</option>
-                                        {companies.map((company) => (
-                                            <option key={company.companyId} value={company.companyId}>
-                                                {company.name}
-                                            </option>
-                                        ))}
-                                    </Select>
+                                    />
                                 </ControlArea>
                             </RowFieldGroup>
 
                             <RowFieldGroup>
                                 <RowLabel>직원 선택</RowLabel>
                                 <ControlArea>
-                                    <Select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value ? Number(e.target.value) : "")} disabled={!selectedCompanyId}>
-                                        <option value="">직원을 선택하세요</option>
-                                        {selectedCompanyId &&
-                                            (salaryTargets[selectedCompanyId] || []).map((target) => (
-                                                <option key={target.id} value={target.id}>
-                                                    {target.workerName}
-                                                </option>
-                                            ))}
-                                    </Select>
+                                    <Select
+                                        value={selectedEmployeeId}
+                                        placeholder="직원을 선택하세요"
+                                        options={selectedCompanyId ? (salaryTargets[selectedCompanyId] || []).map((target) => ({ value: target.id, label: target.workerName })) : []}
+                                        onChange={(value) => setSelectedEmployeeId(value ? Number(value) : "")}
+                                        disabled={!selectedCompanyId}
+                                    />
                                 </ControlArea>
                             </RowFieldGroup>
 
@@ -591,46 +585,62 @@ const InlineInputLabel = styled.span`
     color: #00ccc7;
 `;
 
-const Select = styled.select`
-    width: 100%;
-    height: 52px;
-    padding: 0 16px;
-    border: 1.5px solid #00ccc7;
-    border-radius: 12px;
-    font-size: 17px;
-    background: #ffffff;
-    color: #000;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300ccc7' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    padding-right: 40px;
-
-    &:focus {
-        outline: none;
-        border-color: #00ccc7;
-        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
+const Select = styled(CustomSelect)`
+    .custom-select-button {
+        width: 100%;
+        height: 60px;
+        padding: 0 56px 0 18px;
+        border: 1px solid rgba(0, 204, 199, 0.22);
+        border-radius: 18px;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 255, 254, 0.98) 100%),
+            #ffffff;
+        color: #082f2d;
+        cursor: pointer;
+        box-shadow:
+            0 14px 28px rgba(0, 204, 199, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
     }
 
-    &:disabled {
-        background-color: #f5f5f5;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-        color: #000;
+    .custom-select-button:focus {
+        outline: none;
+        border-color: rgba(0, 204, 199, 0.6);
+        box-shadow:
+            0 0 0 4px rgba(0, 204, 199, 0.14),
+            0 18px 34px rgba(0, 204, 199, 0.12);
+        transform: translateY(-1px);
+    }
+
+    .custom-select-button:hover:not(:disabled) {
+        border-color: rgba(0, 204, 199, 0.4);
+        box-shadow:
+            0 18px 30px rgba(0, 204, 199, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .custom-select-button:disabled {
+        background:
+            linear-gradient(180deg, rgba(245, 245, 245, 0.98) 0%, rgba(238, 238, 238, 0.98) 100%),
+            #f5f5f5;
+        color: #6b7280;
+        box-shadow: none;
         cursor: not-allowed;
     }
 
-    option[value=""] {
-        display: none;
-    }
-
     ${media.mobile} {
-        height: 46px;
-        font-size: 16px;
-        padding: 0 14px;
-        padding-right: 40px;
+        .custom-select-button {
+            height: 54px;
+            font-size: 16px;
+            padding: 0 48px 0 15px;
+            border-radius: 16px;
+        }
     }
 `;
 
@@ -674,3 +684,5 @@ const DateDisplayButton = styled.button`
         padding: 0 14px;
     }
 `;
+
+

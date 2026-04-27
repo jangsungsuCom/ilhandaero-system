@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useMypageWorkers } from "../../hooks/useMypageWorkers";
@@ -6,10 +6,35 @@ import { useMypageStores } from "../../hooks/useMypageStores";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchSalaryTargets } from "../../store/slices/salaryTargetSlice";
 import { FormCard, Form, FieldGroup, Label, Input, SubmitButton } from "../../components/common/FormCard";
+import CustomSelect from "../../components/common/CustomSelect";
 import { mypageTitle, mypageSubtitle, mypageContent } from "../../styles/mypageTypography";
 import type { CreateWorkerRequest } from "../../types/mypage";
 
 const DEFAULT_COLOR = "#00ccc7";
+
+const BANK_OPTIONS = [
+    "KB국민은행",
+    "신한은행",
+    "우리은행",
+    "하나은행",
+    "NH농협은행",
+    "카카오뱅크",
+    "토스뱅크",
+    "IBK기업은행",
+    "SC제일은행",
+    "한국씨티은행",
+    "케이뱅크",
+    "새마을금고",
+    "신협",
+    "우체국",
+    "수협은행",
+    "대구은행",
+    "부산은행",
+    "경남은행",
+    "광주은행",
+    "전북은행",
+    "제주은행",
+].map((bank) => ({ value: bank, label: bank }));
 
 const COLOR_PALETTE: string[] = [
     "#fdfab7",
@@ -149,30 +174,12 @@ export default function WorkerFormPage() {
 
                         <FieldGroup>
                             <Label>은행</Label>
-                            <Select value={formData.bankName} onChange={(e) => setFormData({ ...formData, bankName: e.target.value })} required>
-                                <option value="">은행을 선택하세요</option>
-                                <option value="KB국민은행">KB국민은행</option>
-                                <option value="신한은행">신한은행</option>
-                                <option value="우리은행">우리은행</option>
-                                <option value="하나은행">하나은행</option>
-                                <option value="NH농협은행">NH농협은행</option>
-                                <option value="카카오뱅크">카카오뱅크</option>
-                                <option value="토스뱅크">토스뱅크</option>
-                                <option value="IBK기업은행">IBK기업은행</option>
-                                <option value="SC제일은행">SC제일은행</option>
-                                <option value="한국씨티은행">한국씨티은행</option>
-                                <option value="케이뱅크">케이뱅크</option>
-                                <option value="새마을금고">새마을금고</option>
-                                <option value="신협">신협</option>
-                                <option value="우체국">우체국</option>
-                                <option value="수협은행">수협은행</option>
-                                <option value="대구은행">대구은행</option>
-                                <option value="부산은행">부산은행</option>
-                                <option value="경남은행">경남은행</option>
-                                <option value="광주은행">광주은행</option>
-                                <option value="전북은행">전북은행</option>
-                                <option value="제주은행">제주은행</option>
-                            </Select>
+                            <Select
+                                value={formData.bankName}
+                                placeholder="은행을 선택하세요"
+                                options={BANK_OPTIONS}
+                                onChange={(value) => setFormData({ ...formData, bankName: value })}
+                            />
                         </FieldGroup>
 
                         <FieldGroup>
@@ -302,7 +309,7 @@ const ButtonGroup = styled.div`
     width: 100%;
 `;
 
-const Select = styled.select`
+const Select = styled(CustomSelect)`
     width: 100%;
     height: 52px;
     padding: 0 16px;
@@ -323,12 +330,7 @@ const Select = styled.select`
         border-color: #00ccc7;
         box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
     }
-
-    option[value=""] {
-        display: none;
-    }
-
-    &:disabled {
+&:disabled {
         background: #f5f5f5;
         color: #000;
         cursor: not-allowed;
@@ -409,3 +411,4 @@ const ColorSwatch = styled.button<{ $color: string; $selected: boolean }>`
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 `;
+
