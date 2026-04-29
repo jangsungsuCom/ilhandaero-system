@@ -56,7 +56,7 @@ function IosWheelPickerInner<T = number | string>({
             const match = opt.label.match(/\d+/);
             return match ? match[0] : String(val);
         },
-        [options]
+        [options],
     );
 
     // centerInputMode에서 input에 표시할 값 (label 기반)
@@ -67,7 +67,7 @@ function IosWheelPickerInner<T = number | string>({
             }
             return String(val);
         },
-        [centerInputMode, extractNumberFromLabel]
+        [centerInputMode, extractNumberFromLabel],
     );
 
     /** 인덱스 i인 항목이 뷰포트 가운데 오도록 scrollTop 계산 (상단 패딩 반영) */
@@ -80,7 +80,7 @@ function IosWheelPickerInner<T = number | string>({
             isScrollingProgrammatically.current = true;
             el.scrollTo({ top, behavior: "smooth" });
         },
-        [optionHeight, options.length, paddingVertical, containerHeight]
+        [optionHeight, options.length, paddingVertical, containerHeight],
     );
 
     useEffect(() => {
@@ -129,7 +129,7 @@ function IosWheelPickerInner<T = number | string>({
                 setDirectInput(getDisplayValue(options[nextIndex].value));
             }
         },
-        [options, optionHeight, paddingVertical, containerHeight, scrollToIndex, onChange, getDisplayValue]
+        [options, optionHeight, paddingVertical, containerHeight, scrollToIndex, onChange, getDisplayValue],
     );
 
     useEffect(() => {
@@ -173,7 +173,7 @@ function IosWheelPickerInner<T = number | string>({
             const found = options.find((o) => String(o.value) === t || o.label === t);
             return found ? found.value : null;
         },
-        [options, centerInputMode]
+        [options, centerInputMode],
     );
 
     const handleDirectInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,6 +266,123 @@ function IosWheelPickerInner<T = number | string>({
 
 export function IosWheelPicker<T = number | string>(props: Props<T>) {
     return <IosWheelPickerInner {...(props as unknown as Props<number | string>)} />;
+}
+
+/** 0~23 시를 12시간제 표시용으로 분해 */
+export function hour24ToDisplayParts(hour24: number): { hour12: number; period: 0 | 1 } {
+    const h = ((hour24 % 24) + 24) % 24;
+    const period: 0 | 1 = h >= 12 ? 1 : 0;
+    let hour12 = h % 12;
+    if (hour12 === 0) hour12 = 12;
+    return { hour12, period };
+}
+
+/** 12시간 + 오전(0)/오후(1) → 0~23 */
+export function hour12AndPeriodTo24(hour12: number, period: 0 | 1): number {
+    if (period === 1) {
+        return hour12 === 12 ? 12 : hour12 + 12;
+    }
+    return hour12 === 12 ? 0 : hour12;
+}
+
+const HOUR_12_OPTIONS: WheelOption<number>[] = Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: `${i + 1}시`,
+}));
+
+const AM_PM_OPTIONS: WheelOption<number>[] = [
+    { value: 0, label: "오전" },
+    { value: 1, label: "오후" },
+];
+
+export type IosTwelveHourHourPickerProps = {
+    /** 0~23 (부모 state 그대로) */
+    value: number;
+    onChange: (hour24: number) => void;
+    optionHeight?: number;
+    visibleCount?: number;
+    /** true면 하단에 1~12 직접 입력 */
+    allowDirectInput?: boolean;
+};
+
+/** 1~12시 휠만. 오전/오후는 `IosAmPmWheelPicker`를 분 단위 우측에 두면 됨. value/onChange는 0~23. */
+export function IosTwelveHourHourPicker({ value, onChange, optionHeight, visibleCount, allowDirectInput = false }: IosTwelveHourHourPickerProps) {
+    const clamped = ((value % 24) + 24) % 24;
+    const { hour12, period } = hour24ToDisplayParts(clamped);
+    const [hourDirect, setHourDirect] = useState(String(hour12));
+
+    useEffect(() => {
+        setHourDirect(String(hour12));
+    }, [hour12]);
+
+    const applyHour12 = useCallback(
+        (nextHour12: number) => {
+            onChange(hour12AndPeriodTo24(nextHour12, period));
+        },
+        [onChange, period],
+    );
+
+    const handleHourDirectBlur = () => {
+        const n = Number(hourDirect.trim());
+        if (!Number.isNaN(n)) {
+            const nextHour12 = Math.max(1, Math.min(12, Math.floor(n)));
+            onChange(hour12AndPeriodTo24(nextHour12, period));
+            setHourDirect(String(nextHour12));
+        } else {
+            setHourDirect(String(hour12));
+        }
+    };
+
+    const handleHourDirectKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+        }
+    };
+
+    return (
+        <Column>
+            <IosWheelPicker options={HOUR_12_OPTIONS} value={hour12} onChange={(v) => applyHour12(v as number)} optionHeight={optionHeight} visibleCount={visibleCount} allowDirectInput={false} />
+            {allowDirectInput && (
+                <DirectInput
+                    type="text"
+                    inputMode="numeric"
+                    value={hourDirect}
+                    onChange={(e) => setHourDirect(e.target.value)}
+                    onBlur={handleHourDirectBlur}
+                    onKeyDown={handleHourDirectKeyDown}
+                    placeholder="1~12"
+                />
+            )}
+        </Column>
+    );
+}
+
+export type IosAmPmWheelPickerProps = Pick<IosTwelveHourHourPickerProps, "value" | "onChange" | "optionHeight" | "visibleCount">;
+
+/** 오전/오후 휠만. 시(1~12)·분 휠 우측에 배치. value/onChange는 0~23. */
+export function IosAmPmWheelPicker({ value, onChange, optionHeight, visibleCount }: IosAmPmWheelPickerProps) {
+    const clamped = ((value % 24) + 24) % 24;
+    const { hour12, period } = hour24ToDisplayParts(clamped);
+
+    const applyPeriod = useCallback(
+        (nextPeriod: 0 | 1) => {
+            onChange(hour12AndPeriodTo24(hour12, nextPeriod));
+        },
+        [onChange, hour12],
+    );
+
+    return (
+        <AmPmPickerWrap>
+            <IosWheelPicker
+                options={AM_PM_OPTIONS}
+                value={period}
+                onChange={(v) => applyPeriod((v === 1 ? 1 : 0) as 0 | 1)}
+                optionHeight={optionHeight}
+                visibleCount={visibleCount}
+                allowDirectInput={false}
+            />
+        </AmPmPickerWrap>
+    );
 }
 
 // --- Styled ------------------------------------
@@ -362,7 +479,9 @@ const WheelItem = styled.div<{ height: number; $selected: boolean; $hidden?: boo
     font-weight: ${(p) => (p.$selected ? 600 : 400)};
     color: ${(p) => (p.$selected ? "#000" : "#000")};
     cursor: pointer;
-    transition: font-size 0.15s ease, color 0.15s ease;
+    transition:
+        font-size 0.15s ease,
+        color 0.15s ease;
     user-select: none;
     opacity: ${(p) => (p.$hidden ? 0 : 1)};
 `;
@@ -381,4 +500,8 @@ const DirectInput = styled.input`
         border-color: #00ccc7;
         background: #fff;
     }
+`;
+
+const AmPmPickerWrap = styled.div`
+    min-width: 72px;
 `;

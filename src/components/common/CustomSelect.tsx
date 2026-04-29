@@ -14,9 +14,15 @@ interface CustomSelectProps {
     placeholder?: string;
     disabled?: boolean;
     className?: string;
+    embeddedInput?: {
+        enabled: boolean;
+        value: string;
+        onChange: (value: string) => void;
+        placeholder?: string;
+    };
 }
 
-export default function CustomSelect({ value, options, onChange, placeholder = "선택하세요", disabled = false, className }: CustomSelectProps) {
+export default function CustomSelect({ value, options, onChange, placeholder = "선택하세요", disabled = false, className, embeddedInput }: CustomSelectProps) {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const normalizedValue = value == null ? "" : String(value);
@@ -43,7 +49,19 @@ export default function CustomSelect({ value, options, onChange, placeholder = "
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
-                <SelectText>{selectedOption?.label ?? placeholder}</SelectText>
+                {embeddedInput?.enabled ? (
+                    <EmbeddedInput
+                        type="text"
+                        value={embeddedInput.value}
+                        placeholder={embeddedInput.placeholder ?? "직접 입력"}
+                        disabled={disabled}
+                        onChange={(e) => embeddedInput.onChange(e.target.value)}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <SelectText>{selectedOption?.label ?? placeholder}</SelectText>
+                )}
                 <SelectArrow className="custom-select-arrow" $open={open}>˅</SelectArrow>
             </SelectButton>
             {open && !disabled ? (
@@ -112,6 +130,23 @@ const SelectText = styled.span`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+`;
+
+const EmbeddedInput = styled.input`
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #000;
+    font: inherit;
+    padding-right: 10px;
+
+    &:focus {
+        outline: none;
+    }
+
+    &::placeholder {
+        color: #6b7280;
+    }
 `;
 
 const SelectArrow = styled.span<{ $open: boolean }>`

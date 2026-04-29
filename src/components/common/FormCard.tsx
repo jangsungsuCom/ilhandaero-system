@@ -58,18 +58,29 @@ export const EmailInput = ({ value, onChange, placeholder = "이메일", disable
         }
     };
 
-    const handleCustomDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const domain = e.target.value;
-        setCustomDomain(domain);
-        updateEmail(emailId, domain);
-    };
-
     return (
         <EmailInputContainer>
             <EmailIdInput type="text" value={emailId} onChange={handleIdChange} placeholder={placeholder} disabled={disabled} />
             <AtSymbol>@</AtSymbol>
-            {selectedDomain === "" && <EmailDomainInput type="text" value={customDomain} onChange={handleCustomDomainChange} placeholder="도메인 입력" disabled={disabled} />}
-            <EmailDomainSelect value={selectedDomain} options={EMAIL_DOMAINS} onChange={handleDomainSelect} disabled={disabled} />
+            <EmailDomainSelect
+                value={selectedDomain}
+                options={EMAIL_DOMAINS}
+                onChange={handleDomainSelect}
+                disabled={disabled}
+                embeddedInput={
+                    selectedDomain === ""
+                        ? {
+                              enabled: true,
+                              value: customDomain,
+                              onChange: (next) => {
+                                  setCustomDomain(next);
+                                  updateEmail(emailId, next);
+                              },
+                              placeholder: "도메인 입력",
+                          }
+                        : undefined
+                }
+            />
         </EmailInputContainer>
     );
 };
@@ -132,45 +143,8 @@ const AtSymbol = styled.span`
     }
 `;
 
-const EmailDomainInput = styled.input`
-    width: 120px;
-    height: 52px;
-    padding: 0 12px;
-    font-size: 17px;
-    border: 1.5px solid #00ccc7;
-    border-radius: 12px;
-    background: #ffffff;
-    color: #000;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #00ccc7;
-        box-shadow: 0 0 0 3px rgba(0, 204, 199, 0.18);
-    }
-
-    &::placeholder {
-        color: #000;
-    }
-
-    &:disabled {
-        background: #f5f5f5;
-        color: #000;
-        cursor: not-allowed;
-    }
-
-    ${media.mobile} {
-        width: auto;
-        min-width: 70px;
-        flex: 1;
-        height: 46px;
-        font-size: 13px;
-        padding: 0 6px;
-    }
-`;
-
 const EmailDomainSelect = styled(CustomSelect)`
-    width: 110px;
+    width: 200px;
     height: 52px;
     font-size: 15px;
     flex-shrink: 0;

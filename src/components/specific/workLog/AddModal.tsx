@@ -8,10 +8,9 @@ import { createWorkLog } from "../../../utils/workLog";
 import { getLoginMethod } from "../../../utils/auth";
 import { createWorkLogForEmail } from "../../../utils/mypageApi";
 import type { SalaryTarget } from "../../../types/salaryTarget";
-import { IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
+import { IosAmPmWheelPicker, IosTwelveHourHourPicker, IosWheelPicker, type WheelOption } from "../../common/IosWheelPicker.tsx";
 import CustomSelect from "../../common/CustomSelect";
 
-const HOUR_OPTIONS: WheelOption<number>[] = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${i}시` }));
 const MINUTE_OPTIONS: WheelOption<number>[] = Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${i}분` }));
 
 type Props = {
@@ -193,19 +192,21 @@ export default function AddModal({ isModalOpen, setIsModalOpen, selectedDate, on
                     <TimeRow>
                         <SectionTitle>시작 시간</SectionTitle>
                         <TimePickerRow>
-                            <IosWheelPicker options={HOUR_OPTIONS} value={startHour} onChange={setStartHour} allowDirectInput />
+                            <IosTwelveHourHourPicker value={startHour} onChange={setStartHour} allowDirectInput />
                             <MinutePickerWrap>
                                 <IosWheelPicker options={MINUTE_OPTIONS} value={startMinute} onChange={setStartMinute} allowDirectInput />
                             </MinutePickerWrap>
+                            <IosAmPmWheelPicker value={startHour} onChange={setStartHour} />
                         </TimePickerRow>
                     </TimeRow>
                     <TimeRow>
                         <SectionTitle>종료 시간</SectionTitle>
                         <TimePickerRow>
-                            <IosWheelPicker options={HOUR_OPTIONS} value={endHour} onChange={setEndHour} allowDirectInput />
+                            <IosTwelveHourHourPicker value={endHour} onChange={setEndHour} allowDirectInput />
                             <MinutePickerWrap>
                                 <IosWheelPicker options={MINUTE_OPTIONS} value={endMinute} onChange={setEndMinute} allowDirectInput />
                             </MinutePickerWrap>
+                            <IosAmPmWheelPicker value={endHour} onChange={setEndHour} />
                         </TimePickerRow>
                     </TimeRow>
 
